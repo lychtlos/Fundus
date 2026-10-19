@@ -1135,15 +1135,26 @@ async function loadProviders(){
   const groups=new Map();
   [...all.values()].sort((x,y)=>prio(x)-prio(y)).forEach(p=>{
     const b=baseName(p.provider_name);const g=groups.get(b)||{name:b,ids:[],logo:p.logo_path?TMDB_IMG+'w92'+p.logo_path:null};g.ids.push(p.provider_id);groups.set(b,g)});
-  return [...groups.values()];
+  /* große deutsche Abo-Dienste zuerst, reine Leih-/Kaufshops ans Ende */
+  const MAJOR=['netflix','amazon prime video','disney plus','apple tv','apple tv plus','wow','hbo max','paramount plus','rtl plus','joyn','magentatv','sky go','dazn','crunchyroll','ard mediathek','zdf','arte','mubi','pluto tv','freevee'];
+  const SHOP=/store$|amazon video|google play|rakuten|chili|videoload|microsoft|^youtube$|kino on demand|verleihshop/i;
+  const rank=g=>{const i=MAJOR.indexOf(g.name.toLowerCase());return i>=0?i:SHOP.test(g.name)?2000+g.p:100+g.p};
+  const arr=[...groups.values()];arr.forEach((g,i)=>g.p=i);
+  return arr.sort((a,b)=>rank(a)-rank(b));
+}
+function provGridHtml(){
+  const sel=new Set(S.settings.providers);const q=(ui.provQ||'').trim().toLowerCase();
+  let list=ui.provs.map((g,i)=>({g,i}));
+  if(q)list=list.filter(x=>x.g.name.toLowerCase().includes(q));
+  else if(!ui.provAll)list=list.filter((x,n)=>n<24||x.g.ids.some(id=>sel.has(id)));
+  return (list.length?'<div class="provs">'+list.map(({g,i})=>'<label class="prov"><input type="checkbox" id="prov-'+i+'" data-prov="'+i+'"'+(g.ids.some(id=>sel.has(id))?' checked':'')+'>'+(g.logo?'<img src="'+esc(g.logo)+'" alt="">':'<span class="pl">'+esc(g.name.slice(0,2).toUpperCase())+'</span>')+'<span>'+esc(g.name)+'</span></label>').join('')+'</div>':'<p class="note">Kein Dienst gefunden.</p>')+
+    (!q&&!ui.provAll&&ui.provs.length>24?'<div class="more"><button class="btn ghost" data-act="provAll">Alle '+ui.provs.length+' Dienste zeigen</button></div>':'');
 }
 function provPanel(){
   if(needsKey('film'))return '<p class="note">Die Liste der Dienste kommt von TMDB. Erst den Schlüssel eintragen.</p>';
   if(!ui.provs){if(!ui.provLoading){ui.provLoading=true;loadProviders().then(p=>{ui.provs=p}).catch(e=>{ui.provs=[];ui.provErr=e.message}).finally(()=>{ui.provLoading=false;render()})}return '<p class="note">Lade Dienste …</p>'}
   if(ui.provErr||!ui.provs.length)return '<div class="row"><p class="err" style="margin:0">'+esc(ui.provErr||'Keine Dienste gefunden.')+'</p><button class="btn" data-act="provRetry">Erneut laden</button></div>';
-  const sel=new Set(S.settings.providers);const list=ui.provAll?ui.provs:ui.provs.slice(0,24);
-  return '<div class="provs">'+list.map((g,i)=>'<label class="prov"><input type="checkbox" id="prov-'+i+'" data-prov="'+i+'"'+(g.ids.some(id=>sel.has(id))?' checked':'')+'>'+(g.logo?'<img src="'+esc(g.logo)+'" alt="">':'<span class="pl">'+esc(g.name.slice(0,2).toUpperCase())+'</span>')+'<span>'+esc(g.name)+'</span></label>').join('')+'</div>'+
-    (ui.provs.length>24&&!ui.provAll?'<div class="more"><button class="btn ghost" data-act="provAll">Alle '+ui.provs.length+' Dienste zeigen</button></div>':'');
+  return '<input class="inp" id="provQ" type="search" placeholder="Dienst suchen, z. B. HBO" value="'+esc(ui.provQ||'')+'" autocomplete="off" style="margin-bottom:10px;width:100%;max-width:360px"><div id="provGrid">'+provGridHtml()+'</div>';
 }
 
 /* ---------- Auswahl (für Sheet und Intro): ein Abschnitt je Genre ---------- */
@@ -1338,7 +1349,7 @@ document.addEventListener('change',e=>{
     if(k==='onlyMine'||k==='includeFree')resetPools(['film','serie']);render();return}
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
-document.addEventListener('input',e=>{if(e.target.id==='pickQ')pickSearch(e.target.value)});
+document.addEventListener('input',e=>{if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
 /* Zurück-Geste: jede Ebene (Reiter, Medium, Detail, Auswahl, Intro-Schritt) ist ein Verlaufseintrag */
 let navLock=false;
 function navPush(extra){if(navLock)return;try{history.pushState({tab:ui.tab,med:ui.med,...(extra||{})},'')}catch(e){}}
