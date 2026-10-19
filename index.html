@@ -301,7 +301,7 @@ select.inp{flex:0 1 220px}
 
 <header class="top"><div class="wrap">
   <div class="brand"><h1>Fundus<i>.</i></h1><small id="modeLabel"></small></div>
-  <div class="topr"><div class="theme" id="themeSw" role="group" aria-label="Darstellung"></div><div id="acct"></div></div>
+  <div class="topr"><div id="acct"></div></div>
   <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
 </div></header>
 <div class="wrap">
@@ -1010,7 +1010,7 @@ function renderTabs(){
   $('#tabs').innerHTML=TABS.map(([id,l])=>'<button class="tab" data-act="tab" data-tab="'+id+'"'+(ui.tab===id?' aria-current="page"':'')+'>'+l+(id==='merkliste'&&wl?' <span class="st">'+wl+'</span>':'')+(id==='neu'&&nn?' <span class="count">'+nn+'</span>':'')+'</button>').join('');
   $('#modeLabel').textContent=MODE==='demo'?'Demo':'';
   const t=S.settings.theme;
-  $('#themeSw').innerHTML=[['light','Hell',IC.sun],['dark','Dunkel',IC.moon],['system','System',IC.auto]].map(([v,l,i])=>'<button data-act="theme" data-v="'+v+'" aria-pressed="'+(t===v)+'" title="'+l+'">'+i+'<span>'+l+'</span></button>').join('');
+
 }
 function renderBanner(){
   let h='';
@@ -1038,7 +1038,7 @@ const VIEWS={
     const fs=ui.med==='alle'||isFS(ui.med);
     let h='<div class="head"><h2>Vorschläge für Dich</h2>';
     if(fs)h+='<label class="switch"><input type="checkbox" id="sw-only" data-set="onlyMine"'+(S.settings.onlyMine?' checked':'')+(S.settings.providers.length?'':' disabled')+'> Nur meine Dienste</label>';
-    h+='<button class="btn" data-act="reshuffle" data-m="'+ui.med+'">'+IC.shuffle+(ui.med==='alle'?'Alle neu mischen':'Neu mischen')+'</button></div>'+medChips();
+    h+='</div>'+medChips();
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
     if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
     else{const blk=discoverBlock(ui.med,ui.shown[ui.med]||12);h+=filterBar(ui.med)+'<div style="margin-top:16px">'+blk+'</div>'}
@@ -1323,6 +1323,8 @@ const ACT={
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
   pushOn(){pushOn()},pushOff(){pushOff()},
+  freshAll(){const m=ui.tab==='entdecken'?ui.med:'alle';resetPools(m==='alle'?null:[m]);ui.shown={};ui.knownOpen=null;
+    if(ui.tab!=='entdecken'){ui.tab='entdecken';navPush()}render();window.scrollTo({top:0});toast(m==='alle'?'Neue Vorschläge für alle Bereiche':'Neue Vorschläge: '+MEDIA[m].label)},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
   async install(){if(!installEvt){ui.instHelp=true;if(!ui.intro&&ui.tab!=='einstellungen'){ui.tab='einstellungen';navPush()}render();if(ui.intro)renderIntro();setTimeout(()=>{const h=document.querySelector('.insthelp');if(h)h.scrollIntoView({block:'center',behavior:'smooth'})},50);return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
@@ -1447,8 +1449,9 @@ async function login(){
 async function logout(){if(!FB)return;await pushNow();await FB.A.signOut(FB.auth);toast('Abgemeldet. Die Daten bleiben auf diesem Gerät.')}
 const canInstall=()=>MODE==='live'&&/^https?:$/.test(location.protocol)&&!isStandalone();
 function acctHtml(){
+  const neu=S.onboarded?'<button class="btn acct-in" data-act="freshAll" title="Neue Vorschläge">'+IC.shuffle+'<span>Neue Vorschläge</span></button>':'';
   const ins=canInstall()?'<button class="btn acct-in" data-act="install" title="Als App installieren">'+IC.dl+'<span>Installieren</span></button>':'';
-  return ins+acctBtn();
+  return neu+ins+acctBtn();
 }
 function acctBtn(){
   if(!canSync())return '';
