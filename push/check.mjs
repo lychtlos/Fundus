@@ -32,18 +32,20 @@ async function j(url,{itunes=false}={}){
 }
 const tmdb=(p,q='')=>j('https://api.themoviedb.org/3'+p+'?api_key='+TMDB+'&language=de-DE'+q);
 
-/* Ereignisse je Eintrag: {id,title,text} – nur, was heute bzw. in den letzten Tagen passiert ist */
+/* Ereignisse je Eintrag: {id,title,text} – nur, was in den letzten Tagen passiert ist.
+   Serien: Termine sind Erstausstrahlung (meist USA, abends = bei uns nachts),
+   daher Meldung am Tag nach dem Sendetermin. */
 async function serie(it){
   const ev=[];
   if(String(it.id).startsWith('tvm')){
     const s=await j('https://api.tvmaze.com/shows/'+String(it.id).slice(3)+'?embed[]=nextepisode&embed[]=previousepisode');
     const em=s._embedded||{};
-    for(const e of [em.nextepisode,em.previousepisode])if(e&&e.airdate&&dd(e.airdate)<=0&&dd(e.airdate)>=-1)
+    for(const e of [em.nextepisode,em.previousepisode])if(e&&e.airdate&&dd(e.airdate)<=-1&&dd(e.airdate)>=-2)
       ev.push({id:it.k+':'+ep(e.season,e.number),title:it.title,text:(e.number===1?'Neue Staffel: ':'Neue Folge: ')+ep(e.season,e.number)+(e.name?' · '+e.name:'')});
     return ev;
   }
   const d=await tmdb('/tv/'+it.id);
-  for(const e of [d.next_episode_to_air,d.last_episode_to_air])if(e&&e.air_date&&dd(e.air_date)<=0&&dd(e.air_date)>=-1)
+  for(const e of [d.next_episode_to_air,d.last_episode_to_air])if(e&&e.air_date&&dd(e.air_date)<=-1&&dd(e.air_date)>=-2)
     ev.push({id:it.k+':'+ep(e.season_number,e.episode_number),title:it.title,text:(e.episode_number===1?'Neue Staffel: ':'Neue Folge: ')+ep(e.season_number,e.episode_number)+(e.name?' · '+e.name:'')});
   return ev;
 }

@@ -654,7 +654,7 @@ const buchLive={
       const r=[];const au=(s.authors||[])[0];
       if(au)(await olib('author_key:'+au+' language:ger','&limit=12')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.8,why:who?'Von '+who:'Von demselben Autor'}));
       else if(who)(await olib('author:"'+who+'" language:ger','&limit=12')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.8,why:'Von '+who}));
-      for(const sub of (s.subjects||[]).slice(0,2))(await olib('subject:"'+sub+'" language:ger','&limit=20')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.5}));
+      for(const sub of (s.subjects||[]).slice(0,1))(await olib('subject:"'+sub+'" language:ger','&limit=20')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.5}));
       if(gq)(await olGenre(gq,1+Math.floor(Math.random()*3))).forEach(d=>r.push({it:olItem(d,g,gq),w:0.4}));
       r.forEach(x=>out.push(x));return r;
     },async()=>{
@@ -786,13 +786,17 @@ async function buildPool(m){
   const A=adapter(m);if(!A)return [];
   const likes=byStatus(m,'like'),watch=byStatus(m,'watch'),dis=byStatus(m,'dislike');
   if(!likes.length&&!watch.length)return [];
-  const seeds=shuffle(likes).slice(0,m==='podcast'?5:8).map(s=>[s,1]).concat(shuffle(watch).slice(0,3).map(s=>[s,0.5]));
+  /* alle „Gefällt mir“ (neueste zuerst, Obergrenze je Bereich wegen API-Limits);
+     Gewicht 1,0 für den neuesten Eintrag, linear fallend bis 0,5 für den ältesten */
+  const CAP={film:40,serie:40,musik:40,buch:12,podcast:20}[m]||30;
+  const lk=likes.slice(0,CAP),n=lk.length;
+  const seeds=lk.map((s,i)=>[s,n>1?1-0.5*i/(n-1):1,false]).concat(watch.slice(0,10).map(s=>[s,0.4,true]));
   const cand=new Map();const known=new Set(Object.values(S.items).map(x=>x.tk).filter(Boolean));
   const add=(it,w,why,ex)=>{if(!it||S.items[it.k]||(it.tk&&known.has(it.tk)))return;const key=it.tk||it.k;let c=cand.get(key);
     if(!c){c={it,score:0,reasons:[],ex:!!ex};cand.set(key,c)}else if(!ex)c.ex=false;
     c.score+=w;if(why&&w>0&&c.reasons.length<2&&!c.reasons.includes(why))c.reasons.push(why)};
-  await pool(seeds,4,async([s,w])=>{(await A.similar(s)).forEach((r,i)=>add(r.it,w*r.w*(1-i/60),r.why||('Weil Dir „'+s.title+'“ gefällt')))});
-  await pool(shuffle(dis).slice(0,4),4,async s=>{(await A.similar(s)).forEach(r=>add(r.it,-0.7*r.w,null))});
+  await pool(seeds,4,async([s,w,wl])=>{(await A.similar(s)).forEach((r,i)=>add(r.it,w*r.w*(1-i/60),r.why||(wl?'Ähnlich wie „'+s.title+'“ (Merkliste)':'Weil Dir „'+s.title+'“ gefällt')))});
+  await pool(dis.slice(0,10),4,async s=>{(await A.similar(s)).forEach(r=>add(r.it,-0.7*r.w,null))});
   try{(await A.explore(likes.concat(watch),[...cand.values()].filter(c=>c.score>0).map(c=>c.it))).forEach(r=>add(r.it,0.35*r.w,r.why,true))}catch(e){}
   const list=[...cand.values()].filter(c=>c.score>0);
   list.forEach(c=>c.rank=c.score+Math.random()*0.25);
@@ -1547,7 +1551,7 @@ function pushPanel(){
   if(!pushSupported())return '<p>Push-Mitteilungen gibt es nur in der online geöffneten bzw. installierten App'+(/iPhone|iPad|iPod/.test(navigator.userAgent)?' (iPhone: erst über „Zum Home-Bildschirm“ installieren, dann dort aktivieren)':'')+'.</p>';
   if(ui.pushSt===undefined){ui.pushSt='…';pushStateNow().then(s=>{ui.pushSt=s;if(ui.tab==='einstellungen')render()})}
   const devs=Object.values(S.subs||{}).filter(s=>!s.off);
-  let h='<p>Einmal täglich gegen 8 Uhr: neue Folgen, Staffeln, Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“, dazu Filme der Merkliste, die neu bei Deinen Diensten laufen. Kommt auch, wenn Fundus geschlossen ist.</p>';
+  let h='<p>Einmal täglich gegen 8 Uhr: neue Serienfolgen und Staffeln (am Tag nach der Erstausstrahlung, da US-Termine bei uns nachts laufen), Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“, dazu Filme der Merkliste, die neu bei Deinen Diensten laufen. Kommt auch, wenn Fundus geschlossen ist.</p>';
   if(!SYNC.user)return h+'<p class="note" style="margin:0">Voraussetzung ist die Anmeldung (Konto oben), damit der tägliche Abgleich Deine Listen kennt.</p>';
   if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!isStandalone())return h+'<p class="note" style="margin:0">iPhone/iPad: Fundus zuerst über Teilen → „Zum Home-Bildschirm“ installieren und dort aktivieren.</p>';
   h+=ui.pushSt==='on'?'<p class="ok" style="margin:0 0 10px">Auf diesem Gerät aktiv.</p><button class="btn" data-act="pushOff">Auf diesem Gerät ausschalten</button>'
