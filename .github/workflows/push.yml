@@ -3,6 +3,9 @@ name: Fundus täglicher Check
 on:
   schedule:
     - cron: '7 6 * * *'   # täglich 06:07 UTC = 08:07 Sommerzeit / 07:07 Winterzeit
+  push:                    # Änderung am Prüfskript = Testlauf ohne Versand
+    branches: [main]
+    paths: ['push/**', '.github/workflows/push.yml']
   workflow_dispatch:
     inputs:
       dry_run:
@@ -31,7 +34,7 @@ jobs:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           VAPID_PUBLIC: BPbXST0UBvG6REMA1frrvW3xPKhxm8r5XFh-T9igYiEcuAnLQ7wI8NXYET8YRMFgVbx-RCIL_LgL5L04tSw43fI
-          DRY_RUN: ${{ github.event.inputs.dry_run || '0' }}
+          DRY_RUN: ${{ github.event_name == 'push' && '1' || github.event.inputs.dry_run || '0' }}
         run: node check.mjs
       # GitHub schaltet Zeitpläne nach 60 Tagen ohne Commit ab – alle 50 Tage ein leerer Commit
       - name: Zeitplan aktiv halten

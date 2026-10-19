@@ -122,5 +122,6 @@ async function runUser(doc){
 }
 
 const users=await db.collection('artifacts').doc('fundus').collection('users').get();
-console.log('Stichtag',TODAY,'·',users.size,'Konten');
+console.log('Stichtag',TODAY,'·',users.size,'Konten',DRY?'· Testlauf ohne Versand':'');
+if(!users.size)throw new Error('Keine Konten gefunden – Dienstkonto gehört evtl. zu einem anderen Projekt');
 for(const d of users.docs){try{console.log(await runUser(d))}catch(e){console.error('Konto',d.id.slice(0,6),e.message)}}
