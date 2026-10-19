@@ -285,6 +285,11 @@ select.inp{flex:0 1 220px}
 .sum{background:var(--surface);border-radius:var(--r);padding:14px}
 .sum b{font-family:var(--f-display);font-size:32px;font-weight:800;display:block;line-height:1}
 .pkbox{display:grid;gap:12px}
+.introacct{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;background:var(--surface);border-radius:var(--r);padding:14px 16px}
+.introacct.is-in{gap:12px;flex-wrap:nowrap}
+.introacct img{width:36px;height:36px;border-radius:50%;flex:none}
+.insthelp{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13.5px}
+.insthelp p{margin:0}
 
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .toast button{background:none;border:0;color:var(--bg);font-weight:700;text-decoration:underline}
@@ -877,17 +882,19 @@ async function detailFor(it){
 function openDetail(k){
   const it=REG.get(k)||S.items[k];if(!it)return;ui.detail={k,it,data:null,err:''};
   if(isFS(it.m)&&!AV.has(it.k))availFetch(it).then(()=>{if(ui.detail&&ui.detail.k===k)renderDetail()});
+  if(!(history.state&&history.state.ov==='detail'))navPush({ov:'detail'});
   renderDetail();
   detailFor(it).then(d=>{if(ui.detail&&ui.detail.k===k){ui.detail.data=d;renderDetail()}}).catch(e=>{if(ui.detail&&ui.detail.k===k){ui.detail.err=e.message||String(e);renderDetail()}});
 }
-function closeDetail(){ui.detail=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
+function closeDetail(){if(history.state&&history.state.ov==='detail'){history.back();return}doCloseDetail()}
+function doCloseDetail(){ui.detail=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
 function avFull(it){
   if(!AV.has(it.k))return '<div class="subh">Wo verfügbar</div><p class="note">Wird geladen …</p>';
   const av=AV.get(it.k);if(!av)return '';const mine=new Set(S.settings.providers);
   const grp=(lab,arr)=>{const seen=new Set();const xs=arr.filter(p=>{const b=baseName(p.name);if(seen.has(b))return false;seen.add(b);return true});
     return xs.length?'<div class="avrow"><span class="st">'+lab+'</span>'+xs.map(p=>'<span class="avp'+(mine.has(p.id)?' mine':'')+'">'+(p.logo?'<img src="'+esc(p.logo)+'" alt="">':'')+esc(baseName(p.name))+'</span>').join('')+'</div>':''};
   const h=grp('Im Abo',av.flat)+grp('Kostenlos',av.free)+grp('Leihen, Kaufen',av.rent);
-  return '<div class="subh">Wo verfügbar (Deutschland)</div>'+(h||'<p class="note">Derzeit nicht im Streaming.</p>')+(av.link?'<div><a class="btn ghost" href="'+esc(av.link)+'" target="_blank" rel="noopener">Alle Angebote bei JustWatch'+IC.ext+'</a></div>':'');
+  return '<div class="subh">Wo verfügbar (Deutschland)</div>'+(h||'<p class="note">Derzeit nicht im Streaming.</p>');
 }
 function renderDetail(){
   const D=ui.detail;const el=$('#sheet');if(!D)return;
@@ -951,7 +958,7 @@ function links(it){
   const q=encodeURIComponent(it.title+(it.m==='buch'?' '+((it.sub||'').split(' · ')[0]||''):''));
   if(it.m==='musik'){const svc={spotify:['Spotify','https://open.spotify.com/search/'+q],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],deezer:['Deezer',it.link&&String(it.link).includes('deezer')?it.link:'https://www.deezer.com/search/'+q],apple:['Apple Music','https://music.apple.com/de/search?term='+q]};
     const pref=svc[S.settings.musicService]?S.settings.musicService:'ytm';return [svc[pref]].concat(Object.keys(svc).filter(k=>k!==pref).map(k=>svc[k]))}
-  if(isFS(it.m)){const s=AV.get(it.k);const l=[];if(s&&s.link)l.push(['JustWatch',s.link]);l.push(['Details',it.link||'https://www.themoviedb.org/search?query='+q]);return l}
+  if(isFS(it.m))return [['TMDB',it.link||'https://www.themoviedb.org/search?query='+q]];
   if(it.m==='buch')return [['Thalia','https://www.thalia.de/suche?sq='+q],['Open Library',it.link||'https://openlibrary.org/search?q='+q]];
   const id=/^\d+$/.test(String(it.id))?String(it.id):null;const apple=it.link||'https://podcasts.apple.com/de/search?term='+q;
   const svc={pocketcasts:['Pocket Casts',id?'https://pca.st/itunes/'+id:apple],apple:['Apple Podcasts',apple],spotify:['Spotify','https://open.spotify.com/search/'+q+'/podcasts'],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],overcast:['Overcast',id?'https://overcast.fm/itunes'+id:apple]};
@@ -968,7 +975,7 @@ function card(it,mode,reasons){
   reg(it);const M=MEDIA[it.m];const k=esc(it.k);
   const meta='<div class="meta"><span class="mtag">'+M.one+'</span>'+((it.genres||[]).length?'<span>'+esc(it.genres.slice(0,2).join(' · '))+'</span>':'')+'</div>';
   const why=reasons&&reasons.length?'<p class="why">'+esc(reasons[0])+(reasons[1]?' <span>· '+esc(reasons[1])+'</span>':'')+'</p>':'';
-  const l=links(it)[0];
+  const l=isFS(it.m)?null:links(it)[0];
   const lnk=l?'<a class="btn ghost lnk" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+IC.ext+'</a>':'';
   let acts='';
   if(mode==='discover'){
@@ -1197,14 +1204,22 @@ function openSheet(m){
   const p=initPick(m,'sheet');const M=MEDIA[m];const el=$('#sheet');
   el.innerHTML='<div class="sheet-panel f-'+m+'" role="dialog" aria-modal="true" aria-label="Basis '+M.label+'"><div class="sheet-h"><div class="row"><h2>Basis: '+M.label+'</h2><button class="btn ghost" data-act="closePick" aria-label="Schließen">'+IC.x+'</button></div></div>'+
     '<div class="sheet-b">'+pickBoxHtml(p)+'</div><div class="sheet-f"><span class="note" id="pickCount">'+byStatus(m,'like').length+' ausgewählt</span><button class="btn pri" data-act="closePick">Fertig</button></div></div>';
-  el.hidden=false;document.body.style.overflow='hidden';
+  el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});
 }
-function closeSheet(){const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m];render()}}
+function closeSheet(){if(history.state&&history.state.ov==='sheet'){history.back();return}doCloseSheet()}
+function doCloseSheet(){const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m];render()}}
 
 /* ---------- Intro ---------- */
 function introSteps(){const I=ui.intro;const s=['welcome','services'];I.order().forEach(m=>s.push('pick:'+m));s.push('done');return s}
+function introAcct(){
+  if(!canSync())return '';
+  if(!SYNC.ready)return '<div class="introacct"><p class="note" style="margin:0">Anmeldung wird geladen …</p></div>';
+  if(SYNC.user)return '<div class="introacct is-in">'+(SYNC.user.photo?'<img src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':'')+'<p style="margin:0">Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b>. Deine Auswahl wird gespeichert und auf allen Geräten verfügbar.</p></div>';
+  return '<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Mit Google anmelden</b><p class="note" style="margin:2px 0 0">Speichert Deine Auswahl auf allen Geräten und ist Voraussetzung für Push-Mitteilungen. Schon eingerichtet? Dann werden Deine Daten geladen.</p></div><button class="btn pri" data-act="login">'+IC.user+'Anmelden</button></div>';
+}
 function startIntro(){
   ui.intro={media:new Set(ORDER),i:0,order(){return ORDER.filter(m=>this.media.has(m))}};
+  try{history.replaceState({tab:ui.tab,med:ui.med,ii:0},'')}catch(e){}
   ui.pick=null;renderIntro();
 }
 function renderIntro(){
@@ -1214,9 +1229,8 @@ function renderIntro(){
   let body='',foot='';
   const back=I.i>0?'<button class="btn ghost" data-act="introBack">Zurück</button>':'';
   if(step==='welcome'){
-    body='<span class="st">Schritt 1 · Einrichtung</span><h2>Was soll Fundus für Dich finden?</h2><p class="lead">Wähle die Bereiche. Danach legst Du pro Bereich Genres fest und markierst Titel, die Dir gefallen. Daraus entstehen Deine Vorschläge. Alles lässt sich später unter „Meine Basis“ ändern.</p>'+
+    body='<span class="st">Schritt 1 · Einrichtung</span>'+introAcct()+'<h2>Was soll Fundus für Dich finden?</h2><p class="lead">Wähle die Bereiche. Danach legst Du pro Bereich Genres fest und markierst Titel, die Dir gefallen. Daraus entstehen Deine Vorschläge. Alles lässt sich später unter „Meine Basis“ ändern.</p>'+
       '<div class="medpick">'+ORDER.map(m=>'<button class="medbtn f-'+m+'" data-act="introMed" data-m="'+m+'" aria-pressed="'+I.media.has(m)+'">'+art({k:'intro:'+m,m,title:MEDIA[m].label},'',true)+'<span class="tick">'+IC.check+'</span><b>'+MEDIA[m].label+'</b><small>'+MEDIA[m].desc+'</small></button>').join('')+'</div>';
-    if(canSync()&&!SYNC.user)body+='<p class="note" style="margin:0">Schon eingerichtet? <button class="btn ghost" data-act="login" style="display:inline-flex">'+IC.user+'Mit Google anmelden</button> lädt Deine Daten.</p>';
     foot=(MODE==='demo'?'<button class="btn ghost sp" data-act="introDemo">Überspringen und Beispielauswahl laden</button>':'<button class="btn ghost sp" data-act="introSkip">Später</button>')+'<button class="btn pri big" data-act="introNext"'+(I.media.size?'':' disabled')+'>Weiter</button>';
   }else if(step==='services'){
     const fs=[...I.media].some(isFS),ma=I.media.has('musik')||I.media.has('podcast');
@@ -1231,13 +1245,14 @@ function renderIntro(){
     foot=back+'<span class="note sp" id="pickCount">'+byStatus(m,'like').length+' ausgewählt</span><button class="btn pri big" data-act="introNext">'+(k===I.order().length-1?'Abschließen':'Weiter')+'</button>';
   }else{
     const sums=I.order().map(m=>'<div class="sum f-'+m+'"><span class="mtag st">'+MEDIA[m].label+'</span><b>'+byStatus(m,'like').length+'</b><span class="note">Titel in der Basis</span></div>').join('');
-    body='<span class="st">Fertig</span><h2>Deine Basis steht.</h2><p class="lead">Die Vorschläge entstehen jetzt aus Deiner Auswahl. Bewerte unter „Entdecken“, was Du schon kennst. So werden sie mit der Zeit genauer.</p><div class="sumgrid">'+sums+'</div>';
+    const inst=(!isStandalone()&&/^https?:$/.test(location.protocol)&&MODE==='live')?'<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Als App installieren</b><p class="note" style="margin:2px 0 0">Eigenes Symbol, Vollbild, Push-Mitteilungen auch auf dem iPhone.</p>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'')+'</div><button class="btn" data-act="install">Installieren</button></div>':'';
+    body='<span class="st">Fertig</span><h2>Deine Basis steht.</h2><p class="lead">Die Vorschläge entstehen jetzt aus Deiner Auswahl. Bewerte unter „Entdecken“, was Du schon kennst. So werden sie mit der Zeit genauer.</p><div class="sumgrid">'+sums+'</div>'+inst;
     foot=back+'<span class="sp"></span><button class="btn pri big" data-act="introFinish">Zu den Vorschlägen</button>';
   }
   el.innerHTML='<div class="intro-in">'+bar+body+'<div class="intro-f">'+foot+'</div></div>';
   el.hidden=false;document.body.style.overflow='hidden';
 }
-function finishIntro(){S.onboarded=true;save();setTimeout(dailyCheck,3000);ui.intro=null;ui.pick=null;renderIntro();resetPools();ui.tab='entdecken';ui.med='alle';render();window.scrollTo({top:0})}
+function finishIntro(){S.onboarded=true;save();setTimeout(dailyCheck,3000);ui.intro=null;ui.pick=null;renderIntro();resetPools();ui.tab='entdecken';ui.med='alle';render();window.scrollTo({top:0});try{history.replaceState({tab:'entdecken',med:'alle'},'')}catch(e){}}
 
 /* ---------- Toast ---------- */
 let tT=null,undo=null;
@@ -1254,8 +1269,8 @@ function act(k,st){
   toast(st?LBL[st]:'Entfernt',()=>{restore(k,prev);render()});
 }
 const ACT={
-  tab(b){ui.tab=b.dataset.tab;ui.knownOpen=null;render();window.scrollTo({top:0})},
-  med(b){ui.med=b.dataset.m;ui.knownOpen=null;render()},
+  tab(b){if(ui.tab===b.dataset.tab){window.scrollTo({top:0});return}ui.tab=b.dataset.tab;ui.knownOpen=null;render();window.scrollTo({top:0});navPush()},
+  med(b){if(ui.med===b.dataset.m)return;ui.med=b.dataset.m;ui.knownOpen=null;render();window.scrollTo({top:0});navPush()},
   theme(b){S.settings.theme=b.dataset.v;save();applyTheme();render()},
   watch(b){act(b.dataset.k,'watch')},
   like(b){act(b.dataset.k,'like')},
@@ -1287,7 +1302,7 @@ const ACT={
   provAll(){ui.provAll=true;render()},
   pushOn(){pushOn()},pushOff(){pushOff()},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
-  async install(){if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
+  async install(){if(!installEvt){ui.instHelp=true;render();if(ui.intro)renderIntro();return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
   async saveGb(){const v=$('#gbKey').value.trim();S.settings.gbKey=v;save();GB_ANON_OK=true;resetPools(['buch']);
     if(MODE==='demo'){ui.gbMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
@@ -1302,8 +1317,8 @@ const ACT={
   reset(){const th=S.settings.theme;S=newState();S.settings.theme=th;save();resetPools();ui.confirmReset=false;ui.rel=null;AV.clear();render();startIntro()},
   introStart(){startIntro()},
   introMed(b){const I=ui.intro;const m=b.dataset.m;if(I.media.has(m))I.media.delete(m);else I.media.add(m);renderIntro()},
-  introNext(){const I=ui.intro;const n=introSteps().length;if(I.i<n-1){I.i++;ui.pick=null;renderIntro();$('#intro').scrollTop=0}},
-  introBack(){const I=ui.intro;if(I.i>0){I.i--;ui.pick=null;renderIntro();$('#intro').scrollTop=0}},
+  introNext(){const I=ui.intro;const n=introSteps().length;if(I.i<n-1){I.i++;ui.pick=null;renderIntro();$('#intro').scrollTop=0;navPush({ii:I.i})}},
+  introBack(){const I=ui.intro;if(history.state&&history.state.ii===I.i&&I.i>0){history.back();return}if(I.i>0){I.i--;ui.pick=null;renderIntro();$('#intro').scrollTop=0}},
   introFinish(){finishIntro()},
   introSkip(){finishIntro()},
   introDemo(){const th=S.settings.theme;S=demoSeed();S.settings.theme=th;finishIntro()}
@@ -1322,6 +1337,18 @@ document.addEventListener('change',e=>{
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
 document.addEventListener('input',e=>{if(e.target.id==='pickQ')pickSearch(e.target.value)});
+/* Zurück-Geste: jede Ebene (Reiter, Medium, Detail, Auswahl, Intro-Schritt) ist ein Verlaufseintrag */
+let navLock=false;
+function navPush(extra){if(navLock)return;try{history.pushState({tab:ui.tab,med:ui.med,...(extra||{})},'')}catch(e){}}
+window.addEventListener('popstate',e=>{
+  const st=e.state||{};navLock=true;
+  try{
+    if(ui.detail&&st.ov!=='detail'){doCloseDetail();return}
+    if(ui.pick&&ui.pick.host==='sheet'&&st.ov!=='sheet'){doCloseSheet();return}
+    if(ui.intro){const n=typeof st.ii==='number'?st.ii:0;if(n!==ui.intro.i){ui.intro.i=Math.min(n,introSteps().length-1);ui.pick=null;renderIntro();$('#intro').scrollTop=0}return}
+    if(st.tab&&(st.tab!==ui.tab||(st.med||'alle')!==ui.med)){ui.tab=st.tab;ui.med=st.med||'alle';ui.knownOpen=null;render();window.scrollTo({top:0})}
+  }finally{navLock=false}
+});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
@@ -1363,7 +1390,7 @@ function mergeRemote(r){
 async function onUser(u){
   if(SYNC.unsub){SYNC.unsub();SYNC.unsub=null}
   ui.pushSt=undefined;
-  if(!u){SYNC.user=null;SYNC.state='off';renderAcct();return}
+  if(!u){SYNC.user=null;SYNC.state='off';renderAcct();if(ui.intro&&ui.intro.i===0)renderIntro();return}
   SYNC.user={uid:u.uid,name:u.displayName||'',email:u.email||'',photo:u.photoURL||''};SYNC.state='sync';renderAcct();
   try{
     const snap=await FB.F.getDoc(userRef());
@@ -1374,7 +1401,7 @@ async function onUser(u){
       mergeRemote(d);localSave();applyTheme();resetPools();SYNC.at=Date.now();SYNC.state='ok';
       if(ui.detail)renderDetail();render();
     },e=>{SYNC.state='err';SYNC.err=fbErr(e);renderAcct()});
-    if(ui.intro&&S.onboarded){finishIntro();toast('Deine Daten wurden geladen')}else render();
+    if(ui.intro&&S.onboarded){finishIntro();toast('Deine Daten wurden geladen')}else{render();if(ui.intro&&ui.intro.i===0)renderIntro()}
   }catch(e){SYNC.state='err';SYNC.err=fbErr(e);renderAcct()}
 }
 function fbErr(e){const c=(e&&e.code)||'';
@@ -1419,12 +1446,17 @@ let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='einstellungen')render()});
 window.addEventListener('appinstalled',()=>{installEvt=null;toast('Fundus ist installiert');render()});
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+function installSteps(){const u=navigator.userAgent;
+  if(/iPhone|iPad|iPod/.test(u))return '<p><b>iPhone/iPad (Safari):</b> unten auf das Teilen-Symbol tippen → „Zum Home-Bildschirm“ → „Hinzufügen“.</p>';
+  if(/SamsungBrowser/.test(u))return '<p><b>Samsung Internet:</b> Menü (☰) → „Seite hinzufügen zu“ → „Startbildschirm“.</p>';
+  if(/Firefox/.test(u))return '<p><b>Firefox:</b> Menü (⋮) → „Installieren“ bzw. „Zum Startbildschirm hinzufügen“.</p>';
+  if(/Android/.test(u))return '<p><b>Chrome (Android):</b> Menü (⋮) oben rechts → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Fehlt der Eintrag, ist Fundus evtl. schon installiert: auf dem Startbildschirm nachsehen.</p>';
+  return '<p><b>Chrome/Edge (PC):</b> In der Adressleiste rechts auf das Installieren-Symbol klicken, oder Menü (⋮) → „Streamen, speichern und teilen“ → „Seite als App installieren“.</p>';
+}
 function installPanel(){
   if(isStandalone())return '<p class="ok" style="margin:0">Fundus läuft als installierte App.</p>';
   if(!/^https?:$/.test(location.protocol)||MODE==='demo')return '<p>Installation ist in der online geöffneten App möglich (lychtlos.github.io/Fundus).</p>';
-  if(installEvt)return '<p>Als eigene App auf dem Startbildschirm, ohne Browserleiste.</p><button class="btn pri" data-act="install">Fundus installieren</button>';
-  if(/iPhone|iPad|iPod/.test(navigator.userAgent))return '<p>Safari: Teilen-Symbol → „Zum Home-Bildschirm“.</p>';
-  return '<p>Im Browser-Menü „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ wählen.</p>';
+  return '<p>Als eigene App auf dem Startbildschirm, im Vollbild ohne Browserleiste.</p><button class="btn pri" data-act="install">Als App installieren</button>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'');
 }
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
@@ -1509,10 +1541,11 @@ async function start(){
   const th=S.settings.theme;
   S=loadState()||newState();
   S.del=S.del||{};metaSig=JSON.stringify([S.settings,S.genres]);
-  if(canSync())fbInit().catch(()=>{SYNC.ready=true;SYNC.err='Anmeldedienst nicht erreichbar';renderAcct()});
+  if(canSync())fbInit().catch(()=>{SYNC.ready=true;SYNC.err='Anmeldedienst nicht erreichbar';renderAcct();if(ui.intro&&ui.intro.i===0)renderIntro()});
   if(!loadState())S.settings.theme=th;
   applyTheme();render();
   if(location.hash==='#neu'&&S.onboarded)ui.tab='neu';
+  try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}
   if(!S.onboarded)startIntro();
   dailyCheck();setInterval(dailyCheck,36e5);
 }
