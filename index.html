@@ -1045,9 +1045,9 @@ const VIEWS={
     return h;
   },
   merkliste(){
-    let h='<div class="head"><h2>Merkliste</h2></div><p class="lead">Was Du sehen, hören oder lesen willst. Wenn Du es kennst, bewerte es. Das verbessert die nächsten Vorschläge.</p>';
+    let h='<div class="head"><h2>Merkliste</h2><button class="btn pri" data-act="addOpen">'+IC.plus+'Hinzufügen</button></div><p class="lead">Was Du sehen, hören oder lesen willst. Wenn Du es kennst, bewerte es. Das verbessert die nächsten Vorschläge.</p>';
     const all=Object.values(S.items).filter(x=>x.status==='watch');
-    if(!all.length)return h+'<div class="empty"><p>Die Merkliste ist leer. Unter „Entdecken“ landet mit „Merken“ ein Titel hier.</p><button class="btn pri" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
+    if(!all.length)return h+'<div class="empty"><p>Die Merkliste ist leer. Unter „Entdecken“ landet mit „Merken“ ein Titel hier.</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
     ORDER.forEach(m=>{const its=byStatus(m,'watch');if(!its.length)return;
       if(isFS(m)&&!needsKey(m))ensureAv(m,its.filter(i=>!AV.has(i.k)));
       h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+its.length+'</span></h3></div><div class="grid">'+its.map(i=>card(i,'watch')).join('')+'</div></section>'});
@@ -1229,7 +1229,30 @@ function openSheet(m){
   el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});
 }
 function closeSheet(){if(history.state&&history.state.ov==='sheet'){history.back();return}doCloseSheet()}
-function doCloseSheet(){const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m];render()}}
+/* Merkliste: Titel manuell suchen und hinzufügen */
+function openAdd(){
+  ui.add={m:ui.add&&ui.add.m||'film',q:'',res:null,busy:false,err:''};const el=$('#sheet');
+  el.innerHTML='<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Zur Merkliste hinzufügen"><div class="sheet-h"><div class="row"><h2>Zur Merkliste hinzufügen</h2><button class="btn ghost" data-act="closePick" aria-label="Schließen">'+IC.x+'</button></div>'+
+    '<div class="chips" id="addMed">'+addMedHtml()+'</div><input class="inp" id="addQ" type="search" placeholder="Titel, Künstler, Autor oder Podcast suchen" autocomplete="off"></div>'+
+    '<div class="sheet-b" id="addRes">'+addResHtml()+'</div><div class="sheet-f"><span class="note" id="addCount">'+Object.values(S.items).filter(x=>x.status==='watch').length+' auf der Merkliste</span><button class="btn pri" data-act="closePick">Fertig</button></div></div>';
+  el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});setTimeout(()=>{const i=$('#addQ');if(i)i.focus()},50);
+}
+const addMedHtml=()=>ORDER.map(m=>'<button class="chip" data-act="addMed" data-m="'+m+'" aria-pressed="'+(ui.add.m===m)+'">'+MEDIA[m].label+'</button>').join('');
+function addResHtml(){const a=ui.add;if(!a)return '';
+  if(a.err)return '<p class="err">'+esc(a.err)+'</p>';
+  if(a.q.trim().length<2)return '<p class="pk-hint">Bereich wählen und Suchbegriff eingeben.</p>';
+  if(a.busy&&!a.res)return '<p class="pk-hint">Suche …</p>';
+  if(!a.res||!a.res.length)return '<p class="pk-hint">Keine Treffer.</p>';
+  return '<div class="tiles">'+a.res.map(it=>{reg(it);const st=S.items[it.k]&&S.items[it.k].status;const on=st==='watch';
+    return '<button class="tile f-'+it.m+'" data-act="addToggle" data-k="'+esc(it.k)+'" aria-pressed="'+on+'">'+art(it)+'<span class="tick">'+IC.check+'</span>'+(hasRating(it)?'<span class="rbadge rt-'+rtClass(it.rating)+'">★ '+nf1.format(it.rating)+'</span>':'')+'<span class="tt">'+esc(it.title)+'</span><span class="ts">'+esc(st&&!on?({like:'gefällt Dir',dislike:'gefällt nicht',hide:'ausgeblendet'})[st]:(it.sub||''))+'</span></button>'}).join('')+'</div>';
+}
+function addUpdate(){const r=$('#addRes'),m=$('#addMed'),c=$('#addCount');if(r)r.innerHTML=addResHtml();if(m)m.innerHTML=addMedHtml();if(c)c.textContent=Object.values(S.items).filter(x=>x.status==='watch').length+' auf der Merkliste'}
+let aT=null;
+function addSearch(){const a=ui.add;if(!a)return;clearTimeout(aT);a.res=null;a.err='';if(a.q.trim().length<2){addUpdate();return}
+  a.busy=true;addUpdate();const q=a.q,m=a.m;
+  aT=setTimeout(()=>{const A=adapter(m);if(!A){a.busy=false;a.err='Für '+MEDIA[m].label+' fehlt der TMDB-Schlüssel.';addUpdate();return}
+    A.search(q.trim()).then(r=>{if(ui.add===a&&a.q===q&&a.m===m){a.res=r;a.busy=false;addUpdate()}}).catch(e=>{if(ui.add===a){a.busy=false;a.err=e.message;addUpdate()}})},350)}
+function doCloseSheet(){const wasAdd=!!ui.add;ui.add=null;const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m]}if(p||wasAdd)render()}
 
 /* ---------- Intro ---------- */
 function introSteps(){const I=ui.intro;const s=['welcome','services'];I.order().forEach(m=>s.push('pick:'+m));s.push('done');return s}
@@ -1325,6 +1348,9 @@ const ACT={
   pushOn(){pushOn()},pushOff(){pushOff()},
   freshAll(){const m=ui.tab==='entdecken'?ui.med:'alle';resetPools(m==='alle'?null:[m]);ui.shown={};ui.knownOpen=null;
     if(ui.tab!=='entdecken'){ui.tab='entdecken';navPush()}render();window.scrollTo({top:0});toast(m==='alle'?'Neue Vorschläge für alle Bereiche':'Neue Vorschläge: '+MEDIA[m].label)},
+  addOpen(){openAdd()},
+  addMed(b){const a=ui.add;if(!a)return;a.m=b.dataset.m;addSearch();addUpdate();const i=$('#addQ');if(i)i.focus()},
+  addToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const on=S.items[k]&&S.items[k].status==='watch';setStatus(it,on?null:'watch');addUpdate()},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
   async install(){if(!installEvt){ui.instHelp=true;if(!ui.intro&&ui.tab!=='einstellungen'){ui.tab='einstellungen';navPush()}render();if(ui.intro)renderIntro();setTimeout(()=>{const h=document.querySelector('.insthelp');if(h)h.scrollIntoView({block:'center',behavior:'smooth'})},50);return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
@@ -1360,7 +1386,7 @@ document.addEventListener('change',e=>{
     if(k==='onlyMine'||k==='includeFree')resetPools(['film','serie']);render();return}
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
-document.addEventListener('input',e=>{if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
+document.addEventListener('input',e=>{if(e.target.id==='addQ'&&ui.add){ui.add.q=e.target.value;addSearch()}if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
 /* Zurück-Geste: jede Ebene (Reiter, Medium, Detail, Auswahl, Intro-Schritt) ist ein Verlaufseintrag */
 let navLock=false;
 function navPush(extra){if(navLock)return;try{history.pushState({tab:ui.tab,med:ui.med,...(extra||{})},'')}catch(e){}}
@@ -1368,12 +1394,12 @@ window.addEventListener('popstate',e=>{
   const st=e.state||{};navLock=true;
   try{
     if(ui.detail&&st.ov!=='detail'){doCloseDetail();return}
-    if(ui.pick&&ui.pick.host==='sheet'&&st.ov!=='sheet'){doCloseSheet();return}
+    if((ui.add||ui.pick&&ui.pick.host==='sheet')&&st.ov!=='sheet'){doCloseSheet();return}
     if(ui.intro){const n=typeof st.ii==='number'?st.ii:0;if(n!==ui.intro.i){ui.intro.i=Math.min(n,introSteps().length-1);ui.pick=null;renderIntro();$('#intro').scrollTop=0}return}
     if(st.tab&&(st.tab!==ui.tab||(st.med||'alle')!==ui.med)){ui.tab=st.tab;ui.med=st.med||'alle';ui.knownOpen=null;render();window.scrollTo({top:0})}
   }finally{navLock=false}
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.pick&&ui.pick.host==='sheet')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.add||ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
   renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
