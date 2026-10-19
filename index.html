@@ -2,7 +2,7 @@
 <title>Fundus</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: App-Shell mit fester Kopfleiste; Inhalte als Karteikarten (Cover links, Text rechts) im 1–3-Spalten-Raster */
 :root{
@@ -10,9 +10,9 @@
   --accent:#0D6A5B; --accent-ink:#FFFFFF; --mark:#B7790B; --good:#1E7440; --bad:#A8372B;
   --c-film:#3B5DA6; --c-serie:#7D4E9E; --c-musik:#B3432F; --c-buch:#8C6A10; --c-podcast:#19808A;
   --shade:rgba(20,32,27,.45);
-  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
-  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --f-display:"Archivo","Segoe UI",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif; /* Kleinlabels und Zahlen: gleiche Schrift, Ziffern tabellarisch */
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -43,7 +43,7 @@ html:root[data-ft="dark"]{
   color-scheme:dark}
 [hidden]{display:none!important}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-variant-numeric:tabular-nums;font-size:15px;line-height:1.5;margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 img{max-width:100%}
@@ -59,7 +59,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
   margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
 .top .wrap{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 24px;padding-top:12px}
 .brand{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-right:auto}
-.brand h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.brand h1{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1}
+.brand h1 i{font-style:normal;color:var(--accent)}
 .brand small{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
 .topr{display:flex;align-items:center;gap:8px;margin-bottom:8px;order:2}
 @media (min-width:900px){.topr{margin-left:auto}}
@@ -117,7 +118,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .art.sq{aspect-ratio:1/1}
 .art img,.art svg{width:100%;height:100%;object-fit:cover;display:block}
 .body{min-width:0;display:flex;flex-direction:column;gap:3px}
-.meta{display:flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:11px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;flex-wrap:wrap}
+.meta{display:flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;flex-wrap:wrap}
 .mtag{display:inline-flex;align-items:center;gap:5px;color:var(--mc)}
 .mtag::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--mc)}
 .t{font-size:17px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
@@ -163,7 +164,7 @@ details.rated .base{margin-top:8px}
 .ev{display:grid;grid-template-columns:48px 70px 1fr auto;gap:14px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px}
 .ev .art{width:48px}
 .ev .d{font-family:var(--f-mono);font-variant-numeric:tabular-nums;line-height:1.2}
-.ev .d b{display:block;font-size:17px;font-weight:500}
+.ev .d b{display:block;font-size:18px;font-weight:700;font-family:var(--f-display)}
 .ev .d small{color:var(--ink-2);font-size:11px}
 .ev .x{min-width:0}
 .ev .x .t{font-size:15.5px}
@@ -282,7 +283,7 @@ select.inp{flex:0 1 220px}
 .intro-f .sp{margin-right:auto}
 .sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .sum{background:var(--surface);border-radius:var(--r);padding:14px}
-.sum b{font-family:var(--f-display);font-size:30px;display:block;line-height:1}
+.sum b{font-family:var(--f-display);font-size:32px;font-weight:800;display:block;line-height:1}
 .pkbox{display:grid;gap:12px}
 
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.18)}
@@ -293,7 +294,7 @@ select.inp{flex:0 1 220px}
 </style>
 
 <header class="top"><div class="wrap">
-  <div class="brand"><h1>Fundus</h1><small id="modeLabel"></small></div>
+  <div class="brand"><h1>Fundus<i>.</i></h1><small id="modeLabel"></small></div>
   <div class="topr"><div class="theme" id="themeSw" role="group" aria-label="Darstellung"></div><div id="acct"></div></div>
   <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
 </div></header>
@@ -373,8 +374,8 @@ function genArt(it,bare){
   const label=(MEDIA[it.m].one+(it.year?' · '+it.year:'')).toUpperCase();
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl('+hue+' 52% 40%)"/><stop offset="1" stop-color="hsl('+hue2+' 58% 20%)"/></linearGradient></defs>'+
     '<rect width="'+W+'" height="'+H+'" fill="url(#'+gid+')"/>'+motif(it.m,W,H)+(bare?'</svg>':'')+
-    (bare?'':'<text x="'+(it.m==='buch'?34:16)+'" y="'+(it.m==='film'?32:26)+'" font-family="IBM Plex Mono,monospace" font-size="11" letter-spacing="1.5" fill="rgba(255,255,255,.75)">'+esc(label)+'</text>'+
-    '<text font-family="Bricolage Grotesque,Segoe UI,sans-serif" font-weight="700" font-size="'+fs+'" fill="#fff" letter-spacing="-0.5">'+
+    (bare?'':'<text x="'+(it.m==='buch'?34:16)+'" y="'+(it.m==='film'?32:26)+'" font-family="Figtree,sans-serif" font-weight="600" font-size="11" letter-spacing="1.5" fill="rgba(255,255,255,.75)">'+esc(label)+'</text>'+
+    '<text font-family="Archivo,Segoe UI,sans-serif" font-weight="800" font-size="'+fs+'" fill="#fff" letter-spacing="-0.5">'+
     lines.map((l,i)=>'<tspan x="'+(it.m==='buch'?34:16)+'" y="'+(y0+i*fs*1.06).toFixed(1)+'">'+esc(l)+'</tspan>').join('')+'</text></svg>');
 }
 function art(it,cls,bare){
@@ -989,7 +990,7 @@ function renderTabs(){
   const wl=Object.values(S.items).filter(x=>x.status==='watch').length;
   const nn=ui.rel&&ui.rel.list?ui.rel.list.filter(e=>e.isNew).length:0;
   $('#tabs').innerHTML=TABS.map(([id,l])=>'<button class="tab" data-act="tab" data-tab="'+id+'"'+(ui.tab===id?' aria-current="page"':'')+'>'+l+(id==='merkliste'&&wl?' <span class="st">'+wl+'</span>':'')+(id==='neu'&&nn?' <span class="count">'+nn+'</span>':'')+'</button>').join('');
-  $('#modeLabel').textContent=MODE==='demo'?'Demo':'Live';
+  $('#modeLabel').textContent=MODE==='demo'?'Demo':'';
   const t=S.settings.theme;
   $('#themeSw').innerHTML=[['light','Hell',IC.sun],['dark','Dunkel',IC.moon],['system','System',IC.auto]].map(([v,l,i])=>'<button data-act="theme" data-v="'+v+'" aria-pressed="'+(t===v)+'" title="'+l+'">'+i+'<span>'+l+'</span></button>').join('');
 }
@@ -1061,6 +1062,7 @@ const VIEWS={
   einstellungen(){
     const st=S.settings;let h='<div class="head"><h2>Einstellungen</h2></div><div class="set">';
     h+='<div class="panel"><h3>Konto</h3><div id="acctPanel">'+acctPanel()+'</div></div>';
+    h+='<div class="panel"><h3>Push-Mitteilungen</h3>'+pushPanel()+'</div>';
     h+='<div class="panel"><h3>Als App installieren</h3>'+installPanel()+'</div>';
     h+='<div class="panel"><h3>Darstellung</h3><p>Hell, dunkel oder wie das System.</p><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
     h+='<div class="panel"><h3>Datenquelle Filme &amp; Serien</h3>'+keyBox()+'</div>';
@@ -1283,6 +1285,7 @@ const ACT={
     if(MODE==='demo'){ui.keyMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
+  pushOn(){pushOn()},pushOff(){pushOff()},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
   async install(){if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
@@ -1345,12 +1348,13 @@ async function fbInit(){
   return FB;
 }
 const userRef=()=>FB.F.doc(FB.db,'artifacts','fundus','users',SYNC.user.uid);
-function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt:Date.now(),items:S.items,del:S.del||{},settings:S.settings,genres:S.genres,seen:S.seen,snap:S.snap,onboarded:!!S.onboarded,lastCheck:S.lastCheck||0,metaTs:S.metaTs||0}))}
+function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt:Date.now(),items:S.items,del:S.del||{},subs:S.subs||{},settings:S.settings,genres:S.genres,seen:S.seen,snap:S.snap,onboarded:!!S.onboarded,lastCheck:S.lastCheck||0,metaTs:S.metaTs||0}))}
 function mergeRemote(r){
   const items={...S.items},del={...(S.del||{})};const lt=k=>Math.max(items[k]?items[k].ts||0:0,del[k]||0);
   Object.entries(r.items||{}).forEach(([k,v])=>{if((v.ts||0)>lt(k)){items[k]=v;delete del[k]}});
   Object.entries(r.del||{}).forEach(([k,t])=>{if(t>lt(k)){delete items[k];del[k]=t}});
   S.items=items;S.del=del;
+  const subs={...(S.subs||{})};Object.entries(r.subs||{}).forEach(([k,v])=>{if(!subs[k]||(v.ts||0)>(subs[k].ts||0))subs[k]=v});S.subs=subs;
   if((r.metaTs||0)>(S.metaTs||0)){S.settings={...S.settings,...(r.settings||{})};S.genres=r.genres||S.genres;S.metaTs=r.metaTs}
   S.seen={...(r.seen||{}),...S.seen};S.snap={...(r.snap||{}),...S.snap};
   S.onboarded=S.onboarded||!!r.onboarded;S.lastCheck=Math.max(S.lastCheck||0,r.lastCheck||0);
@@ -1358,6 +1362,7 @@ function mergeRemote(r){
 }
 async function onUser(u){
   if(SYNC.unsub){SYNC.unsub();SYNC.unsub=null}
+  ui.pushSt=undefined;
   if(!u){SYNC.user=null;SYNC.state='off';renderAcct();return}
   SYNC.user={uid:u.uid,name:u.displayName||'',email:u.email||'',photo:u.photoURL||''};SYNC.state='sync';renderAcct();
   try{
@@ -1423,6 +1428,47 @@ function installPanel(){
 }
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
+/* ---------- Push-Mitteilungen ----------
+   Abo je Gerät wird mit dem Konto synchronisiert (S.subs). Ein täglicher Job
+   auf GitHub Actions liest die Konten und schickt Neuerscheinungen als Push. */
+const VAPID_PUBLIC='BPbXST0UBvG6REMA1frrvW3xPKhxm8r5XFh-T9igYiEcuAnLQ7wI8NXYET8YRMFgVbx-RCIL_LgL5L04tSw43fI';
+const b64u=s=>{const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+const subKey=ep=>String(ep).replace(/[^a-zA-Z0-9]/g,'').slice(-32);
+const deviceName=()=>{const u=navigator.userAgent;return (/Android/.test(u)?'Android':/iPhone|iPad|iPod/.test(u)?'iPhone/iPad':/Windows/.test(u)?'Windows':/Macintosh/.test(u)?'Mac':/Linux/.test(u)?'Linux':'Browser')+(isStandalone()?' (App)':' (Browser)')};
+const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&/^https?:$/.test(location.protocol);
+async function pushStateNow(){if(!pushSupported())return 'unsupported';try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();return sub?'on':'off'}catch(e){return 'off'}}
+async function pushOn(){
+  if(!SYNC.user){toast('Bitte zuerst mit Google anmelden');return}
+  try{
+    const perm=await Notification.requestPermission();if(perm!=='granted'){toast('Mitteilungen wurden nicht erlaubt');ui.pushSt=undefined;render();return}
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    const j=sub.toJSON();S.subs=S.subs||{};S.subs[subKey(j.endpoint)]={endpoint:j.endpoint,keys:j.keys,device:deviceName(),ts:Date.now()};
+    save();await pushNow();
+    reg.showNotification('Fundus',{body:'Push-Mitteilungen sind aktiv. Neuerscheinungen kommen täglich gegen 8 Uhr.',icon:'icon-192.png',badge:'icon-192.png',tag:'fundus-test'});
+    ui.pushSt='on';render();
+  }catch(e){toast('Push nicht möglich: '+(e.message||e));ui.pushSt=undefined;render()}
+}
+async function pushOff(){
+  try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();
+    if(sub){const k=subKey(sub.endpoint);await sub.unsubscribe();if(S.subs&&S.subs[k]){S.subs[k]={...S.subs[k],off:true,ts:Date.now()};save()}}}catch(e){}
+  ui.pushSt='off';render();
+}
+function pushPanel(){
+  if(!pushSupported())return '<p>Push-Mitteilungen gibt es nur in der online geöffneten bzw. installierten App'+(/iPhone|iPad|iPod/.test(navigator.userAgent)?' (iPhone: erst über „Zum Home-Bildschirm“ installieren, dann dort aktivieren)':'')+'.</p>';
+  if(ui.pushSt===undefined){ui.pushSt='…';pushStateNow().then(s=>{ui.pushSt=s;if(ui.tab==='einstellungen')render()})}
+  const devs=Object.values(S.subs||{}).filter(s=>!s.off);
+  let h='<p>Einmal täglich gegen 8 Uhr: neue Folgen, Staffeln, Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“, dazu Filme der Merkliste, die neu bei Deinen Diensten laufen. Kommt auch, wenn Fundus geschlossen ist.</p>';
+  if(!SYNC.user)return h+'<p class="note" style="margin:0">Voraussetzung ist die Anmeldung (Konto oben), damit der tägliche Abgleich Deine Listen kennt.</p>';
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!isStandalone())return h+'<p class="note" style="margin:0">iPhone/iPad: Fundus zuerst über Teilen → „Zum Home-Bildschirm“ installieren und dort aktivieren.</p>';
+  h+=ui.pushSt==='on'?'<p class="ok" style="margin:0 0 10px">Auf diesem Gerät aktiv.</p><button class="btn" data-act="pushOff">Auf diesem Gerät ausschalten</button>'
+    :Notification.permission==='denied'?'<p class="err" style="margin:0">Mitteilungen sind im Browser blockiert. Bitte in den Website- bzw. App-Einstellungen erlauben.</p>'
+    :'<button class="btn pri" data-act="pushOn">'+IC.bell+'Push-Mitteilungen aktivieren</button>';
+  if(devs.length)h+='<p class="note" style="margin:10px 0 0">Aktive Geräte: '+devs.map(d=>esc(d.device||'Gerät')).join(', ')+'</p>';
+  return h;
+}
+
 /* ---------- Tagesrhythmus ----------
    Vorschläge: Antworten der Dienste gelten 24 h, danach wird neu abgefragt.
    Neuerscheinungen (Merkliste + „Gefällt mir“): automatisch einmal täglich,
@@ -1466,6 +1512,7 @@ async function start(){
   if(canSync())fbInit().catch(()=>{SYNC.ready=true;SYNC.err='Anmeldedienst nicht erreichbar';renderAcct()});
   if(!loadState())S.settings.theme=th;
   applyTheme();render();
+  if(location.hash==='#neu'&&S.onboarded)ui.tab='neu';
   if(!S.onboarded)startIntro();
   dailyCheck();setInterval(dailyCheck,36e5);
 }
