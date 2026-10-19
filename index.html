@@ -203,6 +203,11 @@ select.inp{flex:0 1 220px}
 .tile[aria-pressed="true"] .art{outline:3px solid var(--accent);outline-offset:-3px}
 .tile .tick svg{width:14px;height:14px}
 .pk-hint{padding:26px 0;text-align:center;color:var(--ink-2)}
+.rt{font-family:var(--f-mono);font-size:12.5px;font-weight:500;white-space:nowrap}
+.rt small{font-size:11px;color:var(--ink-2);font-weight:400}
+.rt-hi{color:var(--good)} .rt-mid{color:var(--ink)} .rt-lo{color:var(--ink-2)}
+.rbadge{position:absolute;top:6px;left:6px;background:rgba(10,16,14,.78);color:#fff;font-family:var(--f-mono);font-size:11.5px;border-radius:5px;padding:1px 6px}
+.rbadge.rt-hi{color:#7FE0A0}
 .pk-sec{display:grid;gap:12px}
 .pk-sec + .pk-sec{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 .pk-h{display:flex;align-items:baseline;gap:10px}
@@ -332,13 +337,13 @@ document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&
 
 /* ---------- Zustand ---------- */
 let MODE='demo';
-const DEF={tmdbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system'};
+const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system'};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
 function loadState(){try{const raw=localStorage.getItem(SKEY());if(raw){const o=JSON.parse(raw);return {...newState(),...o,settings:{...DEF,...(o.settings||{})}}}}catch(e){}return null}
 function save(){try{localStorage.setItem(SKEY(),JSON.stringify(S))}catch(e){}}
-const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid'];
+const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes'];
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
 function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;if(!st)delete S.items[it.k];else S.items[it.k]={...strip(it),status:st,ts:Date.now()};save();return prev}
 const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
@@ -416,9 +421,11 @@ async function olib(q,extra='',ttl=24*H){
   const url='https://openlibrary.org/search.json?q='+encodeURIComponent(q)+'&fields='+f+extra;
   return cached(url,async()=>(await getJSON(url,GATE.ol,'Open Library')).docs||[],ttl);
 }
+let GB_ANON_OK=true; /* ohne Schlüssel nur bis zum ersten Fehler versuchen */
 async function gbooks(q,extra='',ttl=24*H){
-  const url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&printType=books&maxResults=40'+extra;
-  return cached(url,async()=>(await getJSON(url,GATE.gb,'Google Books')).items||[],ttl);
+  const k=(S.settings.gbKey||'').trim();if(!k&&!GB_ANON_OK)throw new Error('Google Books ohne Schlüssel nicht verfügbar');
+  const url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&printType=books&maxResults=40'+extra+(k?'&key='+encodeURIComponent(k):'');
+  return cached(url,async()=>{try{return (await getJSON(url,GATE.gb,'Google Books')).items||[]}catch(e){if(!k)GB_ANON_OK=false;throw e}},ttl);
 }
 
 /* ---------- Filme & Serien ---------- */
@@ -429,12 +436,12 @@ function tmdbItem(m,r){
   const type=m==='film'?'movie':'tv';
   const date=(m==='film'?r.release_date:r.first_air_date)||'';
   return reg({k:m+':'+r.id,m,id:r.id,title:m==='film'?r.title:r.name,year:date.slice(0,4),
-    sub:date?date.slice(0,4):'',img:r.poster_path?TMDB_IMG+'w342'+r.poster_path:null,
+    sub:date?date.slice(0,4):'',img:r.poster_path?TMDB_IMG+'w342'+r.poster_path:null,rating:r.vote_average||null,votes:r.vote_count||0,
     gids:r.genre_ids||[],genres:(r.genre_ids||[]).map(g=>gName(type,g)).filter(Boolean).slice(0,3),
     link:'https://www.themoviedb.org/'+type+'/'+r.id});
 }
 function tvmItem(s){const y=(s.premiered||'').slice(0,4);
-  return reg({k:'serie:tvm'+s.id,m:'serie',id:'tvm'+s.id,title:s.name,year:y,sub:y,img:s.image?(s.image.medium||s.image.original).replace('http://','https://'):null,genres:(s.genres||[]).slice(0,2),gids:[],link:s.url})}
+  return reg({k:'serie:tvm'+s.id,m:'serie',id:'tvm'+s.id,title:s.name,year:y,sub:y,img:s.image?(s.image.medium||s.image.original).replace('http://','https://'):null,rating:s.rating&&s.rating.average||null,votes:null,genres:(s.genres||[]).slice(0,2),gids:[],link:s.url})}
 function parseAv(d){
   const r=(d.results&&d.results.DE)||{};
   const map=a=>(a||[]).map(p=>({id:p.provider_id,name:p.provider_name,logo:p.logo_path?TMDB_IMG+'w92'+p.logo_path:null}));
@@ -746,6 +753,13 @@ function links(it){
   const svc={pocketcasts:['Pocket Casts',id?'https://pca.st/itunes/'+id:apple],apple:['Apple Podcasts',apple],spotify:['Spotify','https://open.spotify.com/search/'+q+'/podcasts'],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],overcast:['Overcast',id?'https://overcast.fm/itunes'+id:apple]};
   const pref=svc[S.settings.podcastService]?S.settings.podcastService:'pocketcasts';return [svc[pref]].concat(Object.keys(svc).filter(k=>k!==pref).map(k=>svc[k]));
 }
+/* TMDB-Bewertung (0–10), erst ab 20 Stimmen aussagekräftig */
+const nf1=new Intl.NumberFormat('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+const nfc=new Intl.NumberFormat('de-DE',{notation:'compact',maximumFractionDigits:1});
+const hasRating=it=>it.rating>0&&(it.votes==null||it.votes>=20);
+const rtClass=r=>r>=7.5?'hi':r>=6?'mid':'lo';
+function ratingHtml(it){if(!hasRating(it))return '';
+  return '<span class="rt rt-'+rtClass(it.rating)+'" title="Bewertung auf TMDB'+(it.votes?', '+it.votes.toLocaleString('de-DE')+' Stimmen':'')+'">★ '+nf1.format(it.rating)+(it.votes?' <small>'+nfc.format(it.votes)+' Stimmen</small>':'')+'</span>'}
 function card(it,mode,reasons){
   reg(it);const M=MEDIA[it.m];const k=esc(it.k);
   const meta='<div class="meta"><span class="mtag">'+M.one+'</span>'+((it.genres||[]).length?'<span>'+esc(it.genres.slice(0,2).join(' · '))+'</span>':'')+'</div>';
@@ -760,7 +774,7 @@ function card(it,mode,reasons){
   }else if(mode==='watch'){
     acts='<button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
-  return '<article class="card f-'+it.m+'" data-card="'+k+'">'+art(it)+'<div class="body">'+meta+'<h3 class="t">'+esc(it.title)+'</h3>'+(it.sub?'<p class="sub">'+esc(it.sub)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
+  return '<article class="card f-'+it.m+'" data-card="'+k+'">'+art(it)+'<div class="body">'+meta+'<h3 class="t">'+esc(it.title)+'</h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
 const skel=n=>'<div class="grid">'+Array.from({length:n},()=>'<div class="skel"></div>').join('')+'</div>';
 function keyPrompt(m){return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> brauchen einen kostenlosen TMDB-Schlüssel. Ohne Schlüssel bleiben Filme und Serien leer.</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>'}
@@ -843,6 +857,7 @@ const VIEWS={
     const st=S.settings;let h='<div class="head"><h2>Einstellungen</h2></div><div class="set">';
     h+='<div class="panel"><h3>Darstellung</h3><p>Hell, dunkel oder wie das System.</p><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
     h+='<div class="panel"><h3>Datenquelle Filme &amp; Serien</h3>'+keyBox()+'</div>';
+    h+='<div class="panel"><h3>Datenquelle Bücher</h3>'+gbBox()+'</div>';
     h+='<div class="panel"><h3>Meine Streamingdienste</h3><p>Steuert, welche Filme und Serien als „bei Dir verfügbar“ gelten. Kanal- und Werbe-Varianten eines Dienstes sind zusammengefasst.</p>'+provPanel()+'</div>';
     h+='<div class="panel"><h3>Anzeige</h3><div class="opts">'+
       '<label class="switch"><input type="checkbox" id="sw-only2" data-set="onlyMine"'+(st.onlyMine?' checked':'')+'> Bei Filmen und Serien nur Titel aus meinen Diensten zeigen</label>'+
@@ -863,6 +878,7 @@ function keyBox(){
     (MODE==='demo'?'<p><b>Im Demo-Modus ohne Wirkung.</b></p>':'')+
     '<div class="row"><input class="inp" id="tmdbKey" type="password" autocomplete="off" placeholder="TMDB-Schlüssel" value="'+esc(S.settings.tmdbKey)+'"><button class="btn pri" data-act="saveKey">Speichern &amp; prüfen</button></div>'+(ui.keyMsg?'<p style="margin:8px 0 0" class="'+(ui.keyMsg.ok?'ok':'err')+'">'+esc(ui.keyMsg.t)+'</p>':'');
 }
+function gbBox(){return '<p>Für deutsche Buchtitel und Cover nutzt Fundus Google Books. Ohne eigenen Schlüssel ist das gemeinsame Kontingent meist erschöpft, dann springt Open Library ein (oft englische Titel). Schlüssel kostenlos: Google Cloud Console → „Books API“ aktivieren → Anmeldedaten → API-Schlüssel (1.000 Abfragen pro Tag).</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
 function relNote(){return '<p class="note" style="margin-top:18px">Prototyp: Die Prüfung läuft beim Öffnen dieser Ansicht oder per Knopf. In der fertigen App läuft sie täglich im Hintergrund und meldet Neues per Push.</p>'}
 function evRow(e){
   const M=MEDIA[e.m];const d=String(e.date);let big,small;
@@ -933,7 +949,7 @@ async function fillGenre(p,gid){
 const gLabel=(p,gid)=>(p.genres||[]).find(g=>String(g.id)===String(gid))?.name||gid;
 function pickChipsHtml(p){if(!p.genres)return '<span class="note">Lade Genres …</span>';return p.genres.map(g=>'<button class="chip" data-act="pickGenre" data-g="'+esc(g.id)+'" aria-pressed="'+!!p.blocks[g.id]+'">'+esc(g.name)+'</button>').join('')}
 function tileHtml(it){reg(it);const on=S.items[it.k]&&S.items[it.k].status==='like';
-  return '<button class="tile f-'+it.m+'" data-act="pickToggle" data-k="'+esc(it.k)+'" aria-pressed="'+!!on+'">'+art(it)+'<span class="tick">'+IC.check+'</span><span class="tt">'+esc(it.title)+'</span><span class="ts">'+esc(it.sub||'')+'</span></button>'}
+  return '<button class="tile f-'+it.m+'" data-act="pickToggle" data-k="'+esc(it.k)+'" aria-pressed="'+!!on+'">'+art(it)+'<span class="tick">'+IC.check+'</span>'+(hasRating(it)?'<span class="rbadge rt-'+rtClass(it.rating)+'">★ '+nf1.format(it.rating)+'</span>':'')+'<span class="tt">'+esc(it.title)+'</span><span class="ts">'+esc(it.sub||'')+'</span></button>'}
 function pickResHtml(p){
   let h=p.err?'<p class="err">'+esc(p.err)+'</p>':'';
   if(p.q.trim().length>=2){
@@ -1048,6 +1064,9 @@ const ACT={
     if(MODE==='demo'){ui.keyMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
+  async saveGb(){const v=$('#gbKey').value.trim();S.settings.gbKey=v;save();GB_ANON_OK=true;resetPools(['buch']);
+    if(MODE==='demo'){ui.gbMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
+    try{const r=await gbooks('subject:"fantasy"','&langRestrict=de',6e5);ui.gbMsg={ok:true,t:v?'Schlüssel funktioniert.':'Google Books ohne Schlüssel erreichbar.'}}catch(e){ui.gbMsg={ok:false,t:e.message+(v?'':' – eigenen Schlüssel eintragen.')}}render()},
   provRetry(){ui.provs=null;ui.provErr=null;render()},
   async export(){const txt=JSON.stringify({items:S.items,genres:S.genres,settings:{...S.settings,tmdbKey:''}});
     try{await navigator.clipboard.writeText(txt);toast('Export in die Zwischenablage kopiert')}catch(e){ui.importOpen=true;render();const t=$('#importTxt');t.value=txt;t.select();toast('Text markiert – bitte manuell kopieren')}},
@@ -1096,7 +1115,9 @@ function demoSeed(){
 }
 async function start(){
   let live=false;
-  try{const r=await timeout(fetch('https://openlibrary.org/search.json?q=tolkien&limit=1&fields=key'),6000);live=r.ok}catch(e){live=false}
+  /* Live, sobald irgendeine Datenquelle antwortet */
+  const probe=u=>fetch(u,{mode:'no-cors',cache:'no-store'}).then(()=>true);
+  try{live=await timeout(Promise.any(['https://api.themoviedb.org/3/configuration','https://openlibrary.org/search.json?q=a&limit=1&fields=key','https://api.tvmaze.com/shows/1'].map(probe)),6000)}catch(e){live=false}
   MODE=live?'live':'demo';
   const th=S.settings.theme;
   S=loadState()||newState();
