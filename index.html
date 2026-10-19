@@ -70,6 +70,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .acct .sd{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg)}
 .sd-ok{background:var(--good)} .sd-busy{background:var(--mark)} .sd-err{background:var(--bad)}
 .acct-in{padding:5px 10px}
+#acct{display:flex;gap:8px;align-items:center}
 @media (max-width:480px){.acct-in span{display:none}}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px;margin-bottom:8px;order:2}
 .theme button{border:0;background:none;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--ink-2);display:inline-flex;gap:5px;align-items:center}
@@ -306,7 +307,7 @@ select.inp{flex:0 1 220px}
 <div class="wrap">
   <div id="banner"></div>
   <main id="view"></main>
-  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Prototyp, Daten werden nur in diesem Browser gespeichert.</p>
+  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Version 2026-10-19 15:43.</p>
 </div>
 <div id="sheet" class="sheet" hidden></div>
 <div id="intro" class="intro" hidden></div>
@@ -349,6 +350,7 @@ const IC={
   sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>',
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
   auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></svg>'
 };
 
@@ -1302,7 +1304,7 @@ const ACT={
   provAll(){ui.provAll=true;render()},
   pushOn(){pushOn()},pushOff(){pushOff()},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
-  async install(){if(!installEvt){ui.instHelp=true;render();if(ui.intro)renderIntro();return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
+  async install(){if(!installEvt){ui.instHelp=true;if(!ui.intro&&ui.tab!=='einstellungen'){ui.tab='einstellungen';navPush()}render();if(ui.intro)renderIntro();setTimeout(()=>{const h=document.querySelector('.insthelp');if(h)h.scrollIntoView({block:'center',behavior:'smooth'})},50);return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
   async saveGb(){const v=$('#gbKey').value.trim();S.settings.gbKey=v;save();GB_ANON_OK=true;resetPools(['buch']);
     if(MODE==='demo'){ui.gbMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
@@ -1423,7 +1425,12 @@ async function login(){
   catch(e){if(!/popup-closed|cancelled-popup/.test(e.code||''))toast('Anmeldung fehlgeschlagen: '+fbErr(e))}
 }
 async function logout(){if(!FB)return;await pushNow();await FB.A.signOut(FB.auth);toast('Abgemeldet. Die Daten bleiben auf diesem Gerät.')}
+const canInstall=()=>MODE==='live'&&/^https?:$/.test(location.protocol)&&!isStandalone();
 function acctHtml(){
+  const ins=canInstall()?'<button class="btn acct-in" data-act="install" title="Als App installieren">'+IC.dl+'<span>Installieren</span></button>':'';
+  return ins+acctBtn();
+}
+function acctBtn(){
   if(!canSync())return '';
   if(!SYNC.ready)return '<span class="acct-wait"></span>';
   if(!SYNC.user)return '<button class="btn acct-in" data-act="login">'+IC.user+'<span>Anmelden</span></button>';
