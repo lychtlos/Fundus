@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0D6A5B"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Fundus"></head><body>
 <title>Fundus</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,6 +61,15 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .brand{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-right:auto}
 .brand h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
 .brand small{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
+.topr{display:flex;align-items:center;gap:8px;margin-bottom:8px;order:2}
+@media (min-width:900px){.topr{margin-left:auto}}
+.topr .theme{margin-bottom:0}
+.acct{border:0;padding:0;background:none;position:relative;width:32px;height:32px;border-radius:50%;cursor:pointer}
+.acct img,.acct span{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:700;object-fit:cover}
+.acct .sd{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg)}
+.sd-ok{background:var(--good)} .sd-busy{background:var(--mark)} .sd-err{background:var(--bad)}
+.acct-in{padding:5px 10px}
+@media (max-width:480px){.acct-in span{display:none}}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px;margin-bottom:8px;order:2}
 .theme button{border:0;background:none;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:600;color:var(--ink-2);display:inline-flex;gap:5px;align-items:center}
 .theme button svg{width:14px;height:14px}
@@ -285,7 +294,7 @@ select.inp{flex:0 1 220px}
 
 <header class="top"><div class="wrap">
   <div class="brand"><h1>Fundus</h1><small id="modeLabel"></small></div>
-  <div class="theme" id="themeSw" role="group" aria-label="Darstellung"></div>
+  <div class="topr"><div class="theme" id="themeSw" role="group" aria-label="Darstellung"></div><div id="acct"></div></div>
   <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
 </div></header>
 <div class="wrap">
@@ -333,6 +342,7 @@ const IC={
   bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1112 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4"/></svg>',
   sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>',
   auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></svg>'
 };
 
@@ -378,12 +388,19 @@ let MODE='demo';
 const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
-const newState=()=>({v:2,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
+const newState=()=>({v:2,del:{},metaTs:0,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
 function loadState(){try{const raw=localStorage.getItem(SKEY());if(raw){const o=JSON.parse(raw);return {...newState(),...o,settings:{...DEF,...(o.settings||{})}}}}catch(e){}return null}
-function save(){try{localStorage.setItem(SKEY(),JSON.stringify(S))}catch(e){}}
+let metaSig='';
+function localSave(){try{localStorage.setItem(SKEY(),JSON.stringify(S))}catch(e){}}
+function save(){
+  const sig=JSON.stringify([S.settings,S.genres]);if(sig!==metaSig){if(metaSig)S.metaTs=Date.now();metaSig=sig}
+  if(S.del){const lim=Date.now()-90*864e5;for(const k in S.del)if(S.del[k]<lim)delete S.del[k]}
+  localSave();if(typeof scheduleSync==='function')scheduleSync();
+}
 const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig'];
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
-function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;if(!st)delete S.items[it.k];else S.items[it.k]={...strip(it),status:st,ts:Date.now()};save();return prev}
+function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};if(!st){delete S.items[it.k];S.del[it.k]=Date.now()}else{S.items[it.k]={...strip(it),status:st,ts:Date.now()};delete S.del[it.k]}save();return prev}
+function restore(k,prev){S.del=S.del||{};if(prev){S.items[k]={...prev,ts:Date.now()};delete S.del[k]}else{delete S.items[k];S.del[k]=Date.now()}save()}
 const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
 
 function applyTheme(){
@@ -968,6 +985,7 @@ function keyPrompt(m){return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> br
 /* ---------- Ansichten ---------- */
 const TABS=[['entdecken','Entdecken'],['merkliste','Merkliste'],['neu','Neuerscheinungen'],['basis','Meine Basis'],['einstellungen','Einstellungen']];
 function renderTabs(){
+  renderAcct();
   const wl=Object.values(S.items).filter(x=>x.status==='watch').length;
   const nn=ui.rel&&ui.rel.list?ui.rel.list.filter(e=>e.isNew).length:0;
   $('#tabs').innerHTML=TABS.map(([id,l])=>'<button class="tab" data-act="tab" data-tab="'+id+'"'+(ui.tab===id?' aria-current="page"':'')+'>'+l+(id==='merkliste'&&wl?' <span class="st">'+wl+'</span>':'')+(id==='neu'&&nn?' <span class="count">'+nn+'</span>':'')+'</button>').join('');
@@ -1042,6 +1060,8 @@ const VIEWS={
   },
   einstellungen(){
     const st=S.settings;let h='<div class="head"><h2>Einstellungen</h2></div><div class="set">';
+    h+='<div class="panel"><h3>Konto</h3><div id="acctPanel">'+acctPanel()+'</div></div>';
+    h+='<div class="panel"><h3>Als App installieren</h3>'+installPanel()+'</div>';
     h+='<div class="panel"><h3>Darstellung</h3><p>Hell, dunkel oder wie das System.</p><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
     h+='<div class="panel"><h3>Datenquelle Filme &amp; Serien</h3>'+keyBox()+'</div>';
     h+='<div class="panel"><h3>Datenquelle Bücher</h3>'+gbBox()+'</div>';
@@ -1194,6 +1214,7 @@ function renderIntro(){
   if(step==='welcome'){
     body='<span class="st">Schritt 1 · Einrichtung</span><h2>Was soll Fundus für Dich finden?</h2><p class="lead">Wähle die Bereiche. Danach legst Du pro Bereich Genres fest und markierst Titel, die Dir gefallen. Daraus entstehen Deine Vorschläge. Alles lässt sich später unter „Meine Basis“ ändern.</p>'+
       '<div class="medpick">'+ORDER.map(m=>'<button class="medbtn f-'+m+'" data-act="introMed" data-m="'+m+'" aria-pressed="'+I.media.has(m)+'">'+art({k:'intro:'+m,m,title:MEDIA[m].label},'',true)+'<span class="tick">'+IC.check+'</span><b>'+MEDIA[m].label+'</b><small>'+MEDIA[m].desc+'</small></button>').join('')+'</div>';
+    if(canSync()&&!SYNC.user)body+='<p class="note" style="margin:0">Schon eingerichtet? <button class="btn ghost" data-act="login" style="display:inline-flex">'+IC.user+'Mit Google anmelden</button> lädt Deine Daten.</p>';
     foot=(MODE==='demo'?'<button class="btn ghost sp" data-act="introDemo">Überspringen und Beispielauswahl laden</button>':'<button class="btn ghost sp" data-act="introSkip">Später</button>')+'<button class="btn pri big" data-act="introNext"'+(I.media.size?'':' disabled')+'>Weiter</button>';
   }else if(step==='services'){
     const fs=[...I.media].some(isFS),ma=I.media.has('musik')||I.media.has('podcast');
@@ -1228,7 +1249,7 @@ function act(k,st){
   if(st==='like'||st==='dislike')delete ui.pool[it.m];
   const c=document.querySelector('[data-card="'+CSS.escape(k)+'"]');
   if(c&&ui.tab==='entdecken'){c.classList.add('gone');setTimeout(render,180)}else render();
-  toast(st?LBL[st]:'Entfernt',()=>{if(prev)S.items[k]=prev;else delete S.items[k];save();render()});
+  toast(st?LBL[st]:'Entfernt',()=>{restore(k,prev);render()});
 }
 const ACT={
   tab(b){ui.tab=b.dataset.tab;ui.knownOpen=null;render();window.scrollTo({top:0})},
@@ -1247,7 +1268,7 @@ const ACT={
   detail(b){openDetail(b.dataset.k)},
   closeDetail(){closeDetail()},
   dset(b){const D=ui.detail;if(!D)return;const st=b.dataset.st||null;const prev=setStatus(D.it,st);if(st==='like'||st==='dislike'||!st)delete ui.pool[D.it.m];renderDetail();render();
-    toast(st?LBL[st]:'Zurückgesetzt',()=>{if(prev)S.items[D.it.k]=prev;else delete S.items[D.it.k];save();if(ui.detail)renderDetail();render()})},
+    toast(st?LBL[st]:'Zurückgesetzt',()=>{restore(D.it.k,prev);if(ui.detail)renderDetail();render()})},
   fltReset(b){const m=b.dataset.m;ui.flt[m]={g:'',y:'',r:0,sort:'match'};ui.shown[m]=12;render()},
   pickGenre(b){const p=ui.pick;if(!p||!p.genres)return;const g=p.genres.find(x=>String(x.id)===b.dataset.g);if(!g)return;
     if(p.q){p.q='';p.search=null;const i=$('#pickQ');if(i)i.value=''}
@@ -1262,6 +1283,8 @@ const ACT={
     if(MODE==='demo'){ui.keyMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
+  login(){login()},logout(){logout()},syncNow(){pushNow()},
+  async install(){if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
   async saveGb(){const v=$('#gbKey').value.trim();S.settings.gbKey=v;save();GB_ANON_OK=true;resetPools(['buch']);
     if(MODE==='demo'){ui.gbMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
@@ -1303,6 +1326,103 @@ function render(){
   if(ui.intro&&introSteps()[ui.intro.i]==='services')renderIntro();
 }
 
+/* ---------- Konto & Synchronisierung (Firebase, Google-Anmeldung) ----------
+   Daten je Nutzer unter artifacts/fundus/users/{uid}. Zusammenführung je Eintrag
+   über Zeitstempel (neuester gewinnt, Löschungen als Zeitstempel in S.del). */
+const FB_CFG={apiKey:"AIzaSyBKUL_iThk5jhZr7npM5HJjQ-FBopBnO7Q",authDomain:"wanderlust-8b3ba.firebaseapp.com",projectId:"wanderlust-8b3ba",storageBucket:"wanderlust-8b3ba.firebasestorage.app",messagingSenderId:"638626664196",appId:"1:638626664196:web:055e66c3f7757b0a7d0a51"};
+const FBV='11.6.1';
+const CLIENT=Math.random().toString(36).slice(2);
+const SYNC={ready:false,user:null,state:'off',err:'',at:0,timer:null,unsub:null};
+let FB=null;
+const canSync=()=>MODE==='live'&&/^https?:$/.test(location.protocol);
+async function fbInit(){
+  if(FB)return FB;
+  const b='https://www.gstatic.com/firebasejs/'+FBV+'/';
+  const [app,auth,fs]=await Promise.all([import(b+'firebase-app.js'),import(b+'firebase-auth.js'),import(b+'firebase-firestore.js')]);
+  const a=app.initializeApp(FB_CFG,'fundus');
+  FB={auth:auth.getAuth(a),db:fs.getFirestore(a),A:auth,F:fs};
+  auth.onAuthStateChanged(FB.auth,u=>{SYNC.ready=true;onUser(u)});
+  return FB;
+}
+const userRef=()=>FB.F.doc(FB.db,'artifacts','fundus','users',SYNC.user.uid);
+function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt:Date.now(),items:S.items,del:S.del||{},settings:S.settings,genres:S.genres,seen:S.seen,snap:S.snap,onboarded:!!S.onboarded,lastCheck:S.lastCheck||0,metaTs:S.metaTs||0}))}
+function mergeRemote(r){
+  const items={...S.items},del={...(S.del||{})};const lt=k=>Math.max(items[k]?items[k].ts||0:0,del[k]||0);
+  Object.entries(r.items||{}).forEach(([k,v])=>{if((v.ts||0)>lt(k)){items[k]=v;delete del[k]}});
+  Object.entries(r.del||{}).forEach(([k,t])=>{if(t>lt(k)){delete items[k];del[k]=t}});
+  S.items=items;S.del=del;
+  if((r.metaTs||0)>(S.metaTs||0)){S.settings={...S.settings,...(r.settings||{})};S.genres=r.genres||S.genres;S.metaTs=r.metaTs}
+  S.seen={...(r.seen||{}),...S.seen};S.snap={...(r.snap||{}),...S.snap};
+  S.onboarded=S.onboarded||!!r.onboarded;S.lastCheck=Math.max(S.lastCheck||0,r.lastCheck||0);
+  metaSig=JSON.stringify([S.settings,S.genres]);
+}
+async function onUser(u){
+  if(SYNC.unsub){SYNC.unsub();SYNC.unsub=null}
+  if(!u){SYNC.user=null;SYNC.state='off';renderAcct();return}
+  SYNC.user={uid:u.uid,name:u.displayName||'',email:u.email||'',photo:u.photoURL||''};SYNC.state='sync';renderAcct();
+  try{
+    const snap=await FB.F.getDoc(userRef());
+    if(snap.exists()){mergeRemote(snap.data());localSave();applyTheme();resetPools();AV.clear()}
+    await pushNow();
+    SYNC.unsub=FB.F.onSnapshot(userRef(),s=>{
+      if(!s.exists()||s.metadata.hasPendingWrites)return;const d=s.data();if(d.writer===CLIENT)return;
+      mergeRemote(d);localSave();applyTheme();resetPools();SYNC.at=Date.now();SYNC.state='ok';
+      if(ui.detail)renderDetail();render();
+    },e=>{SYNC.state='err';SYNC.err=fbErr(e);renderAcct()});
+    if(ui.intro&&S.onboarded){finishIntro();toast('Deine Daten wurden geladen')}else render();
+  }catch(e){SYNC.state='err';SYNC.err=fbErr(e);renderAcct()}
+}
+function fbErr(e){const c=(e&&e.code)||'';
+  if(/permission-denied/.test(c))return 'Keine Berechtigung in der Datenbank. Firestore-Regeln für artifacts/fundus/users prüfen.';
+  if(/unavailable|network/.test(c))return 'Keine Verbindung. Änderungen werden später übertragen.';
+  if(/unauthorized-domain/.test(c))return 'Diese Adresse ist in Firebase nicht freigegeben (Authentication → Autorisierte Domains).';
+  if(/operation-not-allowed/.test(c))return 'Google-Anmeldung ist in Firebase nicht aktiviert.';
+  if(/popup-blocked/.test(c))return 'Popup wurde blockiert. Bitte Popups für diese Seite erlauben.';
+  return (e&&e.message)||'Unbekannter Fehler';}
+function scheduleSync(){if(!SYNC.user)return;clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushNow,1500)}
+async function pushNow(){
+  if(!SYNC.user||!FB)return;SYNC.state='sync';renderAcct();
+  try{await FB.F.setDoc(userRef(),payload());SYNC.state='ok';SYNC.err='';SYNC.at=Date.now()}catch(e){SYNC.state='err';SYNC.err=fbErr(e)}
+  renderAcct();
+}
+async function login(){
+  if(!canSync()){toast('Anmeldung nur in der installierten bzw. online geöffneten App möglich');return}
+  try{const fb=await fbInit();await fb.A.signInWithPopup(fb.auth,new fb.A.GoogleAuthProvider())}
+  catch(e){if(!/popup-closed|cancelled-popup/.test(e.code||''))toast('Anmeldung fehlgeschlagen: '+fbErr(e))}
+}
+async function logout(){if(!FB)return;await pushNow();await FB.A.signOut(FB.auth);toast('Abgemeldet. Die Daten bleiben auf diesem Gerät.')}
+function acctHtml(){
+  if(!canSync())return '';
+  if(!SYNC.ready)return '<span class="acct-wait"></span>';
+  if(!SYNC.user)return '<button class="btn acct-in" data-act="login">'+IC.user+'<span>Anmelden</span></button>';
+  const dot=SYNC.state==='err'?'err':SYNC.state==='sync'?'busy':'ok';
+  const tip=SYNC.state==='err'?SYNC.err:SYNC.state==='sync'?'Wird synchronisiert …':'Synchronisiert'+(SYNC.at?' um '+new Date(SYNC.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'');
+  const av=SYNC.user.photo?'<img src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':'<span>'+esc((SYNC.user.name||SYNC.user.email||'?').slice(0,1).toUpperCase())+'</span>';
+  return '<button class="acct" data-act="tab" data-tab="einstellungen" title="'+esc(SYNC.user.email+' · '+tip)+'" aria-label="Konto: '+esc(tip)+'">'+av+'<i class="sd sd-'+dot+'"></i></button>';
+}
+function renderAcct(){const el=$('#acct');if(el)el.innerHTML=acctHtml();const p=$('#acctPanel');if(p)p.innerHTML=acctPanel()}
+function acctPanel(){
+  if(MODE==='demo')return '<p>Anmeldung ist nur in der Live-Version verfügbar.</p>';
+  if(!canSync())return '<p>Anmeldung funktioniert nur in der online geöffneten App (lychtlos.github.io/Fundus), nicht als lokale Datei.</p>';
+  if(!SYNC.user)return '<p>Mit Google anmelden, damit Merkliste, Bewertungen, Genres und Einstellungen auf allen Geräten gleich sind. Ohne Anmeldung bleiben die Daten nur in diesem Browser.</p><button class="btn pri" data-act="login">'+IC.user+'Mit Google anmelden</button>';
+  const st=SYNC.state==='err'?'<p class="err" style="margin:6px 0 0">'+esc(SYNC.err)+'</p>':'<p class="ok" style="margin:6px 0 0">'+(SYNC.state==='sync'?'Wird synchronisiert …':'Synchronisiert'+(SYNC.at?' um '+new Date(SYNC.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):''))+'</p>';
+  return '<p>Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b>'+(SYNC.user.name?' ('+esc(SYNC.user.email)+')':'')+'. Änderungen werden automatisch auf alle Geräte übertragen.</p>'+st+'<div class="row" style="margin-top:10px"><button class="btn" data-act="syncNow">Jetzt synchronisieren</button><button class="btn ghost" data-act="logout">Abmelden</button></div>';
+}
+
+/* ---------- Installation als App ---------- */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='einstellungen')render()});
+window.addEventListener('appinstalled',()=>{installEvt=null;toast('Fundus ist installiert');render()});
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+function installPanel(){
+  if(isStandalone())return '<p class="ok" style="margin:0">Fundus läuft als installierte App.</p>';
+  if(!/^https?:$/.test(location.protocol)||MODE==='demo')return '<p>Installation ist in der online geöffneten App möglich (lychtlos.github.io/Fundus).</p>';
+  if(installEvt)return '<p>Als eigene App auf dem Startbildschirm, ohne Browserleiste.</p><button class="btn pri" data-act="install">Fundus installieren</button>';
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent))return '<p>Safari: Teilen-Symbol → „Zum Home-Bildschirm“.</p>';
+  return '<p>Im Browser-Menü „App installieren“ bzw. „Zum Startbildschirm hinzufügen“ wählen.</p>';
+}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
 /* ---------- Tagesrhythmus ----------
    Vorschläge: Antworten der Dienste gelten 24 h, danach wird neu abgefragt.
    Neuerscheinungen (Merkliste + „Gefällt mir“): automatisch einmal täglich,
@@ -1342,6 +1462,8 @@ async function start(){
   MODE=live?'live':'demo';
   const th=S.settings.theme;
   S=loadState()||newState();
+  S.del=S.del||{};metaSig=JSON.stringify([S.settings,S.genres]);
+  if(canSync())fbInit().catch(()=>{SYNC.ready=true;SYNC.err='Anmeldedienst nicht erreichbar';renderAcct()});
   if(!loadState())S.settings.theme=th;
   applyTheme();render();
   if(!S.onboarded)startIntro();
