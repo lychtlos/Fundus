@@ -532,7 +532,7 @@ const GENRE_EXCL={
   tv:{35:[18,80,16,10751,10762]}                               // Comedy-Serien: dito, keine Kinderserien
 };
 const TV_NOISE=[10767,10763,10764,10766];                      // Talk, News, Reality, Soap
-function genreExcl(type,gid){gid=+gid;let ex=(GENRE_EXCL[type]||{})[gid]||[];if(type==='tv'&&!TV_NOISE.includes(gid))ex=ex.concat(TV_NOISE);return ex}
+function genreExcl(type,gid){gid=+gid;let ex=(GENRE_EXCL[type]||{})[gid]||[];if(type==='tv'&&!TV_NOISE.includes(gid))ex=ex.concat(TV_NOISE);if(gid!==16&&!ex.includes(16))ex=ex.concat([16]); /* Animation nur unter Animation */return ex}
 function tmdbAdapter(m){
   const type=m==='film'?'movie':'tv';
   const minVotes=m==='film'?400:150;
