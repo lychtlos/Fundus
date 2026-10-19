@@ -525,13 +525,21 @@ async function tvmazeEvents(it){
   if(pv&&pv.airdate&&dayDiff(pv.airdate)>=-45)ev.push({id:it.k+':'+epCode(pv.season,pv.number),date:pv.airdate,label:pv.number===1?'Neue Staffel gestartet':'Neue Folge erschienen',text:epCode(pv.season,pv.number)+(pv.name?' · '+pv.name:''),via:'TVmaze'});
   return ev;
 }
+/* Genre-Schärfung: TMDB vergibt Genres großzügig (Forrest Gump = Komödie, Drama, Romanze).
+   Für die Genre-Listen werden Mischformen ausgeschlossen, die nicht zum Genre passen. */
+const GENRE_EXCL={
+  movie:{35:[18,80,10752,36,16,10751]},                       // Komödie: keine Dramen, Krimis, Kriegs-/Historienfilme, Animation, Familie
+  tv:{35:[18,80,16,10751,10762]}                               // Comedy-Serien: dito, keine Kinderserien
+};
+const TV_NOISE=[10767,10763,10764,10766];                      // Talk, News, Reality, Soap
+function genreExcl(type,gid){gid=+gid;let ex=(GENRE_EXCL[type]||{})[gid]||[];if(type==='tv'&&!TV_NOISE.includes(gid))ex=ex.concat(TV_NOISE);return ex}
 function tmdbAdapter(m){
   const type=m==='film'?'movie':'tv';
   const minVotes=m==='film'?400:150;
   const tvOnly=s=>m==='serie'&&String(s.id).startsWith('tvm');
   return {
     async genres(){return (await tmdbGenres(type)).map(g=>({id:g.id,name:g.name}))},
-    async byGenre(gid,page=1){if(page>10)return [];await tmdbGenres(type);const d=await tmdb('/discover/'+type,{with_genres:gid,sort_by:'popularity.desc','vote_count.gte':minVotes,page});return (d.results||[]).map(r=>tmdbItem(m,r))},
+    async byGenre(gid,page=1){if(page>10)return [];await tmdbGenres(type);const d=await tmdb('/discover/'+type,{with_genres:gid,without_genres:genreExcl(type,gid).join(',')||undefined,sort_by:'popularity.desc','vote_count.gte':minVotes,page});return (d.results||[]).map(r=>tmdbItem(m,r))},
     async search(q){return chain(
       async()=>{await tmdbGenres(type);const d=await tmdb('/search/'+type,{query:q});return (d.results||[]).map(r=>tmdbItem(m,r))},
       async()=>m==='serie'?(await tvmaze('/search/shows?q='+encodeURIComponent(q),6e5)).map(x=>tvmItem(x.show)):[])},
@@ -541,7 +549,7 @@ function tmdbAdapter(m){
       (S.genres[m]||[]).forEach(g=>cnt[g]=(cnt[g]||0)+1);
       const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>+e[0]);if(!top.length)return [];
       const g=top[Math.floor(Math.random()*top.length)];
-      const d=await tmdb('/discover/'+type,{with_genres:g,sort_by:'popularity.desc','vote_count.gte':Math.round(minVotes/2),page:1+Math.floor(Math.random()*3),...provParams()});
+      const d=await tmdb('/discover/'+type,{with_genres:g,without_genres:genreExcl(type,g).join(',')||undefined,sort_by:'popularity.desc','vote_count.gte':Math.round(minVotes/2),page:1+Math.floor(Math.random()*3),...provParams()});
       return (d.results||[]).map(r=>({it:tmdbItem(m,r),w:1,why:'Entdecken · '+gName(type,g)}));
     },
     async avail(it){if(tvOnly(it))return null;return parseAv(await tmdb('/'+type+'/'+it.id+'/watch/providers',{language:''}))},
@@ -935,6 +943,7 @@ function flt(m){return ui.flt[m]||(ui.flt[m]={g:'',y:'',r:0,sort:'match'})}
 const fltActive=m=>{const f=flt(m);return !!(f.g||f.y||f.r||f.sort!=='match')};
 function passF(m,it){const f=flt(m);
   if(f.g&&!(it.genres||[]).includes(f.g))return false;
+  if(f.g&&isFS(m)&&it.gids&&it.gids.length){const type=m==='film'?'movie':'tv';const g=(gCache[type]||[]).find(x=>x.name===f.g);if(g){const ex=genreExcl(type,g.id);if(it.gids.some(x=>ex.includes(x)))return false}}
   if(f.y){const y=parseInt(it.year)||0;if(!y)return false;const a=+f.y;if(a===0?y>=1990:a===2020?y<2020:(y<a||y>a+9))return false}
   if(f.r&&!(hasRating(it)&&it.rating>=f.r))return false;return true}
 function sortF(m,list){const f=flt(m);
