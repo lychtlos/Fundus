@@ -142,7 +142,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 
 .base{display:flex;flex-wrap:wrap;gap:6px}
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border-radius:999px;padding:4px 4px 4px 12px;font-size:13.5px;max-width:100%}
-.pill span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill span,.pill .tbtn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pill button{border:0;background:var(--surface-2);border-radius:50%;width:22px;height:22px;display:grid;place-items:center;flex:none;color:var(--ink-2);padding:0}
 .pill button svg{width:12px;height:12px}
 .pill.neg{background:none;border:1px solid var(--line);color:var(--ink-2)}
@@ -203,6 +203,44 @@ select.inp{flex:0 1 220px}
 .tile[aria-pressed="true"] .art{outline:3px solid var(--accent);outline-offset:-3px}
 .tile .tick svg{width:14px;height:14px}
 .pk-hint{padding:26px 0;text-align:center;color:var(--ink-2)}
+.fbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px}
+.fl{display:grid;gap:3px}
+.fl .inp{flex:none;padding:6px 8px;font-size:13.5px;min-width:130px;max-width:100%}
+.art-btn{border:0;padding:0;background:none;cursor:pointer;align-self:start;display:block;border-radius:6px}
+.art-btn:hover .art{filter:brightness(1.06)}
+.tbtn{all:unset;cursor:pointer;overflow-wrap:anywhere}
+.tbtn:hover{text-decoration:underline}
+.tbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dt-panel{max-width:1000px}
+.dt-hero{height:170px;flex:none;background-size:cover;background-position:center 25%;position:relative}
+.dt-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,var(--bg))}
+.dt{display:grid;grid-template-columns:170px 1fr;gap:22px}
+.dt-side .art{width:100%}
+.dt-main{min-width:0;display:flex;flex-direction:column;gap:12px}
+.dt-acts{display:flex;flex-wrap:wrap;gap:6px}
+.dt-tag{font-style:italic;color:var(--ink-2);margin:0}
+.dt-ov{margin:0;max-width:70ch;white-space:pre-line;font-size:15.5px}
+.dt-facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 18px;margin:0;font-size:14px}
+.dt-facts dt{color:var(--ink-2)} .dt-facts dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.dt-video{position:relative;aspect-ratio:16/9;max-width:640px;border-radius:8px;overflow:hidden;background:#000}
+.dt-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ppl{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:12px}
+.pp{display:flex;flex-direction:column;gap:2px;font-size:12.5px;min-width:0}
+.pp img,.pp-ph{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;background:var(--surface-2);margin-bottom:4px}
+.pp-ph{display:grid;place-items:center;font-family:var(--f-display);font-size:22px;color:var(--ink-2)}
+.pp b{font-weight:600;overflow-wrap:anywhere} .pp small{color:var(--ink-2);overflow-wrap:anywhere}
+.dt-rows{display:flex;flex-direction:column;gap:4px}
+.dt-row{display:flex;gap:10px;align-items:center;background:var(--surface);border-radius:8px;padding:8px 10px}
+.dt-row img{width:40px;height:40px;border-radius:4px;object-fit:cover;flex:none}
+.dt-row>div{flex:1;min-width:0}
+.dt-row b{display:block;font-size:14px;overflow-wrap:anywhere} .dt-row small{color:var(--ink-2);font-size:12.5px}
+.dt-row p{margin:4px 0 0;font-size:12.5px;color:var(--ink-2)}
+.avrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.avrow .st{min-width:110px}
+.avp{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:13px}
+.avp img{width:18px;height:18px;border-radius:4px}
+.avp.mine{border-color:var(--good);color:var(--good);font-weight:600}
+@media (max-width:620px){.dt{grid-template-columns:1fr}.dt-side .art{width:120px}.dt-hero{height:120px}}
 .rt{font-family:var(--f-mono);font-size:12.5px;font-weight:500;white-space:nowrap}
 .rt small{font-size:11px;color:var(--ink-2);font-weight:400}
 .rt-hi{color:var(--good)} .rt-mid{color:var(--ink)} .rt-lo{color:var(--ink-2)}
@@ -253,7 +291,7 @@ select.inp{flex:0 1 220px}
 <div class="wrap">
   <div id="banner"></div>
   <main id="view"></main>
-  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Google Books, Open Library · Podcasts: Apple Podcasts, fyyd. Prototyp, Daten werden nur in diesem Browser gespeichert.</p>
+  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Prototyp, Daten werden nur in diesem Browser gespeichert.</p>
 </div>
 <div id="sheet" class="sheet" hidden></div>
 <div id="intro" class="intro" hidden></div>
@@ -337,13 +375,13 @@ document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&
 
 /* ---------- Zustand ---------- */
 let MODE='demo';
-const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system'};
+const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
 function loadState(){try{const raw=localStorage.getItem(SKEY());if(raw){const o=JSON.parse(raw);return {...newState(),...o,settings:{...DEF,...(o.settings||{})}}}}catch(e){}return null}
 function save(){try{localStorage.setItem(SKEY(),JSON.stringify(S))}catch(e){}}
-const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes'];
+const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig'];
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
 function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;if(!st)delete S.items[it.k];else S.items[it.k]={...strip(it),status:st,ts:Date.now()};save();return prev}
 const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
@@ -354,7 +392,7 @@ function applyTheme(){
   try{localStorage.setItem('fundus.theme',t)}catch(e){}
 }
 
-const ui={tab:'entdecken',med:'alle',pool:{},shown:{},building:{},err:{},avBusy:{},knownOpen:null,rel:null,pick:null,intro:null,provs:null,provAll:false,keyMsg:'',confirmReset:false,importOpen:false};
+const ui={flt:{},detail:null,tab:'entdecken',med:'alle',pool:{},shown:{},building:{},err:{},avBusy:{},knownOpen:null,rel:null,pick:null,intro:null,provs:null,provAll:false,keyMsg:'',confirmReset:false,importOpen:false};
 const REG=new Map();
 const AV=new Map();
 const reg=it=>{REG.set(it.k,it);return it};
@@ -417,14 +455,16 @@ const itunes=(p,ttl=24*H)=>cached('it'+p,async()=>{await GATE.it();try{return aw
 const tvmaze=(p,ttl=6*H)=>cached('tvm'+p,()=>getJSON('https://api.tvmaze.com'+p,GATE.tvm,'TVmaze'),ttl);
 const fyyd=(p,ttl=24*H)=>cached('fy'+p,async()=>(await getJSON('https://api.fyyd.de/0.2'+p,GATE.fy,'fyyd')).data,ttl);
 async function olib(q,extra='',ttl=24*H){
-  const f='key,title,author_name,author_key,cover_i,first_publish_year,subject';
-  const url='https://openlibrary.org/search.json?q='+encodeURIComponent(q)+'&fields='+f+extra;
+  /* lang=de liefert je Werk die deutsche Ausgabe (Titel, Cover) mit */
+  const f='key,title,author_name,author_key,cover_i,first_publish_year,subject,editions,editions.title,editions.language,editions.cover_i';
+  const url='https://openlibrary.org/search.json?q='+encodeURIComponent(q)+'&lang=de&fields='+f+extra;
   return cached(url,async()=>(await getJSON(url,GATE.ol,'Open Library')).docs||[],ttl);
 }
+const GB_DEFAULT='AIzaSyDhZdIY3AfJDAcTcx1fSMoKfbiDW7QPBpc';
 let GB_ANON_OK=true; /* ohne Schlüssel nur bis zum ersten Fehler versuchen */
 async function gbooks(q,extra='',ttl=24*H){
-  const k=(S.settings.gbKey||'').trim();if(!k&&!GB_ANON_OK)throw new Error('Google Books ohne Schlüssel nicht verfügbar');
-  const url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&printType=books&maxResults=40'+extra+(k?'&key='+encodeURIComponent(k):'');
+  const k=(S.settings.gbKey||'').trim()||GB_DEFAULT;if(!k&&!GB_ANON_OK)throw new Error('Google Books ohne Schlüssel nicht verfügbar');
+  const url='https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&printType=books&maxResults=40&country=DE'+extra+(k?'&key='+encodeURIComponent(k):'');
   return cached(url,async()=>{try{return (await getJSON(url,GATE.gb,'Google Books')).items||[]}catch(e){if(!k)GB_ANON_OK=false;throw e}},ttl);
 }
 
@@ -553,9 +593,11 @@ const tkey=(t,a)=>String(t||'').toLowerCase().replace(/[^a-z0-9äöüß]/g,'').s
 const GENERIC=/fiction, general|^fiction$|large type|in library|accessible|protected|nyt|reading level|translations|english|german|^roman|literature|award|open_syllabus|series:|long now|history and criticism|^novel|juvenile|readers|^\w{1,2}$/i;
 function olItem(d,genre,gq){
   const id=(d.key||'').replace('/works/','');const au=(d.author_name||[])[0]||'';
-  return reg({k:'buch:'+id,m:'buch',src:'ol',id,title:d.title,sub:[au,d.first_publish_year].filter(Boolean).join(' · '),year:d.first_publish_year,authorName:au,
-    img:d.cover_i?'https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg':null,authors:(d.author_key||[]).slice(0,2),
-    subjects:(d.subject||[]).filter(s=>!GENERIC.test(s)).slice(0,4),genres:genre?[genre]:[],gq,link:'https://openlibrary.org'+d.key,tk:tkey(d.title,au)});
+  const ed=(d.editions&&d.editions.docs||[])[0];const de=ed&&(ed.language||[]).includes('ger');
+  const title=de&&ed.title?ed.title.replace(/\.\s*Roman\.?$|\s*:\s*Roman$|\.$/i,''):d.title;const cov=(de&&ed.cover_i)||d.cover_i;
+  return reg({k:'buch:'+id,m:'buch',src:'ol',id,title,orig:title!==d.title?d.title:undefined,sub:[au,d.first_publish_year].filter(Boolean).join(' · '),year:d.first_publish_year,authorName:au,
+    img:cov?'https://covers.openlibrary.org/b/id/'+cov+'-M.jpg':null,authors:(d.author_key||[]).slice(0,2),
+    subjects:(d.subject||[]).filter(s=>!GENERIC.test(s)).slice(0,4),genres:genre?[genre]:[],gq,link:'https://openlibrary.org'+d.key,tk:tkey(title,au)});
 }
 function gbItem(v,genre,gq){
   const i=v.volumeInfo||{};const au=(i.authors||[])[0]||'';const y=(i.publishedDate||'').slice(0,4);
@@ -564,25 +606,26 @@ function gbItem(v,genre,gq){
     genres:genre?[genre]:[],gq,subjects:(i.categories||[]).slice(0,2),link:i.infoLink||'https://books.google.de/books?id='+v.id,tk:tkey(i.title,au),pub:i.publishedDate||''});
 }
 /* nur echte Bücher mit Autor, jede Ausgabe nur einmal */
-function gbClean(items,genre,gq){const seen=new Set();return items.filter(v=>{const i=v.volumeInfo||{};if(!i.title||!i.authors||!i.authors.length)return false;const k=tkey(i.title,i.authors[0]);if(seen.has(k))return false;seen.add(k);return true}).map(v=>gbItem(v,genre,gq))}
+function gbClean(items,genre,gq,deOnly){const seen=new Set();return items.filter(v=>{const i=v.volumeInfo||{};if(!i.title||!i.authors||!i.authors.length)return false;if(deOnly&&i.language!=='de')return false;const k=tkey(i.title,i.authors[0]);if(seen.has(k))return false;seen.add(k);return true}).map(v=>gbItem(v,genre,gq))}
 async function olGenre(q,page){q=OL_Q[q]||q;let docs=await olib('subject:"'+q+'" language:ger','&limit=30&page='+(page||1));if(docs.length<8)docs=await olib('subject:"'+q+'"','&limit=30&page='+(page||1));return docs}
 const gbGenre=(gid,page)=>gbooks('subject:"'+gid+'"','&langRestrict=de&startIndex='+((page-1)*40));
 const buchLive={
   async genres(){return BOOK_GENRES},
   async byGenre(gid,page=1){if(page>6)return [];const name=BOOK_GENRES.find(g=>g.id===gid)?.name||gid;
-    return chain(async()=>gbClean(await gbGenre(gid,page),name,gid),async()=>(await olGenre(gid,page)).map(d=>olItem(d,name,gid)))},
-  async search(q){return chain(async()=>gbClean(await gbooks(q,'&langRestrict=de',6e5)),async()=>gbClean(await gbooks(q,'',6e5)),async()=>(await olib(q,'&limit=24',6e5)).map(d=>olItem(d,'')))},
+    return chain(async()=>(await olGenre(gid,page)).map(d=>olItem(d,name,gid)),async()=>gbClean(await gbGenre(gid,page),name,gid))},
+  async search(q){return chain(async()=>(await olib(q+' language:ger','&limit=24',6e5)).map(d=>olItem(d,'')),async()=>gbClean(await gbooks(q,'&langRestrict=de',6e5),'',null,true),async()=>(await olib(q,'&limit=24',6e5)).map(d=>olItem(d,'')))},
   async similar(s){
     const g=(s.genres||[])[0],gq=s.gq||(BOOK_GENRES.find(x=>x.name===g)||{}).id;const out=[];
     const who=s.authorName||(s.sub||'').split(' · ')[0];
     await chain(async()=>{
-      const r=[];if(who)gbClean(await gbooks('inauthor:"'+who+'"','&langRestrict=de'),g,gq).forEach(it=>r.push({it,w:0.8,why:'Von '+who}));
-      if(gq)gbClean(await gbGenre(gq,1+Math.floor(Math.random()*3)),g,gq).forEach(it=>r.push({it,w:0.5}));
+      const r=[];const au=(s.authors||[])[0];
+      if(au)(await olib('author_key:'+au+' language:ger','&limit=12')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.8,why:who?'Von '+who:'Von demselben Autor'}));
+      else if(who)(await olib('author:"'+who+'" language:ger','&limit=12')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.8,why:'Von '+who}));
+      for(const sub of (s.subjects||[]).slice(0,2))(await olib('subject:"'+sub+'" language:ger','&limit=20')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.5}));
+      if(gq)(await olGenre(gq,1+Math.floor(Math.random()*3))).forEach(d=>r.push({it:olItem(d,g,gq),w:0.4}));
       r.forEach(x=>out.push(x));return r;
     },async()=>{
-      const r=[];const au=(s.authors||[])[0];
-      if(au)(await olib('author_key:'+au,'&limit=12&sort=new')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.8,why:who?'Von '+who:'Von demselben Autor'}));
-      for(const sub of (s.subjects||[]).slice(0,2))(await olib('subject:"'+sub+'" language:ger','&limit=20')).forEach(d=>r.push({it:olItem(d,g,gq),w:0.5}));
+      const r=[];if(who)gbClean(await gbooks('inauthor:"'+who+'"','&langRestrict=de'),g,gq).forEach(it=>r.push({it,w:0.8,why:'Von '+who}));
       r.forEach(x=>out.push(x));return r;
     });
     return out;
@@ -592,8 +635,10 @@ const buchLive={
   async releases(it){
     const y=new Date().getFullYear();const who=it.authorName||(it.sub||'').split(' · ')[0];
     return chain(async()=>{if(!who)return [];
-      return gbClean(await gbooks('inauthor:"'+who+'"','&langRestrict=de&orderBy=newest',12*H),'')
-        .filter(x=>x.year&&+x.year>=y-1&&x.tk!==it.tk&&!S.items[x.k])
+      const wl=who.toLowerCase();
+      const raw=(await gbooks('inauthor:"'+who+'"','&langRestrict=de&orderBy=newest',12*H)).filter(v=>{const i=v.volumeInfo||{};return i.language==='de'&&(i.authors||[]).some(a=>a.toLowerCase()===wl)});
+      return gbClean(raw,'')
+        .filter(x=>{if(!x.pub||x.tk===it.tk||S.items[x.k])return false;if(/^\d{4}-\d\d-\d\d$/.test(x.pub)){const dd=dayDiff(x.pub);return dd>=-365&&dd<=365}return +x.year>=y})
         .map(x=>({id:'buch:new:'+x.tk,date:/^\d{4}-\d\d-\d\d$/.test(x.pub)?x.pub:String(x.year),label:(/^\d{4}-\d\d-\d\d$/.test(x.pub)?dayDiff(x.pub)>0:+x.year>y)?'Neues Buch angekündigt':'Neues Buch',text:x.title+' · '+who,link:x.link,img:x.img}))},
     async()=>{const ev=[];for(const au of (it.authors||[]).slice(0,1))
       (await olib('author_key:'+au,'&limit=6&sort=new',12*H)).forEach(d=>{const x=olItem(d,'');if(d.first_publish_year>=y-1&&x.tk!==it.tk&&!S.items[x.k])ev.push({id:'buch:new:'+x.tk,date:String(d.first_publish_year),label:d.first_publish_year>y?'Neues Buch angekündigt':'Neues Buch',text:d.title+' · '+((d.author_name||[])[0]||''),link:x.link,img:x.img})});
@@ -732,7 +777,7 @@ function ensurePool(m){
 }
 function resetPools(ms){(ms||ORDER).forEach(m=>{delete ui.pool[m];delete ui.err[m]})}
 function visible(m,n){
-  const p=(ui.pool[m]||[]).filter(c=>!S.items[c.it.k]);
+  const p=sortF(m,(ui.pool[m]||[]).filter(c=>!S.items[c.it.k]&&(ui.med!==m||passF(m,c.it))));
   if(!isFS(m))return {list:p.slice(0,n),more:p.length>n};
   const only=S.settings.onlyMine&&S.settings.providers.length;
   const look=p.slice(0,only?n*3+12:n+4).filter(c=>!AV.has(c.it.k));
@@ -740,6 +785,147 @@ function visible(m,n){
   if(!only)return {list:p.slice(0,n),more:p.length>n};
   const ok=p.filter(c=>AV.has(c.it.k)&&avSum(c.it)?.hits.length);
   return {list:ok.slice(0,n),more:ok.length>n||p.some(c=>!AV.has(c.it.k)),pending:look.length>0};
+}
+
+/* ---------- Details (Klick auf Cover oder Titel) ---------- */
+const fmtMin=n=>n?(n>=60?Math.floor(n/60)+' Std.'+(n%60?' '+n%60+' Min.':''):n+' Min.'):'';
+const fmtDate=s=>{if(!s)return '';const p=String(s).slice(0,10).split('-');return p.length===3?p[2]+'.'+p[1]+'.'+p[0]:String(s)};
+const stripHtml=s=>String(s||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n)).replace(/\*{1,2}([^*\n]+)\*{1,2}/g,'$1').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/\n{3,}/g,'\n\n').trim();
+const TV_STATUS={'Returning Series':'Läuft','Ended':'Beendet','Canceled':'Abgesetzt','In Production':'In Produktion','Planned':'Geplant'};
+const gbKeyNow=()=>(S.settings.gbKey||'').trim()||GB_DEFAULT;
+const gbVolume=id=>cached('gbv'+id,()=>getJSON('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(id)+'?country=DE&key='+encodeURIComponent(gbKeyNow()),GATE.gb,'Google Books'),24*H);
+async function detailFor(it){
+  if(MODE==='demo'||it.demo)return {overview:'Beispieldaten. Handlung, Mitwirkende, Trailer und weitere Angaben gibt es im Live-Modus.',facts:[['Genres',(it.genres||[]).join(', ')]]};
+  const m=it.m;
+  if(isFS(m)){
+    if(String(it.id).startsWith('tvm')){
+      const s=await tvmaze('/shows/'+String(it.id).slice(3)+'?embed[]=cast');
+      return {backdrop:null,overview:stripHtml(s.summary),facts:[['Erstausstrahlung',fmtDate(s.premiered)],['Status',s.status==='Running'?'Läuft':s.status==='Ended'?'Beendet':s.status],['Sender',(s.network||s.webChannel||{}).name],['Genres',(s.genres||[]).join(', ')]],
+        people:((s._embedded||{}).cast||[]).slice(0,12).map(c=>({name:c.person.name,role:c.character&&c.character.name,img:c.person.image&&c.person.image.medium})),sections:[]};
+    }
+    const type=m==='film'?'movie':'tv';
+    const d=await tmdb('/'+type+'/'+it.id,{append_to_response:m==='film'?'credits,videos':'aggregate_credits,videos',include_video_language:'de,en'});
+    let overview=d.overview;if(!overview){try{overview=(await tmdb('/'+type+'/'+it.id,{language:'en-US'})).overview}catch(e){}}
+    const vids=(d.videos&&d.videos.results||[]).filter(v=>v.site==='YouTube'&&/Trailer|Teaser/.test(v.type))
+      .sort((a,b)=>((b.iso_639_1==='de')-(a.iso_639_1==='de'))||((b.type==='Trailer')-(a.type==='Trailer'))||((b.official?1:0)-(a.official?1:0)));
+    const facts=[];let people=[];const sections=[];
+    if(m==='film'){
+      const dir=(d.credits&&d.credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name);
+      facts.push(['Erschienen',fmtDate(d.release_date)],['Laufzeit',fmtMin(d.runtime)],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Regie',dir.join(', ')],['Originaltitel',d.original_title!==d.title?d.original_title:'']);
+      people=(d.credits&&d.credits.cast||[]).slice(0,12).map(c=>({name:c.name,role:c.character,img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
+    }else{
+      facts.push(['Erstausstrahlung',fmtDate(d.first_air_date)],['Status',TV_STATUS[d.status]||d.status],['Umfang',(d.number_of_seasons||0)+' Staffeln · '+(d.number_of_episodes||0)+' Folgen'],['Sender',(d.networks||[]).map(n=>n.name).join(', ')],['Idee',(d.created_by||[]).map(c=>c.name).join(', ')],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Originaltitel',d.original_name!==d.name?d.original_name:'']);
+      people=(d.aggregate_credits&&d.aggregate_credits.cast||[]).slice(0,12).map(c=>({name:c.name,role:(c.roles&&c.roles[0]&&c.roles[0].character)||'',img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
+      const rows=[];const nx=d.next_episode_to_air,ls=d.last_episode_to_air;
+      if(nx)rows.push({t:'Nächste: '+epCode(nx.season_number,nx.episode_number)+(nx.name?' · '+nx.name:''),sub:fmtDate(nx.air_date)});
+      if(ls)rows.push({t:'Zuletzt: '+epCode(ls.season_number,ls.episode_number)+(ls.name?' · '+ls.name:''),sub:fmtDate(ls.air_date)});
+      if(rows.length)sections.push({title:'Folgen',rows});
+    }
+    return {backdrop:d.backdrop_path?TMDB_IMG+'w780'+d.backdrop_path:null,tagline:d.tagline,overview,facts,people,trailer:vids[0]?{key:vids[0].key,name:vids[0].name}:null,sections};
+  }
+  if(m==='musik'){
+    if(!isDz(it)){
+      const d=await itunes('/lookup?id='+String(it.id).slice(2)+'&entity=album&limit=10');
+      const al=(d.results||[]).filter(r=>r.wrapperType==='collection').sort((a,b)=>String(b.releaseDate).localeCompare(String(a.releaseDate)));
+      return {facts:[['Genre',(it.genres||[])[0]||'']],sections:[{title:'Neueste Veröffentlichungen',rows:al.slice(0,8).map(a=>({t:a.collectionName,sub:fmtDate(a.releaseDate),img:a.artworkUrl100,q:it.title+' '+a.collectionName}))}]};
+    }
+    const [a,top,al]=await Promise.all([deezer('/artist/'+it.id),deezer('/artist/'+it.id+'/top?limit=8',6*H),deezer('/artist/'+it.id+'/albums?limit=50',6*H)]);
+    const albums=(al.data||[]).slice().sort((x,y)=>String(y.release_date).localeCompare(String(x.release_date)));
+    return {backdrop:a.picture_xl||null,facts:[['Fans auf Deezer',a.nb_fan?a.nb_fan.toLocaleString('de-DE'):''],['Veröffentlichungen',a.nb_album?String(a.nb_album):''],['Genre',(it.genres||[])[0]||'']],
+      sections:[{title:'Beliebteste Titel',rows:(top.data||[]).map(t=>({t:t.title,sub:(t.album&&t.album.title||'')+(t.duration?' · '+Math.floor(t.duration/60)+':'+String(t.duration%60).padStart(2,'0'):''),img:t.album&&t.album.cover_small,q:it.title+' '+t.title}))},
+        {title:'Neueste Veröffentlichungen',rows:albums.slice(0,8).map(x=>({t:x.title,sub:(x.record_type==='single'?'Single':x.record_type==='ep'?'EP':'Album')+' · '+fmtDate(x.release_date),img:x.cover_small,q:it.title+' '+x.title}))}]};
+  }
+  if(m==='buch'){
+    if(it.src==='gb'){const i=(await gbVolume(it.id)).volumeInfo||{};
+      return {overview:stripHtml(i.description),facts:[['Autor',(i.authors||[]).join(', ')],['Erschienen',fmtDate(i.publishedDate)],['Verlag',i.publisher],['Seiten',i.pageCount?String(i.pageCount):''],['Kategorien',(i.categories||[]).join(', ')]]}}
+    const w=await cached('olw'+it.id,()=>getJSON('https://openlibrary.org/works/'+it.id+'.json',GATE.ol,'Open Library'),24*H);
+    const olDesc=stripHtml(w.description&&(w.description.value||w.description));
+    let gbDesc='',pages='',publ='';
+    try{const raw=await gbooks('intitle:"'+it.title+'"'+(it.authorName?' inauthor:"'+it.authorName+'"':''),'&langRestrict=de');
+      const v0=raw.find(v=>(v.volumeInfo||{}).language==='de');
+      if(v0){const i=(await gbVolume(v0.id)).volumeInfo||{};gbDesc=stripHtml(i.description);pages=i.pageCount?String(i.pageCount):'';publ=i.publisher||''}}catch(e){}
+    return {overview:gbDesc||olDesc,overviewNote:!gbDesc&&olDesc?'Beschreibung aus Open Library, teils englisch.':'',
+      facts:[['Autor',it.authorName],['Erstveröffentlichung',w.first_publish_date||String(it.year||'')],['Originaltitel',it.orig||''],['Verlag (dt.)',publ],['Seiten',pages],['Themen',(w.subjects||[]).filter(s=>!GENERIC.test(s)).slice(0,6).join(', ')]]};
+  }
+  if(String(it.id).startsWith('f')){
+    const d=await fyyd('/podcast/episodes?podcast_id='+String(it.id).slice(1)+'&count=8',3*H);
+    return {overview:stripHtml(d&&d.description),facts:[['Von',it.sub]],sections:[{title:'Neueste Folgen',rows:(d&&d.episodes||[]).map(e=>({t:e.title,sub:fmtDate(e.pubdate)+(e.duration?' · '+Math.round(e.duration/60)+' Min.':''),desc:stripHtml(e.description).slice(0,220)}))}]};
+  }
+  const d=await itunes('/lookup?id='+it.id+'&entity=podcastEpisode&limit=8&country=DE',3*H);
+  const pod=(d.results||[]).find(r=>r.kind==='podcast');const eps=(d.results||[]).filter(r=>r.wrapperType==='podcastEpisode'||r.kind==='podcast-episode');
+  return {facts:[['Von',it.sub],['Genre',(pod&&pod.genres||[]).filter(g=>g!=='Podcasts').join(', ')],['Folgen gesamt',pod&&pod.trackCount?String(pod.trackCount):'']],
+    sections:[{title:'Neueste Folgen',rows:eps.map(e=>({t:e.trackName,sub:fmtDate(e.releaseDate)+(e.trackTimeMillis?' · '+Math.round(e.trackTimeMillis/60000)+' Min.':''),desc:stripHtml(e.description||e.shortDescription||'').slice(0,220)}))}]};
+}
+function openDetail(k){
+  const it=REG.get(k)||S.items[k];if(!it)return;ui.detail={k,it,data:null,err:''};
+  if(isFS(it.m)&&!AV.has(it.k))availFetch(it).then(()=>{if(ui.detail&&ui.detail.k===k)renderDetail()});
+  renderDetail();
+  detailFor(it).then(d=>{if(ui.detail&&ui.detail.k===k){ui.detail.data=d;renderDetail()}}).catch(e=>{if(ui.detail&&ui.detail.k===k){ui.detail.err=e.message||String(e);renderDetail()}});
+}
+function closeDetail(){ui.detail=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
+function avFull(it){
+  if(!AV.has(it.k))return '<div class="subh">Wo verfügbar</div><p class="note">Wird geladen …</p>';
+  const av=AV.get(it.k);if(!av)return '';const mine=new Set(S.settings.providers);
+  const grp=(lab,arr)=>{const seen=new Set();const xs=arr.filter(p=>{const b=baseName(p.name);if(seen.has(b))return false;seen.add(b);return true});
+    return xs.length?'<div class="avrow"><span class="st">'+lab+'</span>'+xs.map(p=>'<span class="avp'+(mine.has(p.id)?' mine':'')+'">'+(p.logo?'<img src="'+esc(p.logo)+'" alt="">':'')+esc(baseName(p.name))+'</span>').join('')+'</div>':''};
+  const h=grp('Im Abo',av.flat)+grp('Kostenlos',av.free)+grp('Leihen, Kaufen',av.rent);
+  return '<div class="subh">Wo verfügbar (Deutschland)</div>'+(h||'<p class="note">Derzeit nicht im Streaming.</p>')+(av.link?'<div><a class="btn ghost" href="'+esc(av.link)+'" target="_blank" rel="noopener">Alle Angebote bei JustWatch'+IC.ext+'</a></div>':'');
+}
+function renderDetail(){
+  const D=ui.detail;const el=$('#sheet');if(!D)return;
+  const it=S.items[D.k]?{...D.it,...S.items[D.k]}:D.it;const d=D.data;const M=MEDIA[it.m];const k=esc(it.k);
+  const st=S.items[it.k]&&S.items[it.k].status;
+  const stLbl={watch:'Auf der Merkliste',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
+  const btn=(a,l,ic)=>'<button class="btn'+(st===a?' pri':'')+'" data-act="dset" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+(st===a)+'">'+ic+l+'</button>';
+  const acts='<div class="dt-acts">'+btn('watch','Merken',IC.mark)+btn('like','Gefällt mir',IC.up)+btn('dislike','Gefällt nicht',IC.down)+btn('hide','Kein Interesse',IC.x)+(st?'<button class="btn ghost" data-act="dset" data-st="" data-k="'+k+'">Zurücksetzen</button>':'')+'</div>';
+  const lk='<div class="row">'+links(it).map(l=>'<a class="btn ghost" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+IC.ext+'</a>').join('')+'</div>';
+  let main='';
+  if(!d&&!D.err)main='<div class="skel" style="height:200px"></div>';
+  if(D.err)main='<p class="err">Details konnten nicht geladen werden: '+esc(D.err)+'</p>';
+  if(d){
+    if(d.tagline)main+='<p class="dt-tag">'+esc(d.tagline)+'</p>';
+    if(d.overview)main+='<p class="dt-ov">'+esc(d.overview)+'</p>'+(d.overviewNote?'<p class="note">'+esc(d.overviewNote)+'</p>':'');
+    else if(it.m!=='musik')main+='<p class="note">Keine Beschreibung vorhanden.</p>';
+    const facts=(d.facts||[]).filter(f=>f[1]);
+    if(facts.length)main+='<dl class="dt-facts">'+facts.map(f=>'<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>').join('')+'</dl>';
+    if(d.trailer)main+='<div class="subh">Trailer</div>'+(/^https?:/.test(location.protocol)&&MODE==='live'?'<div class="dt-video"><iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(d.trailer.key)+'" title="'+esc(d.trailer.name||'Trailer')+'" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>':'')+'<div><a class="btn" href="https://www.youtube.com/watch?v='+encodeURIComponent(d.trailer.key)+'" target="_blank" rel="noopener">Trailer auf YouTube'+IC.ext+'</a></div>';
+    if(d.people&&d.people.length)main+='<div class="subh">Mitwirkende</div><div class="ppl">'+d.people.map(p=>'<div class="pp">'+(p.img?'<img src="'+esc(p.img)+'" alt="" loading="lazy">':'<span class="pp-ph">'+esc(String(p.name).split(/\s+/).map(w=>w[0]).slice(0,2).join(''))+'</span>')+'<b>'+esc(p.name)+'</b><small>'+esc(p.role||'')+'</small></div>').join('')+'</div>';
+    (d.sections||[]).forEach(sec=>{if(!sec.rows||!sec.rows.length)return;
+      main+='<div class="subh">'+esc(sec.title)+'</div><div class="dt-rows">'+sec.rows.map(r=>{const q=r.q?links({...it,title:r.q,link:null})[0]:null;
+        return '<div class="dt-row">'+(r.img?'<img src="'+esc(r.img)+'" alt="" loading="lazy">':'')+'<div><b>'+esc(r.t)+'</b><small>'+esc(r.sub||'')+'</small>'+(r.desc?'<p>'+esc(r.desc)+'</p>':'')+'</div>'+(q?'<a class="btn ghost" href="'+esc(q[1])+'" target="_blank" rel="noopener" aria-label="In '+esc(q[0])+' öffnen">'+IC.ext+'</a>':'')+'</div>'}).join('')+'</div>'});
+  }
+  if(isFS(it.m)&&!(it.demo&&MODE==='live'))main+=avFull(it);
+  el.innerHTML='<div class="sheet-panel dt-panel f-'+it.m+'" role="dialog" aria-modal="true" aria-label="'+esc(it.title)+'">'+
+    (d&&d.backdrop?'<div class="dt-hero" style="background-image:url(&quot;'+esc(d.backdrop)+'&quot;)"></div>':'')+
+    '<div class="sheet-h"><div class="row"><div style="margin-right:auto;min-width:0"><div class="meta"><span class="mtag">'+M.one+'</span>'+(it.year?'<span>'+esc(it.year)+'</span>':'')+(st?'<span>'+stLbl[st]+'</span>':'')+'</div><h2>'+esc(it.title)+'</h2>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+'</div><button class="btn ghost" data-act="closeDetail" aria-label="Schließen">'+IC.x+'</button></div></div>'+
+    '<div class="sheet-b"><div class="dt"><div class="dt-side">'+art(it)+'</div><div class="dt-main">'+acts+lk+main+'</div></div></div></div>';
+  el.hidden=false;document.body.style.overflow='hidden';
+}
+
+/* ---------- Filter (Einzelansicht je Medium) ---------- */
+const YEARS=[['','Alle Jahre'],['2020','ab 2020'],['2010','2010–2019'],['2000','2000–2009'],['1990','1990–1999'],['0','vor 1990']];
+function flt(m){return ui.flt[m]||(ui.flt[m]={g:'',y:'',r:0,sort:'match'})}
+const fltActive=m=>{const f=flt(m);return !!(f.g||f.y||f.r||f.sort!=='match')};
+function passF(m,it){const f=flt(m);
+  if(f.g&&!(it.genres||[]).includes(f.g))return false;
+  if(f.y){const y=parseInt(it.year)||0;if(!y)return false;const a=+f.y;if(a===0?y>=1990:a===2020?y<2020:(y<a||y>a+9))return false}
+  if(f.r&&!(hasRating(it)&&it.rating>=f.r))return false;return true}
+function sortF(m,list){const f=flt(m);
+  if(f.sort==='rating')return list.slice().sort((a,b)=>(hasRating(b.it)?b.it.rating:0)-(hasRating(a.it)?a.it.rating:0));
+  if(f.sort==='new')return list.slice().sort((a,b)=>(parseInt(b.it.year)||0)-(parseInt(a.it.year)||0));
+  return list}
+function filterBar(m){
+  if(!ui.pool[m]||!ui.pool[m].length)return '';
+  const f=flt(m);const pool=ui.pool[m].filter(c=>!S.items[c.it.k]);
+  const gc={};pool.forEach(c=>(c.it.genres||[]).forEach(g=>gc[g]=(gc[g]||0)+1));
+  const gs=Object.entries(gc).sort((a,b)=>b[1]-a[1]);if(f.g&&!gc[f.g])gs.unshift([f.g,0]);
+  const sel=(id,key,lab,opts)=>'<label class="fl"><span class="st">'+lab+'</span><select class="inp" id="'+id+'" data-flt="'+key+'" data-m="'+m+'">'+opts.map(([v,l])=>'<option value="'+esc(v)+'"'+(String(f[key])===String(v)?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>';
+  let h='<div class="fbar" role="group" aria-label="Filter">'+sel('f-g','g','Genre',[['','Alle Genres']].concat(gs.map(([g,n])=>[g,g+' ('+n+')'])));
+  if(m!=='musik'&&m!=='podcast')h+=sel('f-y','y','Jahr',YEARS);
+  if(isFS(m))h+=sel('f-r','r','Bewertung',[['0','Jede'],['6','ab ★ 6'],['7','ab ★ 7'],['8','ab ★ 8']]);
+  h+=sel('f-s','sort','Sortierung',[['match','Passend zuerst']].concat(isFS(m)?[['rating','Beste Bewertung']]:[]).concat(m!=='musik'&&m!=='podcast'?[['new','Neueste zuerst']]:[]));
+  if(fltActive(m))h+='<button class="btn ghost" data-act="fltReset" data-m="'+m+'">Zurücksetzen</button>';
+  return h+'</div>';
 }
 
 /* ---------- Bausteine ---------- */
@@ -774,7 +960,7 @@ function card(it,mode,reasons){
   }else if(mode==='watch'){
     acts='<button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
-  return '<article class="card f-'+it.m+'" data-card="'+k+'">'+art(it)+'<div class="body">'+meta+'<h3 class="t">'+esc(it.title)+'</h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
+  return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
 const skel=n=>'<div class="grid">'+Array.from({length:n},()=>'<div class="skel"></div>').join('')+'</div>';
 function keyPrompt(m){return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> brauchen einen kostenlosen TMDB-Schlüssel. Ohne Schlüssel bleiben Filme und Serien leer.</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>'}
@@ -806,6 +992,7 @@ function discoverBlock(m,n){
   ensurePool(m);
   if(!ui.pool[m])return skel(Math.min(n,6));
   const v=visible(m,n);
+  if(!v.list.length&&!v.pending&&ui.med===m&&fltActive(m))return '<div class="empty"><p>Keine Vorschläge mit diesen Filtern. Filter lockern oder neue Vorschläge laden.</p><button class="btn" data-act="fltReset" data-m="'+m+'">Filter zurücksetzen</button><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
   if(!v.list.length)return v.pending?skel(3):'<div class="empty"><p>'+(isFS(m)&&S.settings.onlyMine?'Keine Vorschläge bei Deinen Diensten gefunden. Schalte „Nur meine Dienste“ aus oder lade neue Vorschläge.':'Keine weiteren Vorschläge. Erweitere Deine Basis oder lade neu.')+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
   return '<div class="grid">'+v.list.map(c=>card(c.it,'discover',c.reasons)).join('')+'</div>'+(v.more&&ui.med!=='alle'?'<div class="more"><button class="btn" data-act="more" data-m="'+m+'">Mehr anzeigen</button></div>':'');
 }
@@ -817,7 +1004,7 @@ const VIEWS={
     h+='<button class="btn" data-act="reshuffle" data-m="'+ui.med+'">'+IC.shuffle+(ui.med==='alle'?'Alle neu mischen':'Neu mischen')+'</button></div>'+medChips();
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
     if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
-    else h+='<div style="margin-top:16px">'+discoverBlock(ui.med,ui.shown[ui.med]||12)+'</div>';
+    else{const blk=discoverBlock(ui.med,ui.shown[ui.med]||12);h+=filterBar(ui.med)+'<div style="margin-top:16px">'+blk+'</div>'}
     return h;
   },
   merkliste(){
@@ -847,7 +1034,7 @@ const VIEWS={
     ORDER.forEach(m=>{
       const lk=byStatus(m,'like'),dl=byStatus(m,'dislike'),hd=byStatus(m,'hide');
       h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+lk.length+'</span></h3><button class="btn" data-act="pick" data-m="'+m+'">'+IC.plus+'Erweitern</button></div>';
-      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill"><span>'+esc(i.title)+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
+      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill"><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
       if(dl.length||hd.length)h+='<details class="rated"><summary>Abgelehnt und ausgeblendet ('+(dl.length+hd.length)+')</summary><div class="base">'+dl.concat(hd).map(i=>'<span class="pill neg"><span>'+esc(i.title)+' · '+(i.status==='dislike'?'gefällt nicht':'kein Interesse')+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="Wieder vorschlagen">'+IC.x+'</button></span>').join('')+'</div></details>';
       h+='</section>';
     });
@@ -863,6 +1050,7 @@ const VIEWS={
       '<label class="switch"><input type="checkbox" id="sw-only2" data-set="onlyMine"'+(st.onlyMine?' checked':'')+'> Bei Filmen und Serien nur Titel aus meinen Diensten zeigen</label>'+
       '<label class="switch"><input type="checkbox" id="sw-free" data-set="includeFree"'+(st.includeFree?' checked':'')+'> Kostenlose Angebote (Mediatheken, werbefinanziert) immer einbeziehen</label>'+
       '</div></div>';
+    h+='<div class="panel"><h3>Aktualisierung</h3>'+updBox()+'</div>';
     h+='<div class="panel"><h3>Apps zum Öffnen</h3><p>Mit welcher App sich Musik- und Podcast-Vorschläge öffnen. Bei Pocket Casts und Overcast öffnet sich direkt der Podcast.</p>'+appsBox()+'</div>';
     h+='<div class="panel"><h3>Daten</h3><p>'+Object.keys(S.items).length+' Einträge gespeichert. Export und Import als Text, z. B. zum Übertragen auf ein anderes Gerät.</p><div class="row"><button class="btn" data-act="introStart">Intro erneut starten</button><button class="btn" data-act="export">Export kopieren</button><button class="btn" data-act="importOpen">Import</button>'+
       (ui.confirmReset?'<span class="err">Alle Einträge löschen?</span><button class="btn" data-act="reset" style="color:var(--bad)">Ja, löschen</button><button class="btn ghost" data-act="resetNo">Abbrechen</button>':'<button class="btn ghost" data-act="resetAsk">Alles zurücksetzen</button>')+'</div>'+
@@ -878,8 +1066,8 @@ function keyBox(){
     (MODE==='demo'?'<p><b>Im Demo-Modus ohne Wirkung.</b></p>':'')+
     '<div class="row"><input class="inp" id="tmdbKey" type="password" autocomplete="off" placeholder="TMDB-Schlüssel" value="'+esc(S.settings.tmdbKey)+'"><button class="btn pri" data-act="saveKey">Speichern &amp; prüfen</button></div>'+(ui.keyMsg?'<p style="margin:8px 0 0" class="'+(ui.keyMsg.ok?'ok':'err')+'">'+esc(ui.keyMsg.t)+'</p>':'');
 }
-function gbBox(){return '<p>Für deutsche Buchtitel und Cover nutzt Fundus Google Books. Ohne eigenen Schlüssel ist das gemeinsame Kontingent meist erschöpft, dann springt Open Library ein (oft englische Titel). Schlüssel kostenlos: Google Cloud Console → „Books API“ aktivieren → Anmeldedaten → API-Schlüssel (1.000 Abfragen pro Tag).</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
-function relNote(){return '<p class="note" style="margin-top:18px">Prototyp: Die Prüfung läuft beim Öffnen dieser Ansicht oder per Knopf. In der fertigen App läuft sie täglich im Hintergrund und meldet Neues per Push.</p>'}
+function gbBox(){return '<p>Genres und ähnliche Bücher kommen von Open Library (deutsche Ausgaben), Titelsuche und neue Bücher Deiner Autoren von Google Books. Ein Standardschlüssel ist hinterlegt, ein eigener hat Vorrang.</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
+function relNote(){return '<p class="note" style="margin-top:18px">Automatische Prüfung einmal täglich, solange die App geöffnet ist. Letzte Prüfung: '+fmtDT(S.lastCheck)+'.</p>'}
 function evRow(e){
   const M=MEDIA[e.m];const d=String(e.date);let big,small;
   if(d.length===4){big=d;small='Jahr'}else{const [y,mo,da]=d.split('-');big=da+'.'+mo+'.';small=y}
@@ -887,7 +1075,7 @@ function evRow(e){
   const it=e.img?{...e.src,img:e.img}:e.src;
   return '<div class="ev f-'+e.m+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span><span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
 }
-async function checkReleases(){
+async function checkReleases(opts={}){
   if(ui.rel&&ui.rel.busy)return;
   ui.rel={busy:true,list:[],errors:0};render();
   const ev=[];let errors=0;
@@ -899,7 +1087,12 @@ async function checkReleases(){
   const seen=new Set();const list=ev.filter(e=>{if(seen.has(e.id))return false;seen.add(e.id);return true});
   list.forEach(e=>{e.up=String(e.date).length===4?+e.date>new Date().getFullYear():dayDiff(e.date)>0;e.isNew=!S.seen[e.id];S.seen[e.id]=1});
   list.sort((a,b)=>a.up!==b.up?(a.up?-1:1):a.up?String(a.date).localeCompare(String(b.date)):String(b.date).localeCompare(String(a.date)));
-  save();ui.rel={busy:false,list,errors};render();
+  S.lastCheck=Date.now();save();ui.rel={busy:false,list,errors,at:S.lastCheck};render();
+  /* Hinweis nach automatischer Prüfung, wenn erlaubt und Neues dabei ist */
+  const fresh=list.filter(e=>e.isNew);
+  if(opts.auto&&fresh.length&&'Notification' in window&&Notification.permission==='granted'){
+    try{const n=new Notification('Fundus: '+fresh.length+(fresh.length===1?' Neuerscheinung':' Neuerscheinungen'),{body:fresh.slice(0,4).map(e=>e.src.title+' – '+e.label).join('\n'),tag:'fundus-releases'});n.onclick=()=>{window.focus();ui.tab='neu';render()}}catch(e){}
+  }
 }
 
 /* Streamingdienste */
@@ -1021,7 +1214,7 @@ function renderIntro(){
   el.innerHTML='<div class="intro-in">'+bar+body+'<div class="intro-f">'+foot+'</div></div>';
   el.hidden=false;document.body.style.overflow='hidden';
 }
-function finishIntro(){S.onboarded=true;save();ui.intro=null;ui.pick=null;renderIntro();resetPools();ui.tab='entdecken';ui.med='alle';render();window.scrollTo({top:0})}
+function finishIntro(){S.onboarded=true;save();setTimeout(dailyCheck,3000);ui.intro=null;ui.pick=null;renderIntro();resetPools();ui.tab='entdecken';ui.med='alle';render();window.scrollTo({top:0})}
 
 /* ---------- Toast ---------- */
 let tT=null,undo=null;
@@ -1051,6 +1244,11 @@ const ACT={
   reshuffle(b){const m=b.dataset.m;resetPools(m==='alle'?null:[m]);render()},
   pick(b){openSheet(b.dataset.m)},
   closePick(){closeSheet()},
+  detail(b){openDetail(b.dataset.k)},
+  closeDetail(){closeDetail()},
+  dset(b){const D=ui.detail;if(!D)return;const st=b.dataset.st||null;const prev=setStatus(D.it,st);if(st==='like'||st==='dislike'||!st)delete ui.pool[D.it.m];renderDetail();render();
+    toast(st?LBL[st]:'Zurückgesetzt',()=>{if(prev)S.items[D.it.k]=prev;else delete S.items[D.it.k];save();if(ui.detail)renderDetail();render()})},
+  fltReset(b){const m=b.dataset.m;ui.flt[m]={g:'',y:'',r:0,sort:'match'};ui.shown[m]=12;render()},
   pickGenre(b){const p=ui.pick;if(!p||!p.genres)return;const g=p.genres.find(x=>String(x.id)===b.dataset.g);if(!g)return;
     if(p.q){p.q='';p.search=null;const i=$('#pickQ');if(i)i.value=''}
     if(p.blocks[g.id])removeGenre(p,g.id);else addGenre(p,g.id);
@@ -1064,6 +1262,7 @@ const ACT={
     if(MODE==='demo'){ui.keyMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
+  async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
   async saveGb(){const v=$('#gbKey').value.trim();S.settings.gbKey=v;save();GB_ANON_OK=true;resetPools(['buch']);
     if(MODE==='demo'){ui.gbMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{const r=await gbooks('subject:"fantasy"','&langRestrict=de',6e5);ui.gbMsg={ok:true,t:v?'Schlüssel funktioniert.':'Google Books ohne Schlüssel erreichbar.'}}catch(e){ui.gbMsg={ok:false,t:e.message+(v?'':' – eigenen Schlüssel eintragen.')}}render()},
@@ -1085,24 +1284,46 @@ const ACT={
 };
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');
-  if(!b){if(e.target.id==='sheet')closeSheet();return}
+  if(!b){if(e.target.id==='sheet'){if(ui.detail)closeDetail();else closeSheet()}return}
   if(b.disabled)return;
   const f=ACT[b.dataset.act];if(f){e.preventDefault();f(b,e)}
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.flt){const f=flt(t.dataset.m);f[t.dataset.flt]=t.dataset.flt==='r'?+t.value:t.value;ui.shown[t.dataset.m]=12;render();return}
   if(t.dataset.set){const k=t.dataset.set;S.settings[k]=t.type==='checkbox'?t.checked:t.value;save();
     if(k==='onlyMine'||k==='includeFree')resetPools(['film','serie']);render();return}
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
 document.addEventListener('input',e=>{if(e.target.id==='pickQ')pickSearch(e.target.value)});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.pick&&ui.pick.host==='sheet')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
   renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
   if(ui.intro&&introSteps()[ui.intro.i]==='services')renderIntro();
 }
 
+/* ---------- Tagesrhythmus ----------
+   Vorschläge: Antworten der Dienste gelten 24 h, danach wird neu abgefragt.
+   Neuerscheinungen (Merkliste + „Gefällt mir“): automatisch einmal täglich,
+   beim Öffnen der App und stündlich geprüft, solange sie geöffnet ist. */
+const DAY=24*H;
+function dailyCheck(){
+  if(MODE!=='live'||!S.onboarded||S.settings.autoCheck===false||ui.intro)return;
+  if(Date.now()-(S.lastCheck||0)<DAY-30*60e3)return;
+  if(!Object.values(S.items).some(x=>x.status==='like'||x.status==='watch'))return;
+  setTimeout(()=>checkReleases({auto:true}),1500);
+}
+const fmtDT=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'noch nie';
+function updBox(){
+  const st=S.settings;const nxt=S.lastCheck?S.lastCheck+DAY:0;
+  const nperm='Notification' in window?Notification.permission:'unsupported';
+  return '<p>Vorschläge werden täglich aus frischen Daten gebildet. Neue Folgen, Staffeln, Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“ prüft Fundus einmal täglich automatisch, sobald die App geöffnet ist.</p>'+
+    '<div class="opts"><label class="switch"><input type="checkbox" id="sw-auto" data-set="autoCheck"'+(st.autoCheck!==false?' checked':'')+'> Täglich automatisch prüfen</label>'+
+    '<p class="note" style="margin:0">Letzte Prüfung: '+fmtDT(S.lastCheck)+(nxt&&st.autoCheck!==false?' · nächste ab '+fmtDT(nxt):'')+'</p>'+
+    (nperm==='default'?'<div><button class="btn" data-act="notifAsk">'+IC.bell+'Hinweise im Browser erlauben</button></div>':nperm==='granted'?'<p class="ok" style="margin:0">Browser-Hinweise sind erlaubt.</p>':nperm==='denied'?'<p class="note" style="margin:0">Browser-Hinweise sind blockiert (in den Browser-Einstellungen änderbar).</p>':'')+
+    '</div><p class="note" style="margin:10px 0 0">Ohne geöffnete App kann eine reine Web-App nicht prüfen. Dafür bräuchte es einen kleinen Server-Dienst.</p>';
+}
 /* ---------- Start ---------- */
 function demoSeed(){
   const s=newState();s.onboarded=true;s.settings.providers=[8,9,337];
@@ -1124,6 +1345,7 @@ async function start(){
   if(!loadState())S.settings.theme=th;
   applyTheme();render();
   if(!S.onboarded)startIntro();
+  dailyCheck();setInterval(dailyCheck,36e5);
 }
 S=newState();
 try{const t=localStorage.getItem('fundus.theme');if(t)S.settings.theme=t}catch(e){}
