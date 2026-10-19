@@ -174,6 +174,9 @@ details.rated .base{margin-top:8px}
 .flag{font-family:var(--f-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;border-radius:4px;padding:1px 6px}
 .flag.new{background:var(--mark);color:var(--surface)}
 .flag.demo{border:1px solid var(--line);color:var(--ink-2)}
+.relprog{display:grid;gap:6px;margin:0 0 14px}
+.relprog .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.relprog .bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
 .subh{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin:18px 0 8px}
 
 .set{display:grid;gap:14px;max-width:820px}
@@ -446,7 +449,9 @@ function limiter(max,win){const ts=[];return async function(){for(;;){const now=
 const GATE={tmdb:limiter(35,1000),dz:limiter(40,5000),it:limiter(18,60000),ol:limiter(60,60000),gb:limiter(60,60000),tvm:limiter(18,10000),fy:limiter(30,60000)};
 /* erste Quelle, die etwas liefert; Fehler nur, wenn alle scheitern */
 async function chain(...fns){let err=null;for(const f of fns){try{const r=await f();if(r&&(!Array.isArray(r)||r.length))return r}catch(e){err=err||e}}if(err)throw err;return []}
-async function getJSON(url,gate,name){await gate();const r=await fetch(url);if(r.status===429)throw new Error(name+': zu viele Anfragen, bitte kurz warten');if(!r.ok)throw new Error(name+' antwortet mit Fehler '+r.status);return r.json()}
+/* fetch mit Zeitlimit: hängende Verbindungen (z. B. mobil) brechen nach 15 s ab */
+function fetchT(url,opts={},ms=15000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{...opts,signal:c.signal}).catch(e=>{throw e.name==='AbortError'?new Error('Zeitüberschreitung'):e}).finally(()=>clearTimeout(t))}
+async function getJSON(url,gate,name){await gate();const r=await fetchT(url);if(r.status===429)throw new Error(name+': zu viele Anfragen, bitte kurz warten');if(!r.ok)throw new Error(name+' antwortet mit Fehler '+r.status);return r.json()}
 let jpN=0;
 function jsonp(url,param='callback'){return new Promise((res,rej)=>{
   const cb='__fundus'+(++jpN);const s=document.createElement('script');
@@ -467,7 +472,7 @@ async function tmdb(path,params={}){
   const ttl=/^\/tv\/\d+$/.test(path)?6*H:/watch\/providers$/.test(path)?12*H:/^\/(search|configuration)/.test(path)?6e5:24*H;
   return cached(u.toString(),async()=>{
     await GATE.tmdb();
-    const r=await fetch(u,{headers:h});
+    const r=await fetchT(u,{headers:h});
     if(r.status===401)throw new Error('TMDB-Schlüssel ungültig');
     if(r.status===429)throw new Error('TMDB: zu viele Anfragen, bitte kurz warten');
     if(!r.ok)throw new Error('TMDB antwortet mit Fehler '+r.status);
@@ -1060,14 +1065,17 @@ const VIEWS={
   neu(){
     let h='<div class="head"><h2>Neuerscheinungen</h2><button class="btn pri" data-act="check"'+(ui.rel&&ui.rel.busy?' disabled':'')+'>'+IC.bell+(ui.rel&&ui.rel.busy?'Prüfe …':'Jetzt prüfen')+'</button></div>';
     h+='<p class="lead">Geprüft werden alle Einträge mit „Gefällt mir“ oder auf der Merkliste: neue Folgen und Staffeln, neue Alben, neue Bücher der Autoren, neue Podcast-Folgen und Filme, die neu bei Deinen Diensten laufen.</p>';
-    if(!ui.rel){queueMicrotask(checkReleases);return h+skel(3)}
-    if(ui.rel.busy&&!ui.rel.list.length)return h+skel(3);
-    const L=ui.rel.list;
-    if(!L.length)return h+'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>'+relNote();
+    if(!ui.rel){const c=relLoad();ui.rel={busy:false,list:c?c.list:[],at:c&&c.at,errors:0};
+      if(!c||Date.now()-c.at>6*H)queueMicrotask(checkReleases)}
+    const R0=ui.rel;
+    if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">Prüfe '+R0.done+' von '+R0.total+' Einträgen …'+(R0.fresh&&R0.fresh.length?' '+R0.fresh.length+' Treffer bisher':'')+'</span></div>';
+    const L=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
+    if(!L.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
+    if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
     const up=L.filter(e=>e.up),past=L.filter(e=>!e.up);
     if(up.length)h+='<div class="subh">Kommend</div><div class="rel">'+up.map(evRow).join('')+'</div>';
     if(past.length)h+='<div class="subh">Erschienen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
-    if(ui.rel.errors)h+='<p class="err" style="margin-top:10px">'+ui.rel.errors+' Abfragen sind fehlgeschlagen.</p>';
+    if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' Einträge konnten nicht geprüft werden (Dienst nicht erreichbar oder Limit)':'',R0.skipped?R0.skipped+' übersprungen (Zeitlimit)':''].filter(Boolean).join(' · ')+'. Beim nächsten Prüfen erneut versucht.</p>';
     return h+relNote();
   },
   basis(){
@@ -1119,23 +1127,46 @@ function evRow(e){
   const it=e.img?{...e.src,img:e.img}:e.src;
   return '<div class="ev f-'+e.m+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span><span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
 }
+/* Neuerscheinungen: Ergebnisse erscheinen schrittweise, letzter Stand wird gespeichert.
+   Zeitlimit je Eintrag 25 s, gesamt 3 Min.; hängt nichts mehr dauerhaft. */
+const RKEY=()=>'fundus.rel.'+MODE;
+function relLoad(){try{const o=JSON.parse(localStorage.getItem(RKEY())||'null');if(o&&Array.isArray(o.list))return o}catch(e){}return null}
+function relStore(list,at){try{localStorage.setItem(RKEY(),JSON.stringify({at,list:list.map(e=>({...e,src:strip(e.src)}))}))}catch(e){}}
+function relSort(list){
+  list.forEach(e=>{e.up=String(e.date).length===4?+e.date>new Date().getFullYear():dayDiff(e.date)>0});
+  return list.sort((a,b)=>a.up!==b.up?(a.up?-1:1):a.up?String(a.date).localeCompare(String(b.date)):String(b.date).localeCompare(String(a.date)));
+}
+let relRun=0;
 async function checkReleases(opts={}){
   if(ui.rel&&ui.rel.busy)return;
-  ui.rel={busy:true,list:[],errors:0};render();
-  const ev=[];let errors=0;
-  for(const m of ['serie','musik','buch','podcast','film']){
+  const run=++relRun;const t0=Date.now();
+  const jobs=[];
+  for(const m of ['serie','film','musik','buch','podcast']){
     const A=adapter(m);if(!A)continue;
     const its=m==='film'?byStatus(m,'watch'):byStatus(m,'like').concat(byStatus(m,'watch'));
-    await pool(its,4,async it=>{try{(await A.releases(it)).forEach(e=>ev.push({...e,m,src:it}))}catch(err){errors++}});
+    its.forEach(it=>jobs.push({m,A,it}));
   }
-  const seen=new Set();const list=ev.filter(e=>{if(seen.has(e.id))return false;seen.add(e.id);return true});
-  list.forEach(e=>{e.up=String(e.date).length===4?+e.date>new Date().getFullYear():dayDiff(e.date)>0;e.isNew=!S.seen[e.id];S.seen[e.id]=1});
-  list.sort((a,b)=>a.up!==b.up?(a.up?-1:1):a.up?String(a.date).localeCompare(String(b.date)):String(b.date).localeCompare(String(a.date)));
-  S.lastCheck=Date.now();save();ui.rel={busy:false,list,errors,at:S.lastCheck};render();
-  /* Hinweis nach automatischer Prüfung, wenn erlaubt und Neues dabei ist */
-  const fresh=list.filter(e=>e.isNew);
-  if(opts.auto&&fresh.length&&'Notification' in window&&Notification.permission==='granted'){
-    try{const n=new Notification('Fundus: '+fresh.length+(fresh.length===1?' Neuerscheinung':' Neuerscheinungen'),{body:fresh.slice(0,4).map(e=>e.src.title+' – '+e.label).join('\n'),tag:'fundus-releases'});n.onclick=()=>{window.focus();ui.tab='neu';render()}}catch(e){}
+  const prev=ui.rel&&!ui.rel.busy?ui.rel.list:(relLoad()||{}).list||[];
+  ui.rel={busy:true,list:prev,fresh:[],done:0,total:jobs.length,errors:0,skipped:0,at:ui.rel&&ui.rel.at};render();
+  const ev=[],seenId=new Set();let errors=0,skipped=0,done=0,lastPaint=0;
+  const paint=(force)=>{if(run!==relRun)return;const now=Date.now();if(!force&&now-lastPaint<700)return;lastPaint=now;
+    ui.rel={...ui.rel,fresh:relSort(ev.slice()),done,errors,skipped};if(ui.tab==='neu'){const y=window.scrollY;render();window.scrollTo(0,y)}};
+  try{
+    await pool(jobs,4,async j=>{
+      if(Date.now()-t0>180000){skipped++;done++;return}
+      try{(await timeout(j.A.releases(j.it),25000)).forEach(e=>{if(seenId.has(e.id))return;seenId.add(e.id);ev.push({...e,m:j.m,src:j.it})})}catch(err){errors++}
+      done++;paint(false);
+    });
+  }finally{
+    if(run===relRun){
+      const list=relSort(ev);list.forEach(e=>{e.isNew=!S.seen[e.id];S.seen[e.id]=1});
+      S.lastCheck=Date.now();save();relStore(list,S.lastCheck);
+      ui.rel={busy:false,list,errors,skipped,at:S.lastCheck};render();
+      const fresh=list.filter(e=>e.isNew);
+      if(opts.auto&&fresh.length&&'Notification' in window&&Notification.permission==='granted'){
+        try{const n=new Notification('Fundus: '+fresh.length+(fresh.length===1?' Neuerscheinung':' Neuerscheinungen'),{body:fresh.slice(0,4).map(e=>e.src.title+' – '+e.label).join('\n'),tag:'fundus-releases'});n.onclick=()=>{window.focus();ui.tab='neu';render()}}catch(e){}
+      }
+    }
   }
 }
 
