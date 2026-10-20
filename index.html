@@ -859,7 +859,7 @@ async function gameDetail(it){
 }
 
 /* ---------- Konzerte in der Nähe (Ticketmaster) ---------- */
-const TM_DEFAULT='';
+const TM_DEFAULT='n2zn7nBOmZ6OjjIcVFQfRaApC2hhRnhh';
 const tmKey=()=>(S.settings.tmKey||'').trim()||TM_DEFAULT;
 const GATE_TM=limiter(4,1000);
 const tm=(path,params,ttl=12*H)=>{const k=tmKey();if(!k)return Promise.reject(new Error('Ticketmaster-Schlüssel fehlt'));
@@ -890,7 +890,7 @@ async function concertsFor(it){
   }).filter(e=>e&&dayDiff(e.date)>=0);
 }
 function concertBox(){const st=S.settings;
-  return '<p>Konzerte Deiner Künstler (Gefällt mir, ♥, Merkliste) im Umkreis Deiner PLZ. Neue Termine kommen auch als Push-Mitteilung. Quelle: Ticketmaster (Eventim-Termine teils nicht enthalten).</p>'+
+  return '<p>Konzerte Deiner Künstler (Gefällt mir, ♥, Merkliste) im Umkreis Deiner PLZ, neue Termine auch per Push. Quelle ist Ticketmaster, die einzige frei nutzbare Konzert-Datenbank. Sie enthält in Deutschland nur einen Teil der Termine, viele Metal- und Clubkonzerte laufen über Eventim und andere und fehlen. In der Detailansicht eines Künstlers gibt es deshalb zusätzlich Links zur Suche bei Eventim und Songkick.</p>'+
     '<div class="row"><label class="fl"><span class="st">PLZ</span><input class="inp" id="plz" inputmode="numeric" maxlength="5" placeholder="z. B. 10115" value="'+esc(st.plz||'')+'" style="width:110px;flex:none"></label>'+
     '<label class="fl"><span class="st">Umkreis</span><select class="inp" id="radius" data-set="radius">'+[['50','50 km'],['100','100 km'],['150','150 km'],['250','250 km'],['400','400 km'],['1000','ganz Deutschland']].map(([v,l])=>'<option value="'+v+'"'+(String(st.radius||150)===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label>'+
     '<button class="btn" data-act="savePlz" style="align-self:end">Speichern</button></div>'+(ui.plzMsg?'<p class="'+(ui.plzMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.plzMsg.t)+'</p>':'')+
@@ -985,8 +985,11 @@ const gbKeyNow=()=>(S.settings.gbKey||'').trim()||GB_DEFAULT;
 const gbVolume=id=>cached('gbv'+id,()=>getJSON('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(id)+'?country=DE&key='+encodeURIComponent(gbKeyNow()),GATE.gb,'Google Books'),24*H);
 async function detailFor(it){
   const d=await detailFor0(it);
-  if(it.m==='musik'&&concertsOn()){try{const ev=await concertsFor(it);d.sections=d.sections||[];
-    d.sections.unshift({title:'Konzerte (Umkreis '+((+S.settings.radius||150)>=1000?'Deutschland':(S.settings.radius||150)+' km')+')',rows:ev.length?ev.map(e=>({t:fmtDate(e.date)+' · '+e.text.split(' · ')[0],sub:e.text.split(' · ').slice(1).join(' · '),url:e.link})):[{t:'Keine Termine in Deiner Nähe',sub:'Quelle: Ticketmaster'}]})}catch(e){}}
+  if(it.m==='musik'&&MODE==='live'){d.sections=d.sections||[];const q=encodeURIComponent(it.title);
+    let rows=[];if(concertsOn()){try{rows=(await concertsFor(it)).map(e=>({t:fmtDate(e.date)+' · '+e.text.split(' · ')[0],sub:e.text.split(' · ').slice(1).join(' · ')+' · Ticketmaster',url:e.link}))}catch(e){}}
+    /* Ticketmaster deckt Deutschland nur teilweise ab: Suche bei den großen Anbietern immer anbieten */
+    rows=rows.concat([{t:'Bei Eventim suchen',sub:'größter Ticketanbieter in Deutschland',url:'https://www.eventim.de/search/?searchterm='+q},{t:'Bei Songkick suchen',sub:'Tourdaten weltweit',url:'https://www.songkick.com/search?query='+q+'&type=artists'}]);
+    d.sections.unshift({title:'Konzerte'+(concertsOn()?' (Umkreis '+((+S.settings.radius||150)>=1000?'Deutschland':(S.settings.radius||150)+' km')+')':''),rows})}
   return d;
 }
 async function detailFor0(it){

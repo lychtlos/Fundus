@@ -139,7 +139,7 @@ async function game(it,user){
   return (r.results||[]).filter(x=>x.id!==it.id&&x.released&&dd(x.released)<=0&&dd(x.released)>=-1).map(x=>({id:'game:dev:'+x.id,title:dev.name,text:'Neues Spiel: '+x.name}));
 }
 /* Konzerte (Ticketmaster): neue Termine im Umkreis; erster Lauf merkt nur den Bestand */
-const TM_ENV=process.env.TM_KEY||'';
+const TM_ENV=process.env.TM_KEY||'n2zn7nBOmZ6OjjIcVFQfRaApC2hhRnhh';
 const geoCache={};
 async function geo(plz){if(!geoCache[plz]){const d=await j('https://api.zippopotam.us/de/'+plz);const p=(d.places||[])[0];geoCache[plz]=p?{lat:+p.latitude,lon:+p.longitude}:null}return geoCache[plz]}
 function geohash(lat,lon,prec=6){const B='0123456789bcdefghjkmnpqrstuvwxyz';let la=[-90,90],lo=[-180,180],h='',bit=0,ch=0,even=true;
