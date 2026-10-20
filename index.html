@@ -216,6 +216,27 @@ select.inp{flex:0 1 220px}
 .tile[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .tile[aria-pressed="true"] .art{outline:3px solid var(--accent);outline-offset:-3px}
 .tile .tick svg{width:14px;height:14px}
+.lovebtn svg{color:#D9435A}
+.tile.is-love .tick{background:#D9435A;border-color:#D9435A;color:#fff}
+.tile.is-love .art{outline-color:#D9435A}
+.pill .hb{border:0;background:none;width:22px;height:22px;padding:0;display:grid;place-items:center;color:var(--ink-2);margin-left:-6px}
+.pill .hb svg{width:15px;height:15px}
+.pill.is-love{box-shadow:inset 0 0 0 1px #D9435A}
+.pill.is-love .hb{color:#D9435A}
+.dt-acts .btn[data-st="love"][aria-pressed="true"]{background:#D9435A;border-color:#D9435A;color:#fff}
+.tn{display:grid;gap:16px}
+.tn-fd summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink-2);margin-bottom:8px}
+.tn-f{display:grid;gap:10px}
+.tn-f>div{display:grid;gap:5px}
+.tn-f .row{display:flex;flex-wrap:wrap;gap:12px}
+.tn-card{background:var(--surface);border-radius:12px;overflow:hidden}
+.tn-hero{height:180px;background-size:cover;background-position:center 25%;position:relative}
+.tn-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,var(--surface))}
+.tn-body{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:14px 16px 16px}
+.tn-hero+.tn-body{margin-top:-70px;position:relative}
+.tn-body .art{width:120px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.tn-txt{min-width:0;display:flex;flex-direction:column;gap:4px}
+@media (max-width:520px){.tn-body{grid-template-columns:88px 1fr}.tn-body .art{width:88px}.tn-hero{height:130px}}
 .pk-hint{padding:26px 0;text-align:center;color:var(--ink-2)}
 .fbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px}
 .fl{display:grid;gap:3px}
@@ -354,6 +375,8 @@ const IC={
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>',
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>',
+  heartF:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>',
   auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></svg>'
 };
 
@@ -396,7 +419,7 @@ document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&
 
 /* ---------- Zustand ---------- */
 let MODE='demo';
-const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true};
+const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true,digest:true};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,del:{},metaTs:0,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
@@ -412,7 +435,9 @@ const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','auth
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
 function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};if(!st){delete S.items[it.k];S.del[it.k]=Date.now()}else{S.items[it.k]={...strip(it),status:st,ts:Date.now()};delete S.del[it.k]}save();return prev}
 function restore(k,prev){S.del=S.del||{};if(prev){S.items[k]={...prev,ts:Date.now()};delete S.del[k]}else{delete S.items[k];S.del[k]=Date.now()}save()}
-const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
+/* 'like' umfasst auch Lieblingstitel ('love'); byExact unterscheidet */
+const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&(x.status===st||st==='like'&&x.status==='love')).sort((a,b)=>b.ts-a.ts);
+const byExact=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
 
 function applyTheme(){
   const t=S.settings.theme;const r=document.documentElement;
@@ -559,7 +584,7 @@ function tmdbAdapter(m){
     },
     async avail(it){if(tvOnly(it))return null;return parseAv(await tmdb('/'+type+'/'+it.id+'/watch/providers',{language:''}))},
     async releases(it){
-      if(m==='film')return filmAvEvents(it);
+      if(m==='film'){const [a,b]=await Promise.all([filmAvEvents(it),filmDateEvents(it).catch(()=>[])]);return a.concat(b)}
       if(tvOnly(it))return tvmazeEvents(it);
       let d;try{d=await tmdb('/tv/'+it.id)}catch(e){return tvmazeEvents(it)}
       const ev=[];const nx=d.next_episode_to_air,ls=d.last_episode_to_air;
@@ -571,6 +596,20 @@ function tmdbAdapter(m){
       return ev;
     }
   };
+}
+/* Deutsche Veröffentlichungstermine eines Films (TMDB release_dates, Land DE) */
+const REL_T={3:'Kinostart',4:'Digital erhältlich',5:'Auf DVD & Blu-ray'};
+async function movieDatesDE(id){
+  const d=await tmdb('/movie/'+id+'/release_dates',{language:''});
+  const de=(d.results||[]).find(r=>r.iso_3166_1==='DE');const out={};
+  (de&&de.release_dates||[]).forEach(r=>{const t=r.type===2?3:r.type;if(!REL_T[t])return;const dt=String(r.release_date).slice(0,10);if(!out[t]||dt<out[t])out[t]=dt});
+  return out;
+}
+async function filmDateEvents(it){
+  if(String(it.id).startsWith('f'))return [];
+  const ds=await movieDatesDE(it.id);
+  return Object.entries(ds).filter(([t,dt])=>dayDiff(dt)>=-30&&dayDiff(dt)<=365)
+    .map(([t,dt])=>({id:it.k+':rel'+t+':'+dt,date:dt,label:REL_T[t],text:t==='3'?'Im Kino in Deutschland':t==='4'?'Zum Kaufen oder Leihen':'Erscheint auf Disc'}));
 }
 async function filmAvEvents(it){
   const av=await availFetch(it);if(!av)return [];
@@ -789,18 +828,19 @@ function ensureAv(m,list){
 /* ---------- Vorschlags-Logik ---------- */
 async function buildPool(m){
   const A=adapter(m);if(!A)return [];
-  const likes=byStatus(m,'like'),watch=byStatus(m,'watch'),dis=byStatus(m,'dislike');
+  const loves=byExact(m,'love'),likesOnly=byExact(m,'like'),likes=byStatus(m,'like'),watch=byStatus(m,'watch'),dis=byStatus(m,'dislike');
   if(!likes.length&&!watch.length)return [];
   /* alle „Gefällt mir“ (neueste zuerst, Obergrenze je Bereich wegen API-Limits);
      Gewicht 1,0 für den neuesten Eintrag, linear fallend bis 0,5 für den ältesten */
   const CAP={film:40,serie:40,musik:40,buch:12,podcast:20}[m]||30;
-  const lk=likes.slice(0,CAP),n=lk.length;
-  const seeds=lk.map((s,i)=>[s,n>1?1-0.5*i/(n-1):1,false]).concat(watch.slice(0,10).map(s=>[s,0.4,true]));
+  /* Lieblingstitel (♥) zählen doppelt und sind immer dabei */
+  const lv=loves.slice(0,Math.min(20,CAP)),lk=likesOnly.slice(0,Math.max(0,CAP-lv.length)),n=lk.length;
+  const seeds=lv.map(s=>[s,2,false,true]).concat(lk.map((s,i)=>[s,n>1?1-0.5*i/(n-1):1,false])).concat(watch.slice(0,10).map(s=>[s,0.4,true]));
   const cand=new Map();const known=new Set(Object.values(S.items).map(x=>x.tk).filter(Boolean));
   const add=(it,w,why,ex)=>{if(!it||S.items[it.k]||(it.tk&&known.has(it.tk)))return;const key=it.tk||it.k;let c=cand.get(key);
     if(!c){c={it,score:0,reasons:[],ex:!!ex};cand.set(key,c)}else if(!ex)c.ex=false;
     c.score+=w;if(why&&w>0&&c.reasons.length<2&&!c.reasons.includes(why))c.reasons.push(why)};
-  await pool(seeds,4,async([s,w,wl])=>{(await A.similar(s)).forEach((r,i)=>add(r.it,w*r.w*(1-i/60),r.why||(wl?'Ähnlich wie „'+s.title+'“ (Merkliste)':'Weil Dir „'+s.title+'“ gefällt')))});
+  await pool(seeds,4,async([s,w,wl,lov])=>{(await A.similar(s)).forEach((r,i)=>add(r.it,w*r.w*(1-i/60),r.why||(wl?'Ähnlich wie „'+s.title+'“ (Merkliste)':lov?'Weil „'+s.title+'“ ein Lieblingstitel ist':'Weil Dir „'+s.title+'“ gefällt')))});
   await pool(dis.slice(0,10),4,async s=>{(await A.similar(s)).forEach(r=>add(r.it,-0.7*r.w,null))});
   try{(await A.explore(likes.concat(watch),[...cand.values()].filter(c=>c.score>0).map(c=>c.it))).forEach(r=>add(r.it,0.35*r.w,r.why,true))}catch(e){}
   const list=[...cand.values()].filter(c=>c.score>0);
@@ -853,7 +893,8 @@ async function detailFor(it){
     const facts=[];let people=[];const sections=[];
     if(m==='film'){
       const dir=(d.credits&&d.credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name);
-      facts.push(['Erschienen',fmtDate(d.release_date)],['Laufzeit',fmtMin(d.runtime)],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Regie',dir.join(', ')],['Originaltitel',d.original_title!==d.title?d.original_title:'']);
+      let ds={};try{ds=await movieDatesDE(it.id)}catch(e){}
+      facts.push(['Erschienen',fmtDate(d.release_date)],['Kinostart (DE)',fmtDate(ds[3])],['Digital (DE)',fmtDate(ds[4])],['Laufzeit',fmtMin(d.runtime)],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Regie',dir.join(', ')],['Originaltitel',d.original_title!==d.title?d.original_title:'']);
       people=(d.credits&&d.credits.cast||[]).slice(0,12).map(c=>({name:c.name,role:c.character,img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
     }else{
       facts.push(['Erstausstrahlung',fmtDate(d.first_air_date)],['Status',TV_STATUS[d.status]||d.status],['Umfang',(d.number_of_seasons||0)+' Staffeln · '+(d.number_of_episodes||0)+' Folgen'],['Sender',(d.networks||[]).map(n=>n.name).join(', ')],['Idee',(d.created_by||[]).map(c=>c.name).join(', ')],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Originaltitel',d.original_name!==d.name?d.original_name:'']);
@@ -906,7 +947,7 @@ function openDetail(k){
   detailFor(it).then(d=>{if(ui.detail&&ui.detail.k===k){ui.detail.data=d;renderDetail()}}).catch(e=>{if(ui.detail&&ui.detail.k===k){ui.detail.err=e.message||String(e);renderDetail()}});
 }
 function closeDetail(){if(history.state&&history.state.ov==='detail'){history.back();return}doCloseDetail()}
-function doCloseDetail(){ui.detail=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
+function doCloseDetail(){ui.detail=null;if(ui.tonight){renderTonight();render();return}const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
 function avFull(it){
   if(!AV.has(it.k))return '<div class="subh">Wo verfügbar</div><p class="note">Wird geladen …</p>';
   const av=AV.get(it.k);if(!av)return '';const mine=new Set(S.settings.providers);
@@ -919,9 +960,9 @@ function renderDetail(){
   const D=ui.detail;const el=$('#sheet');if(!D)return;
   const it=S.items[D.k]?{...D.it,...S.items[D.k]}:D.it;const d=D.data;const M=MEDIA[it.m];const k=esc(it.k);
   const st=S.items[it.k]&&S.items[it.k].status;
-  const stLbl={watch:'Auf der Merkliste',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
+  const stLbl={watch:'Auf der Merkliste',love:'♥ Lieblingstitel',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
   const btn=(a,l,ic)=>'<button class="btn'+(st===a?' pri':'')+'" data-act="dset" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+(st===a)+'">'+ic+l+'</button>';
-  const acts='<div class="dt-acts">'+btn('watch','Merken',IC.mark)+btn('like','Gefällt mir',IC.up)+btn('dislike','Gefällt nicht',IC.down)+btn('hide','Kein Interesse',IC.x)+(st?'<button class="btn ghost" data-act="dset" data-st="" data-k="'+k+'">Zurücksetzen</button>':'')+'</div>';
+  const acts='<div class="dt-acts">'+btn('watch','Merken',IC.mark)+btn('love','Liebling',st==='love'?IC.heartF:IC.heart)+btn('like','Gefällt mir',IC.up)+btn('dislike','Gefällt nicht',IC.down)+btn('hide','Kein Interesse',IC.x)+(st?'<button class="btn ghost" data-act="dset" data-st="" data-k="'+k+'">Zurücksetzen</button>':'')+'</div>';
   const lk='<div class="row">'+links(it).map(l=>'<a class="btn ghost" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+IC.ext+'</a>').join('')+'</div>';
   let main='';
   if(!d&&!D.err)main='<div class="skel" style="height:200px"></div>';
@@ -1000,10 +1041,10 @@ function card(it,mode,reasons){
   let acts='';
   if(mode==='discover'){
     acts=ui.knownOpen===it.k
-      ?'<button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Gefällt mir nicht</button><button class="btn ghost" data-act="known" data-k="'+k+'">Zurück</button>'
+      ?'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'Liebling</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="known" data-k="'+k+'">Zurück</button>'
       :'<button class="btn" data-act="watch" data-k="'+k+'">'+IC.mark+'Merken</button><button class="btn" data-act="known" data-k="'+k+'">'+IC.check+'Kenne ich</button><button class="btn ghost" data-act="hide" data-k="'+k+'">'+IC.x+'Kein Interesse</button>'+lnk;
   }else if(mode==='watch'){
-    acts='<button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
+    acts='<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
   return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
@@ -1047,6 +1088,7 @@ const VIEWS={
     const fs=ui.med==='alle'||isFS(ui.med);
     let h='<div class="head"><h2>Vorschläge für Dich</h2>';
     if(fs)h+='<label class="switch"><input type="checkbox" id="sw-only" data-set="onlyMine"'+(S.settings.onlyMine?' checked':'')+(S.settings.providers.length?'':' disabled')+'> Nur meine Dienste</label>';
+    if(fs)h+='<button class="btn pri" data-act="tonight">'+IC.moon+'Heute Abend</button>';
     h+='</div>'+medChips();
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
     if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
@@ -1079,11 +1121,11 @@ const VIEWS={
     return h+relNote();
   },
   basis(){
-    let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro erneut starten</button></div><p class="lead">Grundlage aller Vorschläge. Alles mit „Gefällt mir“ fließt ein, „Gefällt mir nicht“ wertet ähnliche Titel ab, „Kein Interesse“ blendet nur aus.</p>';
+    let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro erneut starten</button></div><p class="lead">Grundlage aller Vorschläge. ♥ Lieblingstitel zählen doppelt (Herz antippen), alles mit „Gefällt mir“ fließt ein, „Gefällt mir nicht“ wertet ähnliche Titel ab, „Kein Interesse“ blendet nur aus.</p>';
     ORDER.forEach(m=>{
       const lk=byStatus(m,'like'),dl=byStatus(m,'dislike'),hd=byStatus(m,'hide');
       h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+lk.length+'</span></h3><button class="btn" data-act="pick" data-m="'+m+'">'+IC.plus+'Erweitern</button></div>';
-      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill"><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
+      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill'+(i.status==='love'?' is-love':'')+'"><button class="hb" data-act="loveTog" data-k="'+esc(i.k)+'" aria-label="'+(i.status==='love'?'Kein Lieblingstitel mehr':'Als Lieblingstitel markieren')+'" title="Lieblingstitel">'+(i.status==='love'?IC.heartF:IC.heart)+'</button><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
       if(dl.length||hd.length)h+='<details class="rated"><summary>Abgelehnt und ausgeblendet ('+(dl.length+hd.length)+')</summary><div class="base">'+dl.concat(hd).map(i=>'<span class="pill neg"><span>'+esc(i.title)+' · '+(i.status==='dislike'?'gefällt nicht':'kein Interesse')+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="Wieder vorschlagen">'+IC.x+'</button></span>').join('')+'</div></details>';
       h+='</section>';
     });
@@ -1227,8 +1269,8 @@ async function fillGenre(p,gid){
 }
 const gLabel=(p,gid)=>(p.genres||[]).find(g=>String(g.id)===String(gid))?.name||gid;
 function pickChipsHtml(p){if(!p.genres)return '<span class="note">Lade Genres …</span>';return p.genres.map(g=>'<button class="chip" data-act="pickGenre" data-g="'+esc(g.id)+'" aria-pressed="'+!!p.blocks[g.id]+'">'+esc(g.name)+'</button>').join('')}
-function tileHtml(it){reg(it);const on=S.items[it.k]&&S.items[it.k].status==='like';
-  return '<button class="tile f-'+it.m+'" data-act="pickToggle" data-k="'+esc(it.k)+'" aria-pressed="'+!!on+'">'+art(it)+'<span class="tick">'+IC.check+'</span>'+(hasRating(it)?'<span class="rbadge rt-'+rtClass(it.rating)+'">★ '+nf1.format(it.rating)+'</span>':'')+'<span class="tt">'+esc(it.title)+'</span><span class="ts">'+esc(it.sub||'')+'</span></button>'}
+function tileHtml(it){reg(it);const st=S.items[it.k]&&S.items[it.k].status;const on=st==='like'||st==='love';
+  return '<button class="tile f-'+it.m+(st==='love'?' is-love':'')+'" data-act="pickToggle" data-k="'+esc(it.k)+'" aria-pressed="'+on+'">'+art(it)+'<span class="tick">'+(st==='love'?IC.heartF:IC.check)+'</span>'+(hasRating(it)?'<span class="rbadge rt-'+rtClass(it.rating)+'">★ '+nf1.format(it.rating)+'</span>':'')+'<span class="tt">'+esc(it.title)+'</span><span class="ts">'+esc(it.sub||'')+'</span></button>'}
 function pickResHtml(p){
   let h=p.err?'<p class="err">'+esc(p.err)+'</p>':'';
   if(p.q.trim().length>=2){
@@ -1238,7 +1280,7 @@ function pickResHtml(p){
   }
   if(!p.order.length)return h+'<p class="pk-hint">Wähle oben ein oder mehrere Genres. Jedes Genre bringt '+PER_GENRE+' neue Titel. Oder suche direkt nach einem Titel.</p>';
   return h+p.order.slice().reverse().map(gid=>{const b=p.blocks[gid];const name=gLabel(p,gid);
-    const n=b.items.filter(it=>S.items[it.k]&&S.items[it.k].status==='like').length;
+    const n=b.items.filter(it=>S.items[it.k]&&(S.items[it.k].status==='like'||S.items[it.k].status==='love')).length;
     return '<section class="pk-sec"><div class="pk-h"><h3>'+esc(name)+'</h3><span class="st">'+b.items.length+' Titel'+(n?' · '+n+' gewählt':'')+'</span></div>'+
       (b.items.length?'<div class="tiles">'+b.items.map(tileHtml).join('')+'</div>':(b.busy?'':'<p class="note">Keine weiteren Titel in diesem Genre.</p>'))+
       (b.err?'<p class="err">'+esc(b.err)+'</p>':'')+
@@ -1264,6 +1306,85 @@ function openSheet(m){
   el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});
 }
 function closeSheet(){if(history.state&&history.state.ov==='sheet'){history.back();return}doCloseSheet()}
+/* ---------- Heute Abend: ein Vorschlag, passend zu Zeit, Lust und Diensten ---------- */
+const TN_DEF={type:'beide',max:0,minR:7,mine:true,genre:''};
+function tnOpts(){return {...TN_DEF,...(S.settings.tonight||{})}}
+function openTonight(){
+  ui.tonight={cur:null,busy:false,seen:new Set(),msg:'',run:0};
+  const el=$('#sheet');el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});renderTonight();nextTonight();
+}
+function tnChips(key,opts){const o=tnOpts();return '<div class="chips wrapchips">'+opts.map(([v,l])=>'<button class="chip" data-act="tnSet" data-key="'+key+'" data-v="'+esc(v)+'" aria-pressed="'+(String(o[key])===String(v))+'">'+esc(l)+'</button>').join('')+'</div>'}
+function renderTonight(){
+  const T=ui.tonight;if(!T)return;const o=tnOpts();const el=$('#sheet');
+  const gnames=[...new Set([...(gCache.movie||[]),...(gCache.tv||[])].map(g=>g.name))].filter(n=>!/Animation|Dokumentar|TV-Film|Reality|Talk|News|Soap|Kids|Kinder/i.test(n)).sort((a,b)=>a.localeCompare(b,'de'));
+  const filt='<div class="tn-f">'+
+    '<div><span class="st">Was?</span>'+tnChips('type',[['beide','Film oder Serie'],['film','Film'],['serie','Serie']])+'</div>'+
+    '<div><span class="st">Wie lange?</span>'+tnChips('max',[['0','Egal'],['100','bis 1:40 Std.'],['120','bis 2 Std.'],['150','bis 2:30 Std.']])+'</div>'+
+    '<div><span class="st">Bewertung</span>'+tnChips('minR',[['0','Egal'],['6.5','ab ★ 6,5'],['7','ab ★ 7'],['7.5','ab ★ 7,5']])+'</div>'+
+    '<div class="row"><label class="fl"><span class="st">Genre</span><select class="inp" id="tnGenre" data-tn="genre"><option value="">Alle Genres</option>'+gnames.map(n=>'<option'+(o.genre===n?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>'+
+    (S.settings.providers.length?'<label class="switch" style="align-self:end;padding-bottom:6px"><input type="checkbox" id="tnMine" data-tn="mine"'+(o.mine?' checked':'')+'> Nur bei meinen Diensten</label>':'<p class="note" style="margin:0;align-self:end">Tipp: Streamingdienste in den Einstellungen festlegen.</p>')+'</div></div>';
+  let res='';const c=T.cur;
+  if(T.busy&&!c)res='<div class="skel" style="height:260px"></div><p class="note">Suche passenden Titel …</p>';
+  else if(!c)res='<div class="empty"><p>'+esc(T.msg||'Nichts Passendes gefunden. Filter lockern oder mehr Titel als „Gefällt mir“ markieren.')+'</p></div>';
+  else{const it=c.it;const s=avSum(it);
+    res='<article class="tn-card f-'+it.m+'">'+(c.backdrop?'<div class="tn-hero" style="background-image:url(&quot;'+esc(c.backdrop)+'&quot;)"></div>':'')+
+      '<div class="tn-body"><button class="art-btn" data-act="detail" data-k="'+esc(it.k)+'">'+art(it)+'</button><div class="tn-txt">'+
+      '<div class="meta"><span class="mtag">'+MEDIA[it.m].one+'</span>'+(c.fromWatch?'<span>Von Deiner Merkliste</span>':'')+'</div>'+
+      '<h3 class="t" style="font-size:22px"><button class="tbtn" data-act="detail" data-k="'+esc(it.k)+'">'+esc(it.title)+'</button></h3>'+
+      '<p class="sub">'+[it.year,c.len,(it.genres||[]).slice(0,3).join(', ')].filter(Boolean).map(esc).join(' · ')+(hasRating(it)?' · '+ratingHtml(it):'')+'</p>'+
+      (s&&s.hits.length?'<span class="av av-yes">'+(s.hits[0].logo?'<img src="'+esc(s.hits[0].logo)+'" alt="">':'')+'Bei '+esc(provNames(s.hits))+'</span>':s&&s.others.length?'<span class="av av-other">'+esc(provNames(s.others))+'</span>':'')+
+      (c.overview?'<p class="dt-ov" style="font-size:14.5px;margin-top:6px">'+esc(c.overview.length>420?c.overview.slice(0,400).replace(/\s+\S*$/,'')+' …':c.overview)+'</p>':'')+
+      (c.why?'<p class="why">'+esc(c.why)+'</p>':'')+
+      '</div></div></article>';
+  }
+  const st=c&&S.items[c.it.k]&&S.items[c.it.k].status;
+  el.innerHTML='<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Heute Abend"><div class="sheet-h"><div class="row"><h2>Heute Abend</h2><button class="btn ghost" data-act="closePick" aria-label="Schließen">'+IC.x+'</button></div></div>'+
+    '<div class="sheet-b"><div class="tn"><div id="tnRes">'+res+'</div><details class="tn-fd"'+(ui.tnFOpen||!c?' open':'')+'><summary>Filter</summary>'+filt+'</details></div></div>'+
+    '<div class="sheet-f">'+(c?'<button class="btn" data-act="tnWatch"'+(st==='watch'?' aria-pressed="true"':'')+'>'+IC.mark+(st==='watch'?'Gemerkt':'Merken')+'</button><button class="btn ghost" data-act="tnNo">'+IC.x+'Kenne ich / will nicht</button>':'')+'<span class="sp" style="margin-right:auto"></span><button class="btn pri" data-act="tnNext"'+(T.busy?' disabled':'')+'>'+IC.shuffle+(T.busy?'Suche …':'Anderer Vorschlag')+'</button></div></div>';
+}
+async function tnDetail(it){
+  const type=it.m==='film'?'movie':'tv';const d=await tmdb('/'+type+'/'+it.id);
+  const len=it.m==='film'?d.runtime:((d.episode_run_time||[])[0]||(d.last_episode_to_air&&d.last_episode_to_air.runtime)||0);
+  if(!it.rating&&d.vote_average){it.rating=d.vote_average;it.votes=d.vote_count}
+  if((!it.genres||!it.genres.length)&&d.genres)it.genres=d.genres.map(g=>g.name);
+  return {len,overview:d.overview,backdrop:d.backdrop_path?TMDB_IMG+'w780'+d.backdrop_path:null,seasons:d.number_of_seasons};
+}
+async function nextTonight(){
+  const T=ui.tonight;if(!T||T.busy)return;const run=++T.run;T.busy=true;T.cur=null;T.msg='';renderTonight();
+  const o=tnOpts();const types=o.type==='beide'?['film','serie']:[o.type];
+  try{
+    if(MODE==='live'&&needsKey('film'))throw new Error('TMDB-Schlüssel fehlt');
+    await Promise.all(['movie','tv'].map(t=>tmdbGenres(t).catch(()=>{})));
+    if(T.run===run)renderTonight();
+    for(const m of types)if(!ui.pool[m]&&(byStatus(m,'like').length||byStatus(m,'watch').length)){try{ui.pool[m]=await buildPool(m)}catch(e){}}
+    const cands=[];
+    for(const m of types){
+      byExact(m,'watch').forEach(it=>cands.push({it,w:3,fromWatch:true,why:''}));
+      (ui.pool[m]||[]).slice(0,80).forEach((c,i)=>cands.push({it:c.it,w:2-i/60,why:c.reasons[0]||''}));
+    }
+    const pickW=a=>{const tot=a.reduce((x,c)=>x+Math.max(.1,c.w),0);let r=Math.random()*tot;for(const c of a){r-=Math.max(.1,c.w);if(r<=0)return c}return a[a.length-1]};
+    let pool_=cands.filter(c=>!T.seen.has(c.it.k)&&(!S.items[c.it.k]||S.items[c.it.k].status==='watch'));
+    const onlyMine=o.mine&&S.settings.providers.length;
+    for(let tries=0;tries<30&&pool_.length;tries++){
+      if(T.run!==run)return;
+      const c=pickW(pool_);pool_=pool_.filter(x=>x!==c);T.seen.add(c.it.k);
+      const it=c.it;
+      if(o.genre&&it.genres&&it.genres.length&&!it.genres.includes(o.genre))continue;
+      if(+o.minR&&hasRating(it)&&it.rating<+o.minR)continue;
+      if(onlyMine){await availFetch(it);const s=avSum(it);if(!s||!s.hits.length)continue}
+      let d;try{d=await tnDetail(it)}catch(e){continue}
+      if(o.genre&&!(it.genres||[]).includes(o.genre))continue;
+      if(+o.minR&&!(hasRating(it)&&it.rating>=+o.minR))continue;
+      if(+o.max&&it.m==='film'&&(!d.len||d.len>+o.max))continue;
+      if(!onlyMine)await availFetch(it);
+      T.cur={it,fromWatch:c.fromWatch,why:c.why,overview:d.overview,backdrop:d.backdrop,len:it.m==='film'?fmtMin(d.len):(d.seasons?d.seasons+(d.seasons===1?' Staffel':' Staffeln'):'')+(d.len?' · '+d.len+' Min./Folge':'')};
+      break;
+    }
+    if(!T.cur)T.msg=cands.length?'Nichts Passendes gefunden. Filter lockern, dann „Anderer Vorschlag“.':'Noch keine Basis für Filme oder Serien. Markiere zuerst ein paar Titel als „Gefällt mir“.';
+  }catch(e){T.msg='Fehler: '+(e.message||e)}
+  if(T.run===run){T.busy=false;renderTonight()}
+}
+
 /* Merkliste: Titel manuell suchen und hinzufügen */
 function openAdd(){
   ui.add={m:ui.add&&ui.add.m||'film',q:'',res:null,busy:false,err:''};const el=$('#sheet');
@@ -1287,7 +1408,7 @@ function addSearch(){const a=ui.add;if(!a)return;clearTimeout(aT);a.res=null;a.e
   a.busy=true;addUpdate();const q=a.q,m=a.m;
   aT=setTimeout(()=>{const A=adapter(m);if(!A){a.busy=false;a.err='Für '+MEDIA[m].label+' fehlt der TMDB-Schlüssel.';addUpdate();return}
     A.search(q.trim()).then(r=>{if(ui.add===a&&a.q===q&&a.m===m){a.res=r;a.busy=false;addUpdate()}}).catch(e=>{if(ui.add===a){a.busy=false;a.err=e.message;addUpdate()}})},350)}
-function doCloseSheet(){const wasAdd=!!ui.add;ui.add=null;const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m]}if(p||wasAdd)render()}
+function doCloseSheet(){const wasAdd=!!ui.add||!!ui.tonight;ui.add=null;ui.tonight=null;const p=ui.pick;ui.pick=null;const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';if(p){delete ui.pool[p.m]}if(p||wasAdd)render()}
 
 /* ---------- Intro ---------- */
 function introSteps(){const I=ui.intro;const s=['welcome','services'];I.order().forEach(m=>s.push('pick:'+m));s.push('done');return s}
@@ -1320,7 +1441,7 @@ function renderIntro(){
   }else if(step.startsWith('pick:')){
     const m=step.slice(5);const k=I.order().indexOf(m);
     if(!ui.pick||ui.pick.m!==m||ui.pick.host!=='intro')initPick(m,'intro');
-    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Wähle Genres und tippe an, was Dir gefällt. Drei bis zehn Titel reichen für gute Vorschläge.</p>'+
+    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Wähle Genres und tippe an, was Dir gefällt. Zweimal tippen macht einen Titel zum Lieblingstitel ♥, der doppelt zählt. Drei bis zehn Titel reichen für gute Vorschläge.</p>'+
       (needsKey(m)?'<div class="empty"><p>Für '+MEDIA[m].label+' fehlt der TMDB-Schlüssel. Trage ihn im Schritt „Streaming“ oder später in den Einstellungen ein.</p></div>':pickBoxHtml(ui.pick));
     foot=back+'<span class="note sp" id="pickCount">'+byStatus(m,'like').length+' ausgewählt</span><button class="btn pri big" data-act="introNext">'+(k===I.order().length-1?'Abschließen':'Weiter')+'</button>';
   }else{
@@ -1339,11 +1460,11 @@ let tT=null,undo=null;
 function toast(msg,und){const t=$('#toast');undo=und||null;t.innerHTML='<span>'+esc(msg)+'</span>'+(und?'<button data-act="undo">Rückgängig</button>':'');t.hidden=false;clearTimeout(tT);tT=setTimeout(()=>{t.hidden=true;undo=null},4500)}
 
 /* ---------- Aktionen ---------- */
-const LBL={watch:'Auf der Merkliste',like:'Gefällt Dir – fließt in Vorschläge ein',dislike:'Gefällt Dir nicht – Ähnliches wird abgewertet',hide:'Wird nicht mehr vorgeschlagen'};
+const LBL={watch:'Auf der Merkliste',love:'♥ Lieblingstitel – zählt doppelt für Vorschläge',like:'Gefällt Dir – fließt in Vorschläge ein',dislike:'Gefällt Dir nicht – Ähnliches wird abgewertet',hide:'Wird nicht mehr vorgeschlagen'};
 function act(k,st){
   const it=REG.get(k)||S.items[k];if(!it)return;
   const prev=setStatus(it,st);ui.knownOpen=null;
-  if(st==='like'||st==='dislike')delete ui.pool[it.m];
+  if(st==='like'||st==='love'||st==='dislike')delete ui.pool[it.m];
   const c=document.querySelector('[data-card="'+CSS.escape(k)+'"]');
   if(c&&ui.tab==='entdecken'){c.classList.add('gone');setTimeout(render,180)}else render();
   toast(st?LBL[st]:'Entfernt',()=>{restore(k,prev);render()});
@@ -1354,6 +1475,8 @@ const ACT={
   theme(b){S.settings.theme=b.dataset.v;save();applyTheme();render()},
   watch(b){act(b.dataset.k,'watch')},
   like(b){act(b.dataset.k,'like')},
+  love(b){act(b.dataset.k,'love')},
+  loveTog(b){const k=b.dataset.k;const it=S.items[k];if(!it)return;setStatus(it,it.status==='love'?'like':'love');delete ui.pool[it.m];render()},
   dislike(b){act(b.dataset.k,'dislike')},
   hide(b){act(b.dataset.k,'hide')},
   unset(b){act(b.dataset.k,null)},
@@ -1364,7 +1487,7 @@ const ACT={
   closePick(){closeSheet()},
   detail(b){openDetail(b.dataset.k)},
   closeDetail(){closeDetail()},
-  dset(b){const D=ui.detail;if(!D)return;const st=b.dataset.st||null;const prev=setStatus(D.it,st);if(st==='like'||st==='dislike'||!st)delete ui.pool[D.it.m];renderDetail();render();
+  dset(b){const D=ui.detail;if(!D)return;const st=b.dataset.st||null;const prev=setStatus(D.it,st);if(st!=='watch'&&st!=='hide')delete ui.pool[D.it.m];renderDetail();render();
     toast(st?LBL[st]:'Zurückgesetzt',()=>{restore(D.it.k,prev);if(ui.detail)renderDetail();render()})},
   fltReset(b){const m=b.dataset.m;ui.flt[m]={g:'',y:'',r:0,sort:'match'};ui.shown[m]=12;render()},
   pickGenre(b){const p=ui.pick;if(!p||!p.genres)return;const g=p.genres.find(x=>String(x.id)===b.dataset.g);if(!g)return;
@@ -1372,7 +1495,11 @@ const ACT={
     if(p.blocks[g.id])removeGenre(p,g.id);else addGenre(p,g.id);
     S.genres[p.m]=p.order.slice();save();pickUpdate();const r=$('#pkRes');if(r&&p.blocks[g.id])r.scrollIntoView({block:'nearest'})},
   pickMore(b){const p=ui.pick;if(!p)return;const gid=p.order.find(x=>String(x)===b.dataset.g);if(gid!==undefined)fillGenre(p,gid)},
-  pickToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const on=S.items[k]&&S.items[k].status==='like';setStatus(it,on?null:'like');b.setAttribute('aria-pressed',String(!on));const n=$('#pickCount');if(n)n.textContent=byStatus(ui.pick.m,'like').length+' ausgewählt';
+  pickToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const cur=S.items[k]&&S.items[k].status;
+    const nx=cur==='like'?'love':cur==='love'?null:'like';setStatus(it,nx);
+    b.setAttribute('aria-pressed',String(!!nx));b.classList.toggle('is-love',nx==='love');const tk=b.querySelector('.tick');if(tk)tk.innerHTML=nx==='love'?IC.heartF:IC.check;
+    if(nx==='love')toast('♥ Lieblingstitel – nochmal tippen zum Entfernen');
+    const n=$('#pickCount');if(n&&ui.pick)n.textContent=byStatus(ui.pick.m,'like').length+' ausgewählt';
     const sec=b.closest('.pk-sec');if(sec){const c=sec.querySelectorAll('.tile[aria-pressed="true"]').length,t=sec.querySelectorAll('.tile').length,st=sec.querySelector('.pk-h .st');if(st&&!sec.querySelector('.pk-h h3').textContent.startsWith('Suchergebnisse'))st.textContent=t+' Titel'+(c?' · '+c+' gewählt':'')}},
   check(){checkReleases()},
   undo(){if(undo){const u=undo;undo=null;$('#toast').hidden=true;u()}},
@@ -1384,6 +1511,11 @@ const ACT={
   freshAll(){const m=ui.tab==='entdecken'?ui.med:'alle';resetPools(m==='alle'?null:[m]);ui.shown={};ui.knownOpen=null;
     if(ui.tab!=='entdecken'){ui.tab='entdecken';navPush()}render();window.scrollTo({top:0});toast(m==='alle'?'Neue Vorschläge für alle Bereiche':'Neue Vorschläge: '+MEDIA[m].label)},
   addOpen(){openAdd()},
+  tonight(){openTonight()},
+  tnSet(b){const o=tnOpts();o[b.dataset.key]=b.dataset.key==='type'?b.dataset.v:+b.dataset.v;S.settings.tonight=o;save();if(ui.tonight){ui.tonight.seen=new Set();nextTonight()}},
+  tnNext(){nextTonight()},
+  tnWatch(){const T=ui.tonight;if(!T||!T.cur)return;const it=T.cur.it;const on=S.items[it.k]&&S.items[it.k].status==='watch';setStatus(it,on?null:'watch');renderTonight();toast(on?'Von der Merkliste entfernt':'Auf der Merkliste')},
+  tnNo(){const T=ui.tonight;if(!T||!T.cur)return;setStatus(T.cur.it,'hide');toast('Wird nicht mehr vorgeschlagen');nextTonight()},
   addMed(b){const a=ui.add;if(!a)return;a.m=b.dataset.m;addSearch();addUpdate();const i=$('#addQ');if(i)i.focus()},
   addToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const on=S.items[k]&&S.items[k].status==='watch';setStatus(it,on?null:'watch');addUpdate()},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
@@ -1416,6 +1548,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.tn){const o=tnOpts();o[t.dataset.tn]=t.type==='checkbox'?t.checked:t.value;S.settings.tonight=o;save();if(ui.tonight){ui.tonight.seen=new Set();nextTonight()}return}
   if(t.dataset.flt){const f=flt(t.dataset.m);f[t.dataset.flt]=t.dataset.flt==='r'?+t.value:t.value;ui.shown[t.dataset.m]=12;render();return}
   if(t.dataset.set){const k=t.dataset.set;S.settings[k]=t.type==='checkbox'?t.checked:t.value;save();
     if(k==='onlyMine'||k==='includeFree')resetPools(['film','serie']);render();return}
@@ -1429,12 +1562,12 @@ window.addEventListener('popstate',e=>{
   const st=e.state||{};navLock=true;
   try{
     if(ui.detail&&st.ov!=='detail'){doCloseDetail();return}
-    if((ui.add||ui.pick&&ui.pick.host==='sheet')&&st.ov!=='sheet'){doCloseSheet();return}
+    if((ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')&&st.ov!=='sheet'){doCloseSheet();return}
     if(ui.intro){const n=typeof st.ii==='number'?st.ii:0;if(n!==ui.intro.i){ui.intro.i=Math.min(n,introSteps().length-1);ui.pick=null;renderIntro();$('#intro').scrollTop=0}return}
     if(st.tab&&(st.tab!==ui.tab||(st.med||'alle')!==ui.med)){ui.tab=st.tab;ui.med=st.med||'alle';ui.knownOpen=null;render();window.scrollTo({top:0})}
   }finally{navLock=false}
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.add||ui.pick&&ui.pick.host==='sheet')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
   renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
@@ -1588,6 +1721,7 @@ function pushPanel(){
   h+=ui.pushSt==='on'?'<p class="ok" style="margin:0 0 10px">Auf diesem Gerät aktiv.</p><button class="btn" data-act="pushOff">Auf diesem Gerät ausschalten</button>'
     :Notification.permission==='denied'?'<p class="err" style="margin:0">Mitteilungen sind im Browser blockiert. Bitte in den Website- bzw. App-Einstellungen erlauben.</p>'
     :'<button class="btn pri" data-act="pushOn">'+IC.bell+'Push-Mitteilungen aktivieren</button>';
+  h+='<div style="margin-top:12px"><label class="switch"><input type="checkbox" id="sw-digest" data-set="digest"'+(S.settings.digest!==false?' checked':'')+'> Wochen-Digest: sonntags 5 neue Vorschläge</label></div>';
   if(devs.length)h+='<p class="note" style="margin:10px 0 0">Aktive Geräte: '+devs.map(d=>esc(d.device||'Gerät')).join(', ')+'</p>';
   return h;
 }
@@ -1600,7 +1734,7 @@ const DAY=24*H;
 function dailyCheck(){
   if(MODE!=='live'||!S.onboarded||S.settings.autoCheck===false||ui.intro)return;
   if(Date.now()-(S.lastCheck||0)<DAY-30*60e3)return;
-  if(!Object.values(S.items).some(x=>x.status==='like'||x.status==='watch'))return;
+  if(!Object.values(S.items).some(x=>x.status==='like'||x.status==='love'||x.status==='watch'))return;
   setTimeout(()=>checkReleases({auto:true}),1500);
 }
 const fmtDT=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'noch nie';
@@ -1636,6 +1770,7 @@ async function start(){
   if(!loadState())S.settings.theme=th;
   applyTheme();render();
   if(location.hash==='#neu'&&S.onboarded)ui.tab='neu';
+  if(location.hash==='#entdecken'&&S.onboarded){ui.tab='entdecken';ui.med='alle'}
   try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}
   if(!S.onboarded)startIntro();
   dailyCheck();setInterval(dailyCheck,36e5);

@@ -77,6 +77,14 @@ async function buch(it){
   return (d.items||[]).map(v=>v.volumeInfo||{}).filter(i=>i.language==='de'&&(i.authors||[]).some(a=>a.toLowerCase()===wl)&&/^\d{4}-\d\d-\d\d$/.test(i.publishedDate||'')&&dd(i.publishedDate)<=0&&dd(i.publishedDate)>=-7)
     .map(i=>({id:'buch:new:'+tkey(i.title,(i.authors||[])[0]),title:who,text:'Neues Buch: '+i.title}));
 }
+const REL_T={3:'Kinostart',4:'Digital erhältlich',5:'Auf DVD & Blu-ray'};
+async function filmDates(it){
+  const d=await j('https://api.themoviedb.org/3/movie/'+it.id+'/release_dates?api_key='+TMDB);
+  const de=(d.results||[]).find(r=>r.iso_3166_1==='DE');const out={};
+  (de&&de.release_dates||[]).forEach(r=>{const t=r.type===2?3:r.type;if(!REL_T[t])return;const dt=String(r.release_date).slice(0,10);if(!out[t]||dt<out[t])out[t]=dt});
+  return Object.entries(out).filter(([,dt])=>dd(dt)<=0&&dd(dt)>=-1)
+    .map(([t,dt])=>({id:it.k+':rel'+t+':'+dt,title:it.title,text:t==='3'?'Heute Kinostart in Deutschland':t==='4'?'Jetzt digital zum Kaufen oder Leihen':'Jetzt auf DVD & Blu-ray'}));
+}
 async function film(it,user,state){
   const d=await tmdb('/movie/'+it.id+'/watch/providers','');const r=(d.results&&d.results.DE)||{};
   const mine=new Set((user.settings&&user.settings.providers)||[]);
@@ -87,6 +95,39 @@ async function film(it,user,state){
   return fresh.length?[{id:it.k+':av:'+ids.sort().join('-'),title:it.title,text:'Jetzt bei '+[...new Set(fresh.map(p=>baseName(p.provider_name)))].join(', ')}]:[];
 }
 
+/* Wochen-Digest: sonntags die 5 besten neuen Vorschläge (Filme, Serien, Musik) */
+const WEEKDAY=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',weekday:'short'}).format(new Date());
+const WEEK=(()=>{const d=new Date(TODAY+'T12:00:00Z');const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return t.getUTCFullYear()+'-W'+Math.ceil(((t-y)/864e5+1)/7)})();
+const FORCE_DIGEST=process.env.FORCE_DIGEST==='1';
+async function digest(user){
+  const items=Object.values(user.items||{});const known=new Set(items.map(x=>x.k));
+  const cand=new Map();
+  const add=(k,title,m,score,extra)=>{if(known.has(k))return;const c=cand.get(k)||{k,title,m,score:0,...extra};c.score+=score;cand.set(k,c)};
+  for(const m of ['film','serie']){
+    const type=m==='film'?'movie':'tv';
+    const seeds=items.filter(x=>x.m===m&&(x.status==='love'||x.status==='like')&&/^\d+$/.test(String(x.id))).sort((a,b)=>(b.status==='love')-(a.status==='love')||b.ts-a.ts).slice(0,15);
+    for(const [i,s] of seeds.entries()){
+      const w=s.status==='love'?2:1-0.5*i/Math.max(1,seeds.length-1);
+      try{const d=await j('https://api.themoviedb.org/3/'+type+'/'+s.id+'/recommendations?api_key='+TMDB+'&language=de-DE');
+        (d.results||[]).forEach((r,pos)=>add(m+':'+r.id,r.title||r.name,m,w*(1-pos/60)*((r.vote_average||6)/7.5),{id:r.id,type}))}catch(e){}
+      await sleep(120);
+    }
+  }
+  const artists=items.filter(x=>x.m==='musik'&&(x.status==='love'||x.status==='like')&&/^\d+$/.test(String(x.id))).sort((a,b)=>(b.status==='love')-(a.status==='love')||b.ts-a.ts).slice(0,10);
+  for(const s of artists){try{const d=await j('https://api.deezer.com/artist/'+s.id+'/related?limit=15');(d.data||[]).forEach((a,pos)=>add('musik:'+a.id,a.name,'musik',(s.status==='love'?1.4:0.7)*(1-pos/30)))}catch(e){}}
+  const top=[...cand.values()].sort((a,b)=>b.score-a.score).slice(0,25);
+  const mine=new Set((user.settings&&user.settings.providers)||[]);
+  for(const c of top.filter(c=>c.type).slice(0,15)){
+    try{const d=await j('https://api.themoviedb.org/3/'+c.type+'/'+c.id+'/watch/providers?api_key='+TMDB);const r=(d.results&&d.results.DE)||{};
+      const hit=(r.flatrate||[]).find(p=>mine.has(p.provider_id))||(user.settings&&user.settings.includeFree!==false?[...(r.free||[]),...(r.ads||[])][0]:null);
+      if(hit){c.prov=baseName(hit.provider_name);c.score*=1.3}}catch(e){}
+  }
+  const pick=[];const per={film:0,serie:0,musik:0};
+  for(const c of top.sort((a,b)=>b.score-a.score)){if(pick.length>=5)break;if(per[c.m]>=2)continue;per[c.m]++;pick.push(c)}
+  return pick;
+}
+const LBL_M={film:'Film',serie:'Serie',musik:'Musik'};
+
 async function runUser(doc){
   const user=doc.data();const uid=doc.id;
   const subs=Object.entries(user.subs||{}).filter(([,s])=>!s.off&&s.endpoint&&s.keys);
@@ -94,30 +135,34 @@ async function runUser(doc){
   const stRef=db.collection('artifacts').doc('fundus').collection('pushstate').doc(uid);
   const stSnap=await stRef.get();const state={sent:{},av:{},...(stSnap.exists?stSnap.data():{})};
   const items=Object.values(user.items||{});
-  const pick=(m,sts)=>items.filter(x=>x.m===m&&sts.includes(x.status));
+  const pick=(m,sts)=>items.filter(x=>x.m===m&&(sts.includes(x.status)||sts.includes('like')&&x.status==='love'));
   const jobs=[...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
     ...pick('podcast',['like','watch']).map(it=>()=>podcast(it)),...pick('buch',['like','watch']).map(it=>()=>buch(it)),
-    ...pick('film',['watch']).map(it=>()=>film(it,user,state))];
+    ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it))];
   const events=[];let errors=0;
   for(const job of jobs){try{events.push(...await job())}catch(e){errors++;console.warn(uid.slice(0,6),e.message)}await sleep(150)}
   const fresh=[];const seen=new Set();
   for(const e of events){if(state.sent[e.id]||seen.has(e.id))continue;seen.add(e.id);fresh.push(e)}
   let sent=0,dead=[];
+  const send=async(payload)=>{for(const [id,s] of subs){
+      if(DRY){console.log('[Testlauf]',uid.slice(0,6),payload.title,'|',payload.body.replace(/\n/g,' / '));sent++;continue}
+      try{await webpush.sendNotification({endpoint:s.endpoint,keys:s.keys},JSON.stringify(payload),{TTL:86400});sent++}
+      catch(e){if(e.statusCode===404||e.statusCode===410)dead.push(id);else console.warn('Push-Fehler',e.statusCode,e.body)}}};
+  if(user.settings&&user.settings.digest!==false&&(WEEKDAY==='Sun'||FORCE_DIGEST)&&state.digestWeek!==WEEK){
+    try{const d=await digest(user);
+      if(d.length){await send({title:'Deine Woche: '+d.length+' neue Vorschläge',body:d.map(c=>LBL_M[c.m]+': '+c.title+(c.prov?' (bei '+c.prov+')':'')).join('\n'),url:'./#entdecken',tag:'fundus-digest-'+WEEK});state.digestWeek=WEEK}
+    }catch(e){console.warn('Digest',e.message)}
+  }
   if(fresh.length){
     const title=fresh.length===1?fresh[0].title:'Fundus: '+fresh.length+' Neuerscheinungen';
     const body=fresh.length===1?fresh[0].text:fresh.slice(0,5).map(e=>e.title+' – '+e.text).join('\n')+(fresh.length>5?'\n… und '+(fresh.length-5)+' weitere':'');
-    const msg=JSON.stringify({title,body,url:'./#neu',tag:'fundus-'+TODAY});
-    for(const [id,s] of subs){
-      if(DRY){console.log('[Testlauf]',uid.slice(0,6),title,'|',body.replace(/\n/g,' / '));sent++;continue}
-      try{await webpush.sendNotification({endpoint:s.endpoint,keys:s.keys},msg,{TTL:86400});sent++}
-      catch(e){if(e.statusCode===404||e.statusCode===410)dead.push(id);else console.warn('Push-Fehler',e.statusCode,e.body)}
-    }
+    await send({title,body,url:'./#neu',tag:'fundus-'+TODAY});
     fresh.forEach(e=>state.sent[e.id]=TODAY);
   }
   const lim=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
   for(const k in state.sent)if(state.sent[k]<lim)delete state.sent[k];
   if(!DRY){
-    await stRef.set({sent:state.sent,av:state.av,lastRun:TODAY,lastCount:fresh.length},{merge:false});
+    await stRef.set({sent:state.sent,av:state.av,digestWeek:state.digestWeek||null,lastRun:TODAY,lastCount:fresh.length},{merge:false});
     if(dead.length){const upd={};dead.forEach(id=>upd['subs.'+id]={...user.subs[id],off:true,ts:Date.now()});await doc.ref.update(upd)}
   }
   return {uid:uid.slice(0,6),items:items.length,events:fresh.length,sent,dead:dead.length,errors};

@@ -12,6 +12,10 @@ on:
         description: 'Testlauf ohne Versand (1 = ja)'
         required: false
         default: '0'
+      force_digest:
+        description: 'Wochen-Digest auch heute senden (1 = ja)'
+        required: false
+        default: '0'
 
 permissions:
   contents: write
@@ -34,6 +38,7 @@ jobs:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           VAPID_PUBLIC: BPbXST0UBvG6REMA1frrvW3xPKhxm8r5XFh-T9igYiEcuAnLQ7wI8NXYET8YRMFgVbx-RCIL_LgL5L04tSw43fI
+          FORCE_DIGEST: ${{ github.event.inputs.force_digest || '0' }}
           DRY_RUN: ${{ github.event_name == 'push' && '1' || github.event.inputs.dry_run || '0' }}
         run: node check.mjs
       # GitHub schaltet Zeitpläne nach 60 Tagen ohne Commit ab – alle 50 Tage ein leerer Commit
