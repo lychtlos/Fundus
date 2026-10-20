@@ -109,7 +109,10 @@ async function digest(user){
     for(const [i,s] of seeds.entries()){
       const w=s.status==='love'?2:1-0.5*i/Math.max(1,seeds.length-1);
       try{const d=await j('https://api.themoviedb.org/3/'+type+'/'+s.id+'/recommendations?api_key='+TMDB+'&language=de-DE');
-        (d.results||[]).forEach((r,pos)=>add(m+':'+r.id,r.title||r.name,m,w*(1-pos/60)*((r.vote_average||6)/7.5),{id:r.id,type}))}catch(e){}
+        const rl={minYear:0,minR:0,exGid:[],...(((user.settings||{}).rules||{})[m]||{})};
+        (d.results||[]).filter(r=>{const y=parseInt((r.release_date||r.first_air_date||'').slice(0,4));if(rl.minYear&&y&&y<rl.minYear)return false;
+          if(rl.minR&&r.vote_count>=20&&r.vote_average<rl.minR)return false;if((rl.exGid||[]).length&&(r.genre_ids||[]).some(g=>rl.exGid.includes(g)))return false;return true})
+          .forEach((r,pos)=>add(m+':'+r.id,r.title||r.name,m,w*(1-pos/60)*((r.vote_average||6)/7.5),{id:r.id,type}))}catch(e){}
       await sleep(120);
     }
   }
