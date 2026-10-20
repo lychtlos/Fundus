@@ -37,6 +37,8 @@ jobs:
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          TM_KEY: ${{ secrets.TM_KEY }}
+          RAWG_KEY: ${{ secrets.RAWG_KEY }}
           VAPID_PUBLIC: BPbXST0UBvG6REMA1frrvW3xPKhxm8r5XFh-T9igYiEcuAnLQ7wI8NXYET8YRMFgVbx-RCIL_LgL5L04tSw43fI
           FORCE_DIGEST: ${{ github.event.inputs.force_digest || '0' }}
           DRY_RUN: ${{ github.event_name == 'push' && '1' || github.event.inputs.dry_run || '0' }}

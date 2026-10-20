@@ -8,7 +8,7 @@
 :root{
   --bg:#EBEFED; --surface:#FAFBFA; --surface-2:#DFE6E2; --ink:#14201B; --ink-2:#4B5A54; --line:#C9D3CE;
   --accent:#0D6A5B; --accent-ink:#FFFFFF; --mark:#B7790B; --good:#1E7440; --bad:#A8372B;
-  --c-film:#3B5DA6; --c-serie:#7D4E9E; --c-musik:#B3432F; --c-buch:#8C6A10; --c-podcast:#19808A;
+  --c-film:#3B5DA6; --c-serie:#7D4E9E; --c-musik:#B3432F; --c-buch:#8C6A10; --c-podcast:#19808A; --c-game:#4F7A1F;
   --shade:rgba(20,32,27,.45);
   --f-display:"Archivo","Segoe UI",system-ui,sans-serif;
   --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -18,13 +18,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E1412; --surface:#16201C; --surface-2:#1F2B27; --ink:#E4EBE8; --ink-2:#A1B0AA; --line:#2C3A35;
   --accent:#4EC1A7; --accent-ink:#05201A; --mark:#E6AE45; --good:#5BC583; --bad:#EE7B6C;
-  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC;
+  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC; --c-game:#9BCB5E;
   --shade:rgba(0,0,0,.6);
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E1412; --surface:#16201C; --surface-2:#1F2B27; --ink:#E4EBE8; --ink-2:#A1B0AA; --line:#2C3A35;
   --accent:#4EC1A7; --accent-ink:#05201A; --mark:#E6AE45; --good:#5BC583; --bad:#EE7B6C;
-  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC;
+  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC; --c-game:#9BCB5E;
   --shade:rgba(0,0,0,.6);
   color-scheme:dark}
 :root[data-theme="light"]{color-scheme:light}
@@ -32,13 +32,13 @@
 html:root[data-ft="light"]{
   --bg:#EBEFED; --surface:#FAFBFA; --surface-2:#DFE6E2; --ink:#14201B; --ink-2:#4B5A54; --line:#C9D3CE;
   --accent:#0D6A5B; --accent-ink:#FFFFFF; --mark:#B7790B; --good:#1E7440; --bad:#A8372B;
-  --c-film:#3B5DA6; --c-serie:#7D4E9E; --c-musik:#B3432F; --c-buch:#8C6A10; --c-podcast:#19808A;
+  --c-film:#3B5DA6; --c-serie:#7D4E9E; --c-musik:#B3432F; --c-buch:#8C6A10; --c-podcast:#19808A; --c-game:#4F7A1F;
   --shade:rgba(20,32,27,.45);
   color-scheme:light}
 html:root[data-ft="dark"]{
   --bg:#0E1412; --surface:#16201C; --surface-2:#1F2B27; --ink:#E4EBE8; --ink-2:#A1B0AA; --line:#2C3A35;
   --accent:#4EC1A7; --accent-ink:#05201A; --mark:#E6AE45; --good:#5BC583; --bad:#EE7B6C;
-  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC;
+  --c-film:#7F9CE0; --c-serie:#B98ADB; --c-musik:#E58A74; --c-buch:#D2AE4E; --c-podcast:#5CC4CC; --c-game:#9BCB5E;
   --shade:rgba(0,0,0,.6);
   color-scheme:dark}
 [hidden]{display:none!important}
@@ -134,7 +134,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .acts{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:8px}
 .acts .btn{padding:5px 9px;font-size:13px}
 .acts .lnk{margin-left:auto}
-.f-film{--mc:var(--c-film)} .f-serie{--mc:var(--c-serie)} .f-musik{--mc:var(--c-musik)} .f-buch{--mc:var(--c-buch)} .f-podcast{--mc:var(--c-podcast)}
+.f-film{--mc:var(--c-film)} .f-serie{--mc:var(--c-serie)} .f-musik{--mc:var(--c-musik)} .f-buch{--mc:var(--c-buch)} .f-podcast{--mc:var(--c-podcast)} .f-game{--mc:var(--c-game)}
 
 .sec + .sec{margin-top:28px}
 .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -237,6 +237,8 @@ select.inp{flex:0 1 220px}
 .tn-body .art{width:120px;box-shadow:0 6px 18px rgba(0,0,0,.3)}
 .tn-txt{min-width:0;display:flex;flex-direction:column;gap:4px}
 @media (max-width:520px){.tn-body{grid-template-columns:88px 1fr}.tn-body .art{width:88px}.tn-hero{height:130px}}
+.shots{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px}
+.shots img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px}
 .pk-hint{padding:26px 0;text-align:center;color:var(--ink-2)}
 .fbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px}
 .fl{display:grid;gap:3px}
@@ -357,9 +359,10 @@ const MEDIA={
   serie:{label:'Serien',one:'Serie',sq:false,desc:'Mit Folgen- und Staffelalarm'},
   musik:{label:'Musik',one:'Künstler',sq:true,desc:'Bands und Interpreten'},
   buch:{label:'Bücher',one:'Buch',sq:false,desc:'Romane, Reihen, Autoren'},
-  podcast:{label:'Podcasts',one:'Podcast',sq:true,desc:'Mit Hinweis auf neue Folgen'}
+  podcast:{label:'Podcasts',one:'Podcast',sq:true,desc:'Mit Hinweis auf neue Folgen'},
+  game:{label:'Games',one:'Spiel',sq:true,desc:'Spiele und Release-Termine'}
 };
-const ORDER=['film','serie','musik','buch','podcast'];
+const ORDER=['film','serie','musik','buch','podcast','game'];
 const isFS=m=>m==='film'||m==='serie';
 const IC={
   mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
@@ -393,6 +396,7 @@ function motif(m,W,H){
   if(m==='film')return '<g stroke="'+s+'" stroke-width="12">'+[0,1,2,3,4,5,6].map(i=>'<line x1="'+(-120+i*55)+'" y1="0" x2="'+(-20+i*55)+'" y2="'+H+'"/>').join('')+'</g><g fill="rgba(0,0,0,.22)">'+Array.from({length:Math.ceil(H/26)},(_,i)=>'<rect x="6" y="'+(8+i*26)+'" width="10" height="14" rx="2"/><rect x="'+(W-16)+'" y="'+(8+i*26)+'" width="10" height="14" rx="2"/>').join('')+'</g>';
   if(m==='serie')return '<g fill="'+s+'">'+Array.from({length:12},(_,i)=>'<rect x="'+(22+(i%3)*56)+'" y="'+(24+Math.floor(i/3)*44)+'" width="44" height="32" rx="4"/>').join('')+'</g>';
   if(m==='musik')return '<g fill="none" stroke="'+s+'" stroke-width="5">'+[86,70,54,38].map(r=>'<circle cx="'+(W*0.62)+'" cy="'+(H*0.38)+'" r="'+r+'"/>').join('')+'</g><circle cx="'+(W*0.62)+'" cy="'+(H*0.38)+'" r="12" fill="'+s+'"/>';
+  if(m==='game')return '<g fill="none" stroke="'+s+'" stroke-width="6" stroke-linecap="round"><rect x="40" y="60" width="120" height="70" rx="32"/><path d="M72 85v20M62 95h20"/></g><g fill="'+s+'"><circle cx="128" cy="88" r="6"/><circle cx="142" cy="102" r="6"/></g>';
   if(m==='buch')return '<rect x="0" y="0" width="22" height="'+H+'" fill="rgba(0,0,0,.2)"/><g stroke="'+s+'" stroke-width="3">'+[40,52,64].map(y=>'<line x1="40" y1="'+y+'" x2="'+(W-24)+'" y2="'+y+'"/>').join('')+'</g>';
   return '<g fill="none" stroke="'+s+'" stroke-width="5" stroke-linecap="round">'+[0,1,2,3].map(i=>{const y=40+i*24;return '<path d="M20 '+y+' Q 55 '+(y-22)+' 90 '+y+' T 160 '+y+' T 230 '+y+'"/>'}).join('')+'</g>';
 }
@@ -419,7 +423,7 @@ document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&
 
 /* ---------- Zustand ---------- */
 let MODE='demo';
-const DEF={tmdbKey:'',gbKey:'',providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true,digest:true};
+const DEF={tmdbKey:'',gbKey:'',rawgKey:'',tmKey:'',plz:'',radius:150,concerts:true,platforms:[],providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true,digest:true};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,del:{},metaTs:0,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
@@ -431,7 +435,7 @@ function save(){
   if(S.del){const lim=Date.now()-90*864e5;for(const k in S.del)if(S.del[k]<lim)delete S.del[k]}
   localSave();if(typeof scheduleSync==='function')scheduleSync();
 }
-const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig'];
+const KEEP=['k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig','gslugs','released','tba'];
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
 function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};if(!st){delete S.items[it.k];S.del[it.k]=Date.now()}else{S.items[it.k]={...strip(it),status:st,ts:Date.now()};delete S.del[it.k]}save();return prev}
 function restore(k,prev){S.del=S.del||{};if(prev){S.items[k]={...prev,ts:Date.now()};delete S.del[k]}else{delete S.items[k];S.del[k]=Date.now()}save()}
@@ -760,6 +764,7 @@ const DEMO_RAW={
  serie:[['s1','Severance','2022','Science-Fiction|Drama|Mystery','A'],['s2','Dark','2017','Science-Fiction|Mystery|Drama','N'],['s3','Andor','2022','Science-Fiction|Drama','D'],['s4','The Expanse','2015','Science-Fiction','P'],['s5','True Detective','2014','Krimi|Mystery|Drama','W'],['s6','Mindhunter','2017','Krimi|Drama','N'],['s7','Better Call Saul','2015','Krimi|Drama','N'],['s8','Fargo','2014','Krimi|Komödie|Drama','D'],['s9','Shōgun','2024','Drama|Historie','D'],['s10','Chernobyl','2019','Drama|Historie','W'],['s11','Spuk in Hill House','2018','Horror|Mystery','N'],['s12','Midnight Mass','2021','Horror|Drama','N'],['s13','Arcane','2021','Animation|Science-Fiction','N'],['s14','Silo','2023','Science-Fiction|Mystery','A'],['s15','Babylon Berlin','2017','Krimi|Historie','M'],['s16','The Leftovers','2014','Drama|Mystery','W']],
  musik:[['m1','Mgła','Polen','Black Metal'],['m2','Wolves in the Throne Room','USA','Black Metal|Atmospheric'],['m3','Darkthrone','Norwegen','Black Metal'],['m4','Emperor','Norwegen','Black Metal|Symphonic'],['m5','Agalloch','USA','Atmospheric|Folk|Black Metal'],['m6','Panopticon','USA','Black Metal|Folk|Atmospheric'],['m7','Deafheaven','USA','Black Metal|Post-Rock'],['m8','Alcest','Frankreich','Post-Rock|Atmospheric'],['m9','Bathory','Schweden','Black Metal'],['m10','Mayhem','Norwegen','Black Metal'],['m11','Gojira','Frankreich','Metal'],['m12','Opeth','Schweden','Metal|Folk'],['m13','Amenra','Belgien','Post-Rock|Metal|Doom'],['m14','Russian Circles','USA','Post-Rock'],['m15','Mogwai','Schottland','Post-Rock'],['m16','Ulver','Norwegen','Atmospheric|Folk'],['m17','Wardruna','Norwegen','Folk|Atmospheric'],['m18','Bell Witch','USA','Doom']],
  buch:[['b1','Der Name des Windes','Patrick Rothfuss · 2007','Fantasy'],['b2','Der Weg der Könige','Brandon Sanderson · 2010','Fantasy'],['b3','Der Herr der Ringe','J. R. R. Tolkien · 1954','Fantasy|Klassiker'],['b4','Das Lied von Eis und Feuer','George R. R. Martin · 1996','Fantasy'],['b5','Die Kinder der Zeit','Adrian Tchaikovsky · 2015','Science-Fiction'],['b6','Der Marsianer','Andy Weir · 2011','Science-Fiction'],['b7','Der Astronaut','Andy Weir · 2021','Science-Fiction'],['b8','Die drei Sonnen','Liu Cixin · 2006','Science-Fiction'],['b9','Hyperion','Dan Simmons · 1989','Science-Fiction|Klassiker'],['b10','Es','Stephen King · 1986','Horror'],['b11','Shining','Stephen King · 1977','Horror|Klassiker'],['b12','Die Therapie','Sebastian Fitzek · 2006','Thriller'],['b13','Der Name der Rose','Umberto Eco · 1980','Krimi|Historisch|Klassiker'],['b14','Die Säulen der Erde','Ken Follett · 1989','Historisch'],['b15','Vaterland','Robert Harris · 1992','Thriller|Historisch'],['b16','Der Schwarm','Frank Schätzing · 2004','Thriller|Science-Fiction']],
+ game:[['g1','The Witcher 3: Wild Hunt','2015','Rollenspiel|Abenteuer'],['g2','Elden Ring','2022','Rollenspiel|Action'],['g3','Baldur’s Gate 3','2023','Rollenspiel|Strategie'],['g4','Hades','2020','Action|Indie'],['g5','Hollow Knight','2017','Jump ’n’ Run|Indie'],['g6','Red Dead Redemption 2','2018','Action|Abenteuer'],['g7','Civilization VI','2016','Strategie'],['g8','Stardew Valley','2016','Simulation|Indie'],['g9','Disco Elysium','2019','Rollenspiel|Indie'],['g10','Cyberpunk 2077','2020','Rollenspiel|Action']],
  podcast:[['p1','Zeit Verbrechen','Die Zeit','True Crime'],['p2','Mordlust','funk','True Crime'],['p3','Geschichten aus der Geschichte','Richard Hemmer & Daniel Meßner','Geschichte|Wissen'],['p4','Methodisch inkorrekt','Minkorrekt','Wissen|Comedy'],['p5','Lage der Nation','Philip Banse & Ulf Buermeyer','Politik'],['p6','Gemischtes Hack','Felix Lobrecht & Tommi Schmitt','Comedy'],['p7','Fest & Flauschig','Jan Böhmermann & Olli Schulz','Comedy'],['p8','Hotel Matze','Matze Hielscher','Gespräche'],['p9','Alles gesagt?','Die Zeit','Gespräche'],['p10','c’t uplink','c’t','Technik'],['p11','Logbuch:Netzpolitik','Metaebene','Technik|Politik'],['p12','Baywatch Berlin','Klaas Heufer-Umlauf u. a.','Comedy'],['p13','Eine Stunde History','Deutschlandfunk Nova','Geschichte'],['p14','Verbrechen von nebenan','Philipp Fleiter','True Crime']]
 };
 const DEMO_CAT={};
@@ -767,6 +772,7 @@ ORDER.forEach(m=>{DEMO_CAT[m]=DEMO_RAW[m].map(r=>{
   const g=r[3].split('|');
   const base={k:m+':'+r[0],m,id:r[0],title:r[1],genres:g,demo:true};
   if(isFS(m)){base.year=r[2];base.sub=r[2];base.prov=r[4]}
+  else if(m==='game'){base.year=r[2];base.sub=r[2]}
   else if(m==='musik')base.sub=g[0]+' · '+r[2];
   else base.sub=r[2];
   return base;
@@ -794,8 +800,109 @@ function demoAdapter(m){
   };
 }
 const DEMO={};ORDER.forEach(m=>DEMO[m]=demoAdapter(m));
-const LIVE={film:tmdbAdapter('film'),serie:tmdbAdapter('serie'),musik:musikLive,buch:buchLive,podcast:podcastLive};
-const needsKey=m=>MODE==='live'&&isFS(m)&&!tmdbKeyNow();
+/* ---------- Games (RAWG) ---------- */
+const RAWG_DEFAULT='';
+const rawgKey=()=>(S.settings.rawgKey||'').trim()||RAWG_DEFAULT;
+const GATE_RAWG=limiter(15,1000);
+const rawg=(path,params={},ttl=24*H)=>{
+  const k=rawgKey();if(!k)return Promise.reject(new Error('RAWG-Schlüssel fehlt (Einstellungen)'));
+  const u=new URL('https://api.rawg.io/api'+path);Object.entries(params).forEach(([a,b])=>{if(b!==undefined&&b!=='')u.searchParams.set(a,b)});u.searchParams.set('key',k);
+  return cached('rawg'+u.pathname+u.search.replace(/&?key=[^&]*/,''),()=>getJSON(u.toString(),GATE_RAWG,'RAWG'),ttl);
+};
+const GAME_GENRES_DE={action:'Action',indie:'Indie',adventure:'Abenteuer','role-playing-games-rpg':'Rollenspiel',strategy:'Strategie',shooter:'Shooter',casual:'Casual',simulation:'Simulation',puzzle:'Puzzle',arcade:'Arcade',platformer:'Jump ’n’ Run',racing:'Rennspiel','massively-multiplayer':'MMO',sports:'Sport',fighting:'Prügelspiel',family:'Familie','board-games':'Brettspiel',educational:'Lernspiel',card:'Kartenspiel'};
+const PLATFORMS=[['pc','PC',1],['playstation','PlayStation',2],['xbox','Xbox',3],['nintendo','Nintendo',7],['mobile','Mobil',8]];
+const platParam=()=>{const sel=S.settings.platforms||[];const ids=PLATFORMS.filter(p=>sel.includes(p[0])).map(p=>p[2]);return ids.length?ids.join(','):undefined};
+const GEN_TAGS=/^(singleplayer|multiplayer|steam-achievements|full-controller-support|steam-cloud|steam-trading-cards|partial-controller-support|online-multiplayer|co-op|online-co-op|atmospheric|great-soundtrack|steam-leaderboards|controller|cloud-saves|in-app-purchases|free-to-play|exclusive|true-exclusive|achievements|remote-play.*|2d|3d|first-person|third-person|cross-platform-multiplayer|local-multiplayer|local-co-op|split-screen|vr|steam-workshop|includes-level-editor|stats|moddable|early-access|utilities|tutorial|kickstarter)$/;
+function gameItem(g,genre){
+  const y=(g.released||'').slice(0,4);const plats=(g.parent_platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean);
+  return reg({k:'game:'+g.id,m:'game',id:g.id,title:g.name,year:g.tba?'TBA':y,sub:[g.tba?'Termin offen':y,plats.slice(0,3).join(', ')].filter(Boolean).join(' · '),
+    img:g.background_image?g.background_image.replace('/media/games/','/media/crop/600/400/games/'):null,
+    rating:g.ratings_count>=20&&g.rating?g.rating*2:(g.metacritic?g.metacritic/10:null),votes:g.ratings_count||null,
+    genres:(g.genres||[]).map(x=>GAME_GENRES_DE[x.slug]||x.name).slice(0,3),gslugs:(g.genres||[]).map(x=>x.slug),released:g.released||'',tba:!!g.tba,
+    link:'https://rawg.io/games/'+(g.slug||g.id)});
+}
+const gameLive={
+  async genres(){const d=await rawg('/genres',{page_size:40},30*24*H);return (d.results||[]).map(g=>({id:g.slug,name:GAME_GENRES_DE[g.slug]||g.name}))},
+  async byGenre(gid,page=1){if(page>8)return [];const d=await rawg('/games',{genres:gid,ordering:'-added',page_size:30,page,parent_platforms:platParam(),exclude_additions:true});return (d.results||[]).map(g=>gameItem(g))},
+  async search(q){const d=await rawg('/games',{search:q,page_size:24,search_precise:true,exclude_additions:true},6e5);return (d.results||[]).map(g=>gameItem(g))},
+  async similar(s){
+    const d=await rawg('/games/'+s.id,{},7*24*H);const out=[];
+    const tags=(d.tags||[]).filter(t=>t.language==='eng'&&!GEN_TAGS.test(t.slug)).slice(0,3).map(t=>t.slug);
+    const gen=(d.genres||[]).slice(0,2).map(g=>g.slug).join(',');
+    if(tags.length){const r=await rawg('/games',{tags:tags.join(','),genres:gen||undefined,ordering:'-rating',metacritic:'70,100',page_size:30,parent_platforms:platParam(),exclude_additions:true});(r.results||[]).filter(g=>g.id!==s.id).forEach(g=>out.push({it:gameItem(g),w:0.8}))}
+    const dev=(d.developers||[])[0];
+    if(dev){const r=await rawg('/games',{developers:dev.id,ordering:'-rating',page_size:15,exclude_additions:true});(r.results||[]).filter(g=>g.id!==s.id).forEach(g=>out.push({it:gameItem(g),w:0.6,why:'Vom Studio '+dev.name}))}
+    try{const r=await rawg('/games/'+s.id+'/game-series',{page_size:10});(r.results||[]).forEach(g=>out.push({it:gameItem(g),w:0.9,why:'Aus der Reihe von „'+s.title+'“'}))}catch(e){}
+    return out;
+  },
+  async explore(base){const gs=[...new Set(base.flatMap(b=>b.gslugs||[]))];const g=shuffle(gs)[0]||'action';
+    const d=await rawg('/games',{genres:g,ordering:'-metacritic',page_size:20,page:1+Math.floor(Math.random()*3),parent_platforms:platParam(),exclude_additions:true});
+    return (d.results||[]).map(x=>({it:gameItem(x),w:1,why:'Entdecken · '+(GAME_GENRES_DE[g]||g)}))},
+  async releases(it){
+    const ev=[];
+    if(S.items[it.k]&&S.items[it.k].status==='watch'){const d=await rawg('/games/'+it.id,{},12*H);
+      if(d.released&&dayDiff(d.released)>=-30&&dayDiff(d.released)<=365)ev.push({id:it.k+':rel:'+d.released,date:d.released,label:'Erscheint',text:(d.parent_platforms||[]).map(p=>p.platform.name).join(', ')});
+      else if(d.tba)ev.push({id:it.k+':tba',date:String(new Date().getFullYear()+1),label:'Angekündigt',text:'Termin noch offen'})}
+    else{const d=await rawg('/games/'+it.id,{},7*24*H);const dev=(d.developers||[])[0];
+      if(dev){const r=await rawg('/games',{developers:dev.id,dates:addDays(-60)+','+addDays(365),ordering:'released',page_size:10},12*H);
+        (r.results||[]).filter(g=>g.id!==it.id&&g.released&&!S.items['game:'+g.id]).forEach(g=>ev.push({id:'game:dev:'+g.id,date:g.released,label:dayDiff(g.released)>0?'Neues Spiel angekündigt':'Neues Spiel',text:g.name+' · '+dev.name,img:g.background_image,link:'https://rawg.io/games/'+(g.slug||g.id)}))}}
+    return ev;
+  }
+};
+async function gameDetail(it){
+  const [d,shots,st]=await Promise.all([rawg('/games/'+it.id,{},7*24*H),rawg('/games/'+it.id+'/screenshots',{page_size:6},7*24*H).catch(()=>({})),rawg('/games/'+it.id+'/stores',{},7*24*H).catch(()=>({}))]);
+  const STORE={1:'Steam',2:'Xbox Store',3:'PlayStation Store',4:'App Store',5:'GOG',6:'Nintendo eShop',7:'Xbox 360',8:'Google Play',9:'itch.io',11:'Epic Games'};
+  return {backdrop:d.background_image_additional||d.background_image,overview:stripHtml(d.description_raw||d.description),overviewNote:'Beschreibung von RAWG, meist englisch.',
+    facts:[['Erscheint',d.tba?'Termin offen':fmtDate(d.released)],['Plattformen',(d.platforms||[]).map(p=>p.platform.name).join(', ')],['Entwickler',(d.developers||[]).map(x=>x.name).join(', ')],['Publisher',(d.publishers||[]).map(x=>x.name).join(', ')],['Genres',(d.genres||[]).map(g=>GAME_GENRES_DE[g.slug]||g.name).join(', ')],['Spielzeit',d.playtime?'ca. '+d.playtime+' Std.':''],['Metacritic',d.metacritic?String(d.metacritic):''],['Altersfreigabe',d.esrb_rating&&d.esrb_rating.name||'']],
+    sections:[{title:'Kaufen',rows:(st.results||[]).filter(x=>STORE[x.store_id]&&x.url).map(x=>({t:STORE[x.store_id],sub:'Shop öffnen',url:x.url}))}],
+    shots:(shots.results||[]).map(x=>x.image)};
+}
+
+/* ---------- Konzerte in der Nähe (Ticketmaster) ---------- */
+const TM_DEFAULT='';
+const tmKey=()=>(S.settings.tmKey||'').trim()||TM_DEFAULT;
+const GATE_TM=limiter(4,1000);
+const tm=(path,params,ttl=12*H)=>{const k=tmKey();if(!k)return Promise.reject(new Error('Ticketmaster-Schlüssel fehlt'));
+  const u=new URL('https://app.ticketmaster.com/discovery/v2'+path);Object.entries(params).forEach(([a,b])=>{if(b!==undefined&&b!=='')u.searchParams.set(a,b)});u.searchParams.set('apikey',k);
+  return cached('tm'+u.pathname+u.search.replace(/&?apikey=[^&]*/,''),()=>getJSON(u.toString(),GATE_TM,'Ticketmaster'),ttl)};
+async function geoPlz(plz){return cached('plz'+plz,async()=>{const d=await getJSON('https://api.zippopotam.us/de/'+encodeURIComponent(plz),async()=>{},'PLZ-Suche');const p=(d.places||[])[0];if(!p)throw new Error('PLZ nicht gefunden');return {lat:+p.latitude,lon:+p.longitude,ort:p['place name']}},90*24*H)}
+function geohash(lat,lon,prec=6){const B='0123456789bcdefghjkmnpqrstuvwxyz';let la=[-90,90],lo=[-180,180],h='',bit=0,ch=0,even=true;
+  while(h.length<prec){const r=even?lo:la,v=even?lon:lat,mid=(r[0]+r[1])/2;if(v>mid){ch|=16>>bit;r[0]=mid}else r[1]=mid;even=!even;if(bit<4)bit++;else{h+=B[ch];bit=0;ch=0}}return h}
+const kmDist=(a,b)=>{const R=6371,t=x=>x*Math.PI/180;const dl=t(b.lat-a.lat),dn=t(b.lon-a.lon);const x=Math.sin(dl/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)))};
+const normName=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9]/gi,'').toLowerCase();
+const concertsOn=()=>MODE==='live'&&S.settings.concerts!==false&&!!tmKey()&&/^\d{5}$/.test(S.settings.plz||'');
+async function tmAttraction(name){
+  const d=await tm('/attractions.json',{keyword:name,classificationName:'music',size:10},30*24*H);
+  const n=normName(name);return ((d._embedded||{}).attractions||[]).find(a=>normName(a.name)===n)||null;
+}
+async function concertsFor(it){
+  if(!concertsOn())return [];
+  const at=await tmAttraction(it.title);if(!at)return [];
+  const home=await geoPlz(S.settings.plz);const rad=+S.settings.radius||150;
+  const p={attractionId:at.id,size:50,sort:'date,asc',locale:'*'};
+  if(rad>=1000)p.countryCode='DE';else{p.geoPoint=geohash(home.lat,home.lon);p.radius=rad;p.unit='km'}
+  const d=await tm('/events.json',p);
+  return ((d._embedded||{}).events||[]).map(e=>{const v=((e._embedded||{}).venues||[])[0]||{};const loc=v.location?{lat:+v.location.latitude,lon:+v.location.longitude}:null;
+    const date=e.dates&&e.dates.start&&e.dates.start.localDate;if(!date)return null;
+    const time=e.dates.start.localTime?e.dates.start.localTime.slice(0,5):'';const km=loc?kmDist(home,loc):null;
+    return {id:'konzert:'+e.id,kind:'konzert',date,label:'Konzert',text:[v.name,v.city&&v.city.name].filter(Boolean).join(', ')+(time?' · '+time+' Uhr':'')+(km!=null?' · '+km+' km':''),link:e.url,km,
+      img:((e.images||[]).sort((a,b)=>b.width-a.width).find(x=>x.ratio==='16_9')||{}).url||null,ename:e.name};
+  }).filter(e=>e&&dayDiff(e.date)>=0);
+}
+function concertBox(){const st=S.settings;
+  return '<p>Konzerte Deiner Künstler (Gefällt mir, ♥, Merkliste) im Umkreis Deiner PLZ. Neue Termine kommen auch als Push-Mitteilung. Quelle: Ticketmaster (Eventim-Termine teils nicht enthalten).</p>'+
+    '<div class="row"><label class="fl"><span class="st">PLZ</span><input class="inp" id="plz" inputmode="numeric" maxlength="5" placeholder="z. B. 10115" value="'+esc(st.plz||'')+'" style="width:110px;flex:none"></label>'+
+    '<label class="fl"><span class="st">Umkreis</span><select class="inp" id="radius" data-set="radius">'+[['50','50 km'],['100','100 km'],['150','150 km'],['250','250 km'],['400','400 km'],['1000','ganz Deutschland']].map(([v,l])=>'<option value="'+v+'"'+(String(st.radius||150)===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label>'+
+    '<button class="btn" data-act="savePlz" style="align-self:end">Speichern</button></div>'+(ui.plzMsg?'<p class="'+(ui.plzMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.plzMsg.t)+'</p>':'')+
+    '<div class="row" style="margin-top:10px"><input class="inp" id="tmKey" type="password" autocomplete="off" placeholder="Ticketmaster-Schlüssel'+(TM_DEFAULT?' (optional, Standard hinterlegt)':'')+'" value="'+esc(st.tmKey||'')+'"><button class="btn" data-act="saveTm">Schlüssel speichern</button></div>';
+}
+function rawgBox(){const st=S.settings;const sel=st.platforms||[];
+  return '<p>Spiele-Daten von RAWG. Plattformen filtern die Vorschläge.</p><div class="chips wrapchips" style="margin-bottom:10px">'+PLATFORMS.map(([v,l])=>'<button class="chip" data-act="platTog" data-v="'+v+'" aria-pressed="'+sel.includes(v)+'">'+l+'</button>').join('')+'</div>'+
+    '<div class="row"><input class="inp" id="rawgKey" type="password" autocomplete="off" placeholder="RAWG-Schlüssel'+(RAWG_DEFAULT?' (optional, Standard hinterlegt)':'')+'" value="'+esc(st.rawgKey||'')+'"><button class="btn" data-act="saveRawg">Schlüssel speichern</button></div>'+(ui.rawgMsg?'<p class="'+(ui.rawgMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.rawgMsg.t)+'</p>':'');
+}
+
+const LIVE={film:tmdbAdapter('film'),serie:tmdbAdapter('serie'),musik:musikLive,buch:buchLive,podcast:podcastLive,game:gameLive};
+const needsKey=m=>MODE==='live'&&(isFS(m)&&!tmdbKeyNow()||m==='game'&&!rawgKey());
 const adapter=m=>MODE==='demo'?DEMO[m]:(needsKey(m)?null:LIVE[m]);
 
 /* ---------- Verfügbarkeit ---------- */
@@ -877,6 +984,12 @@ const TV_STATUS={'Returning Series':'Läuft','Ended':'Beendet','Canceled':'Abges
 const gbKeyNow=()=>(S.settings.gbKey||'').trim()||GB_DEFAULT;
 const gbVolume=id=>cached('gbv'+id,()=>getJSON('https://www.googleapis.com/books/v1/volumes/'+encodeURIComponent(id)+'?country=DE&key='+encodeURIComponent(gbKeyNow()),GATE.gb,'Google Books'),24*H);
 async function detailFor(it){
+  const d=await detailFor0(it);
+  if(it.m==='musik'&&concertsOn()){try{const ev=await concertsFor(it);d.sections=d.sections||[];
+    d.sections.unshift({title:'Konzerte (Umkreis '+((+S.settings.radius||150)>=1000?'Deutschland':(S.settings.radius||150)+' km')+')',rows:ev.length?ev.map(e=>({t:fmtDate(e.date)+' · '+e.text.split(' · ')[0],sub:e.text.split(' · ').slice(1).join(' · '),url:e.link})):[{t:'Keine Termine in Deiner Nähe',sub:'Quelle: Ticketmaster'}]})}catch(e){}}
+  return d;
+}
+async function detailFor0(it){
   if(MODE==='demo'||it.demo)return {overview:'Beispieldaten. Handlung, Mitwirkende, Trailer und weitere Angaben gibt es im Live-Modus.',facts:[['Genres',(it.genres||[]).join(', ')]]};
   const m=it.m;
   if(isFS(m)){
@@ -930,6 +1043,7 @@ async function detailFor(it){
     return {overview:gbDesc||olDesc,overviewNote:!gbDesc&&olDesc?'Beschreibung aus Open Library, teils englisch.':'',
       facts:[['Autor',it.authorName],['Erstveröffentlichung',w.first_publish_date||String(it.year||'')],['Originaltitel',it.orig||''],['Verlag (dt.)',publ],['Seiten',pages],['Themen',(w.subjects||[]).filter(s=>!GENERIC.test(s)).slice(0,6).join(', ')]]};
   }
+  if(m==='game')return gameDetail(it);
   if(String(it.id).startsWith('f')){
     const d=await fyyd('/podcast/episodes?podcast_id='+String(it.id).slice(1)+'&count=8',3*H);
     return {overview:stripHtml(d&&d.description),facts:[['Von',it.sub]],sections:[{title:'Neueste Folgen',rows:(d&&d.episodes||[]).map(e=>({t:e.title,sub:fmtDate(e.pubdate)+(e.duration?' · '+Math.round(e.duration/60)+' Min.':''),desc:stripHtml(e.description).slice(0,220)}))}]};
@@ -977,7 +1091,9 @@ function renderDetail(){
     if(d.people&&d.people.length)main+='<div class="subh">Mitwirkende</div><div class="ppl">'+d.people.map(p=>'<div class="pp">'+(p.img?'<img src="'+esc(p.img)+'" alt="" loading="lazy">':'<span class="pp-ph">'+esc(String(p.name).split(/\s+/).map(w=>w[0]).slice(0,2).join(''))+'</span>')+'<b>'+esc(p.name)+'</b><small>'+esc(p.role||'')+'</small></div>').join('')+'</div>';
     (d.sections||[]).forEach(sec=>{if(!sec.rows||!sec.rows.length)return;
       main+='<div class="subh">'+esc(sec.title)+'</div><div class="dt-rows">'+sec.rows.map(r=>{const q=r.q?links({...it,title:r.q,link:null})[0]:null;
-        return '<div class="dt-row">'+(r.img?'<img src="'+esc(r.img)+'" alt="" loading="lazy">':'')+'<div><b>'+esc(r.t)+'</b><small>'+esc(r.sub||'')+'</small>'+(r.desc?'<p>'+esc(r.desc)+'</p>':'')+'</div>'+(q?'<a class="btn ghost" href="'+esc(q[1])+'" target="_blank" rel="noopener" aria-label="In '+esc(q[0])+' öffnen">'+IC.ext+'</a>':'')+'</div>'}).join('')+'</div>'});
+        const lk=q?q:r.url?['Öffnen',r.url]:null;
+        return '<div class="dt-row">'+(r.img?'<img src="'+esc(r.img)+'" alt="" loading="lazy">':'')+'<div><b>'+esc(r.t)+'</b><small>'+esc(r.sub||'')+'</small>'+(r.desc?'<p>'+esc(r.desc)+'</p>':'')+'</div>'+(lk?'<a class="btn ghost" href="'+esc(lk[1])+'" target="_blank" rel="noopener" aria-label="'+esc(lk[0])+' öffnen">'+IC.ext+'</a>':'')+'</div>'}).join('')+'</div>'});
+    if(d.shots&&d.shots.length)main+='<div class="subh">Bilder</div><div class="shots">'+d.shots.map(u=>'<img src="'+esc(u)+'" alt="" loading="lazy">').join('')+'</div>';
   }
   if(isFS(it.m)&&!(it.demo&&MODE==='live'))main+=avFull(it);
   el.innerHTML='<div class="sheet-panel dt-panel f-'+it.m+'" role="dialog" aria-modal="true" aria-label="'+esc(it.title)+'">'+
@@ -1008,8 +1124,8 @@ function filterBar(m){
   const sel=(id,key,lab,opts)=>'<label class="fl"><span class="st">'+lab+'</span><select class="inp" id="'+id+'" data-flt="'+key+'" data-m="'+m+'">'+opts.map(([v,l])=>'<option value="'+esc(v)+'"'+(String(f[key])===String(v)?' selected':'')+'>'+esc(l)+'</option>').join('')+'</select></label>';
   let h='<div class="fbar" role="group" aria-label="Filter">'+sel('f-g','g','Genre',[['','Alle Genres']].concat(gs.map(([g,n])=>[g,g+' ('+n+')'])));
   if(m!=='musik'&&m!=='podcast')h+=sel('f-y','y','Jahr',YEARS);
-  if(isFS(m))h+=sel('f-r','r','Bewertung',[['0','Jede'],['6','ab ★ 6'],['7','ab ★ 7'],['8','ab ★ 8']]);
-  h+=sel('f-s','sort','Sortierung',[['match','Passend zuerst']].concat(isFS(m)?[['rating','Beste Bewertung']]:[]).concat(m!=='musik'&&m!=='podcast'?[['new','Neueste zuerst']]:[]));
+  if(isFS(m)||m==='game')h+=sel('f-r','r','Bewertung',[['0','Jede'],['6','ab ★ 6'],['7','ab ★ 7'],['8','ab ★ 8']]);
+  h+=sel('f-s','sort','Sortierung',[['match','Passend zuerst']].concat(isFS(m)||m==='game'?[['rating','Beste Bewertung']]:[]).concat(m!=='musik'&&m!=='podcast'?[['new','Neueste zuerst']]:[]));
   if(fltActive(m))h+='<button class="btn ghost" data-act="fltReset" data-m="'+m+'">Zurücksetzen</button>';
   return h+'</div>';
 }
@@ -1020,6 +1136,7 @@ function links(it){
   if(it.m==='musik'){const svc={spotify:['Spotify','https://open.spotify.com/search/'+q],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],deezer:['Deezer',it.link&&String(it.link).includes('deezer')?it.link:'https://www.deezer.com/search/'+q],apple:['Apple Music','https://music.apple.com/de/search?term='+q]};
     const pref=svc[S.settings.musicService]?S.settings.musicService:'ytm';return [svc[pref]].concat(Object.keys(svc).filter(k=>k!==pref).map(k=>svc[k]))}
   if(isFS(it.m))return [['TMDB',it.link||'https://www.themoviedb.org/search?query='+q]];
+  if(it.m==='game')return [['Steam','https://store.steampowered.com/search/?term='+q],['RAWG',it.link||'https://rawg.io/search?query='+q]];
   if(it.m==='buch')return [['Thalia','https://www.thalia.de/suche?sq='+q],['Open Library',it.link||'https://openlibrary.org/search?q='+q]];
   const id=/^\d+$/.test(String(it.id))?String(it.id):null;const apple=it.link||'https://podcasts.apple.com/de/search?term='+q;
   const svc={pocketcasts:['Pocket Casts',id?'https://pca.st/itunes/'+id:apple],apple:['Apple Podcasts',apple],spotify:['Spotify','https://open.spotify.com/search/'+q+'/podcasts'],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],overcast:['Overcast',id?'https://overcast.fm/itunes'+id:apple]};
@@ -1049,7 +1166,7 @@ function card(it,mode,reasons){
   return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
 const skel=n=>'<div class="grid">'+Array.from({length:n},()=>'<div class="skel"></div>').join('')+'</div>';
-function keyPrompt(m){return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> brauchen einen kostenlosen TMDB-Schlüssel. Ohne Schlüssel bleiben Filme und Serien leer.</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>'}
+function keyPrompt(m){if(m==='game')return '<div class="empty"><p><b>Games</b> brauchen einen kostenlosen RAWG-Schlüssel (rawg.io/apidocs).</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>';return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> brauchen einen kostenlosen TMDB-Schlüssel. Ohne Schlüssel bleiben Filme und Serien leer.</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>'}
 
 /* ---------- Ansichten ---------- */
 const TABS=[['entdecken','Entdecken'],['merkliste','Merkliste'],['neu','Neuerscheinungen'],['basis','Meine Basis'],['einstellungen','Einstellungen']];
@@ -1114,9 +1231,12 @@ const VIEWS={
     const L=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
     if(!L.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
     if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
-    const up=L.filter(e=>e.up),past=L.filter(e=>!e.up);
+    const conc=L.filter(e=>e.kind==='konzert').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const up=L.filter(e=>e.up&&e.kind!=='konzert'),past=L.filter(e=>!e.up&&e.kind!=='konzert');
     if(up.length)h+='<div class="subh">Kommend</div><div class="rel">'+up.map(evRow).join('')+'</div>';
     if(past.length)h+='<div class="subh">Erschienen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
+    if(conc.length)h+='<div class="subh">Konzerte in Deiner Nähe</div><div class="rel">'+conc.map(evRow).join('')+'</div>';
+    else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte in Deiner Nähe: PLZ und Ticketmaster-Schlüssel in den Einstellungen eintragen.</p>';
     if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' Einträge konnten nicht geprüft werden (Dienst nicht erreichbar oder Limit)':'',R0.skipped?R0.skipped+' übersprungen (Zeitlimit)':''].filter(Boolean).join(' · ')+'. Beim nächsten Prüfen erneut versucht.</p>';
     return h+relNote();
   },
@@ -1139,6 +1259,8 @@ const VIEWS={
     h+='<div class="panel"><h3>Darstellung</h3><p>Hell, dunkel oder wie das System.</p><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
     h+='<div class="panel"><h3>Datenquelle Filme &amp; Serien</h3>'+keyBox()+'</div>';
     h+='<div class="panel"><h3>Datenquelle Bücher</h3>'+gbBox()+'</div>';
+    h+='<div class="panel"><h3>Games</h3>'+rawgBox()+'</div>';
+    h+='<div class="panel"><h3>Konzerte in der Nähe</h3>'+concertBox()+'</div>';
     h+='<div class="panel"><h3>Meine Streamingdienste</h3><p>Steuert, welche Filme und Serien als „bei Dir verfügbar“ gelten. Kanal- und Werbe-Varianten eines Dienstes sind zusammengefasst.</p>'+provPanel()+'</div>';
     h+='<div class="panel"><h3>Anzeige</h3><div class="opts">'+
       '<label class="switch"><input type="checkbox" id="sw-only2" data-set="onlyMine"'+(st.onlyMine?' checked':'')+'> Bei Filmen und Serien nur Titel aus meinen Diensten zeigen</label>'+
@@ -1167,7 +1289,7 @@ function evRow(e){
   if(d.length===4){big=d;small='Jahr'}else{const [y,mo,da]=d.split('-');big=da+'.'+mo+'.';small=y}
   const rel=e.up&&d.length>4?(dayDiff(e.date)===1?'morgen':'in '+dayDiff(e.date)+' Tagen'):'';
   const it=e.img?{...e.src,img:e.img}:e.src;
-  return '<div class="ev f-'+e.m+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span><span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
+  return '<div class="ev f-'+e.m+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span><span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+(e.kind==='konzert'&&e.ename&&normName(e.ename)!==normName(e.src.title)?' · '+esc(e.ename):'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
 }
 /* Neuerscheinungen: Ergebnisse erscheinen schrittweise, letzter Stand wird gespeichert.
    Zeitlimit je Eintrag 25 s, gesamt 3 Min.; hängt nichts mehr dauerhaft. */
@@ -1183,11 +1305,12 @@ async function checkReleases(opts={}){
   if(ui.rel&&ui.rel.busy)return;
   const run=++relRun;const t0=Date.now();
   const jobs=[];
-  for(const m of ['serie','film','musik','buch','podcast']){
+  for(const m of ['serie','film','musik','game','buch','podcast']){
     const A=adapter(m);if(!A)continue;
     const its=m==='film'?byStatus(m,'watch'):byStatus(m,'like').concat(byStatus(m,'watch'));
     its.forEach(it=>jobs.push({m,A,it}));
   }
+  if(concertsOn())byStatus('musik','like').concat(byStatus('musik','watch')).forEach(it=>jobs.push({m:'musik',A:{releases:concertsFor},it}));
   const prev=ui.rel&&!ui.rel.busy?ui.rel.list:(relLoad()||{}).list||[];
   ui.rel={busy:true,list:prev,fresh:[],done:0,total:jobs.length,errors:0,skipped:0,at:ui.rel&&ui.rel.at};render();
   const ev=[],seenId=new Set();let errors=0,skipped=0,done=0,lastPaint=0;
@@ -1434,14 +1557,14 @@ function renderIntro(){
       '<div class="medpick">'+ORDER.map(m=>'<button class="medbtn f-'+m+'" data-act="introMed" data-m="'+m+'" aria-pressed="'+I.media.has(m)+'">'+art({k:'intro:'+m,m,title:MEDIA[m].label},'',true)+'<span class="tick">'+IC.check+'</span><b>'+MEDIA[m].label+'</b><small>'+MEDIA[m].desc+'</small></button>').join('')+'</div>';
     foot=(MODE==='demo'?'<button class="btn ghost sp" data-act="introDemo">Überspringen und Beispielauswahl laden</button>':'<button class="btn ghost sp" data-act="introSkip">Später</button>')+'<button class="btn pri big" data-act="introNext"'+(I.media.size?'':' disabled')+'>Weiter</button>';
   }else if(step==='services'){
-    const fs=[...I.media].some(isFS),ma=I.media.has('musik')||I.media.has('podcast');
+    const fs=[...I.media].some(isFS),ma=I.media.has('musik')||I.media.has('podcast'),gm=I.media.has('game')&&MODE==='live',mu=I.media.has('musik')&&MODE==='live';
     body='<span class="st">Schritt '+(I.i+1)+' · Dienste und Apps</span><h2>Was nutzt Du?</h2><p class="lead">'+(fs?'Bei jedem Film und jeder Serie siehst Du dann, ob er in Deinem Abo läuft. ':'')+(ma?'Musik und Podcasts öffnen sich in Deinen Apps. ':'')+'Alles später in den Einstellungen änderbar.</p>'+
-      (fs?'<div class="subh">Streamingdienste</div>'+provPanel():'')+(ma?'<div class="subh">Apps</div><div class="panel">'+appsBox()+'</div>':'');
+      (fs?'<div class="subh">Streamingdienste</div>'+provPanel():'')+(ma?'<div class="subh">Apps</div><div class="panel">'+appsBox()+'</div>':'')+(gm?'<div class="subh">Games-Plattformen</div><div class="panel">'+rawgBox()+'</div>':'')+(mu?'<div class="subh">Konzerte in der Nähe</div><div class="panel">'+concertBox()+'</div>':'');
     foot=back+'<span class="sp"></span><button class="btn pri big" data-act="introNext">Weiter</button>';
   }else if(step.startsWith('pick:')){
     const m=step.slice(5);const k=I.order().indexOf(m);
     if(!ui.pick||ui.pick.m!==m||ui.pick.host!=='intro')initPick(m,'intro');
-    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Wähle Genres und tippe an, was Dir gefällt. Zweimal tippen macht einen Titel zum Lieblingstitel ♥, der doppelt zählt. Drei bis zehn Titel reichen für gute Vorschläge.</p>'+
+    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({game:'Welche Spiele mochtest Du?',film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Wähle Genres und tippe an, was Dir gefällt. Zweimal tippen macht einen Titel zum Lieblingstitel ♥, der doppelt zählt. Drei bis zehn Titel reichen für gute Vorschläge.</p>'+
       (needsKey(m)?'<div class="empty"><p>Für '+MEDIA[m].label+' fehlt der TMDB-Schlüssel. Trage ihn im Schritt „Streaming“ oder später in den Einstellungen ein.</p></div>':pickBoxHtml(ui.pick));
     foot=back+'<span class="note sp" id="pickCount">'+byStatus(m,'like').length+' ausgewählt</span><button class="btn pri big" data-act="introNext">'+(k===I.order().length-1?'Abschließen':'Weiter')+'</button>';
   }else{
@@ -1507,6 +1630,11 @@ const ACT={
     if(MODE==='demo'){ui.keyMsg={ok:true,t:'Gespeichert. Wirkt im Live-Modus.'};render();return}
     try{await tmdb('/configuration',{language:''});ui.keyMsg={ok:true,t:v?'Eigener Schlüssel funktioniert.':'Standardschlüssel funktioniert.'}}catch(e){ui.keyMsg={ok:false,t:e.message}}render()},
   provAll(){ui.provAll=true;render()},
+  async savePlz(){const v=($('#plz').value||'').trim();if(!/^\d{5}$/.test(v)){ui.plzMsg={ok:false,t:'Bitte fünfstellige PLZ eingeben.'};render();return}
+    S.settings.plz=v;save();try{const g=await geoPlz(v);ui.plzMsg={ok:true,t:'Gespeichert: '+g.ort}}catch(e){ui.plzMsg={ok:false,t:e.message}}ui.rel=null;render()},
+  async saveTm(){S.settings.tmKey=($('#tmKey').value||'').trim();save();try{await tm('/attractions.json',{keyword:'Metallica',size:1},6e5);ui.plzMsg={ok:true,t:'Ticketmaster-Schlüssel funktioniert.'}}catch(e){ui.plzMsg={ok:false,t:e.message}}render()},
+  async saveRawg(){S.settings.rawgKey=($('#rawgKey').value||'').trim();save();resetPools(['game']);try{await rawg('/genres',{page_size:1},6e5);ui.rawgMsg={ok:true,t:'RAWG-Schlüssel funktioniert.'}}catch(e){ui.rawgMsg={ok:false,t:e.message}}render()},
+  platTog(b){const v=b.dataset.v;const a=new Set(S.settings.platforms||[]);a.has(v)?a.delete(v):a.add(v);S.settings.platforms=[...a];save();resetPools(['game']);render()},
   pushOn(){pushOn()},pushOff(){pushOff()},
   freshAll(){const m=ui.tab==='entdecken'?ui.med:'alle';resetPools(m==='alle'?null:[m]);ui.shown={};ui.knownOpen=null;
     if(ui.tab!=='entdecken'){ui.tab='entdecken';navPush()}render();window.scrollTo({top:0});toast(m==='alle'?'Neue Vorschläge für alle Bereiche':'Neue Vorschläge: '+MEDIA[m].label)},

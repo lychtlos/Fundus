@@ -128,6 +128,36 @@ async function digest(user){
 }
 const LBL_M={film:'Film',serie:'Serie',musik:'Musik'};
 
+/* Games (RAWG): Merkliste → Erscheinungstag; Gefällt mir → neues Spiel des Studios erschienen */
+const RAWG_ENV=process.env.RAWG_KEY||'';
+async function game(it,user){
+  const k=(user.settings&&user.settings.rawgKey)||RAWG_ENV;if(!k)return [];
+  const g=await j('https://api.rawg.io/api/games/'+it.id+'?key='+k);
+  if(it.status==='watch')return g.released&&dd(g.released)<=0&&dd(g.released)>=-1?[{id:it.k+':rel:'+g.released,title:it.title,text:'Erscheint heute'}]:[];
+  const dev=(g.developers||[])[0];if(!dev)return [];
+  const r=await j('https://api.rawg.io/api/games?key='+k+'&developers='+dev.id+'&dates='+TODAY.slice(0,8)+'01,'+TODAY+'&ordering=-released&page_size=10');
+  return (r.results||[]).filter(x=>x.id!==it.id&&x.released&&dd(x.released)<=0&&dd(x.released)>=-1).map(x=>({id:'game:dev:'+x.id,title:dev.name,text:'Neues Spiel: '+x.name}));
+}
+/* Konzerte (Ticketmaster): neue Termine im Umkreis; erster Lauf merkt nur den Bestand */
+const TM_ENV=process.env.TM_KEY||'';
+const geoCache={};
+async function geo(plz){if(!geoCache[plz]){const d=await j('https://api.zippopotam.us/de/'+plz);const p=(d.places||[])[0];geoCache[plz]=p?{lat:+p.latitude,lon:+p.longitude}:null}return geoCache[plz]}
+function geohash(lat,lon,prec=6){const B='0123456789bcdefghjkmnpqrstuvwxyz';let la=[-90,90],lo=[-180,180],h='',bit=0,ch=0,even=true;
+  while(h.length<prec){const r=even?lo:la,v=even?lon:lat,mid=(r[0]+r[1])/2;if(v>mid){ch|=16>>bit;r[0]=mid}else r[1]=mid;even=!even;if(bit<4)bit++;else{h+=B[ch];bit=0;ch=0}}return h}
+const normName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l').replace(/[^a-z0-9]/gi,'').toLowerCase();
+let lastTm=0;
+async function tmj(url){const w=260-(Date.now()-lastTm);if(w>0)await sleep(w);lastTm=Date.now();return j(url)}
+async function concerts(it,user){
+  const st=user.settings||{};const k=st.tmKey||TM_ENV;if(!k||!/^\d{5}$/.test(st.plz||''))return [];
+  const home=await geo(st.plz);if(!home)return [];const rad=+st.radius||150;
+  const a=await tmj('https://app.ticketmaster.com/discovery/v2/attractions.json?apikey='+k+'&classificationName=music&size=10&keyword='+encodeURIComponent(it.title));
+  const at=((a._embedded||{}).attractions||[]).find(x=>normName(x.name)===normName(it.title));if(!at)return [];
+  const q=rad>=1000?'&countryCode=DE':'&geoPoint='+geohash(home.lat,home.lon)+'&radius='+rad+'&unit=km';
+  const e=await tmj('https://app.ticketmaster.com/discovery/v2/events.json?apikey='+k+'&attractionId='+at.id+'&size=50&sort=date,asc&locale=*'+q);
+  return ((e._embedded||{}).events||[]).filter(x=>x.dates&&x.dates.start&&x.dates.start.localDate&&dd(x.dates.start.localDate)>=0).map(x=>{const v=((x._embedded||{}).venues||[])[0]||{};
+    const dt=x.dates.start.localDate.split('-');return {id:'konzert:'+x.id,kind:'konzert',title:it.title+' live',text:dt[2]+'.'+dt[1]+'.'+dt[0]+' · '+[v.name,v.city&&v.city.name].filter(Boolean).join(', ')}});
+}
+
 async function runUser(doc){
   const user=doc.data();const uid=doc.id;
   const subs=Object.entries(user.subs||{}).filter(([,s])=>!s.off&&s.endpoint&&s.keys);
@@ -138,11 +168,17 @@ async function runUser(doc){
   const pick=(m,sts)=>items.filter(x=>x.m===m&&(sts.includes(x.status)||sts.includes('like')&&x.status==='love'));
   const jobs=[...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
     ...pick('podcast',['like','watch']).map(it=>()=>podcast(it)),...pick('buch',['like','watch']).map(it=>()=>buch(it)),
-    ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it))];
+    ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it)),
+    ...pick('game',['like','watch']).map(it=>()=>game(it,user)),
+    ...pick('musik',['like','watch']).map(it=>()=>concerts(it,user))];
   const events=[];let errors=0;
   for(const job of jobs){try{events.push(...await job())}catch(e){errors++;console.warn(uid.slice(0,6),e.message)}await sleep(150)}
   const fresh=[];const seen=new Set();
-  for(const e of events){if(state.sent[e.id]||seen.has(e.id))continue;seen.add(e.id);fresh.push(e)}
+  const firstConcerts=!state.concertInit;
+  for(const e of events){if(state.sent[e.id]||seen.has(e.id))continue;seen.add(e.id);
+    if(e.kind==='konzert'&&firstConcerts){state.sent[e.id]=TODAY;continue}   // Bestand beim ersten Lauf nur merken
+    fresh.push(e)}
+  if(events.some(e=>e.kind==='konzert')||((user.settings||{}).plz&&((user.settings||{}).tmKey||TM_ENV)))state.concertInit=true;
   let sent=0,dead=[];
   const send=async(payload)=>{for(const [id,s] of subs){
       if(DRY){console.log('[Testlauf]',uid.slice(0,6),payload.title,'|',payload.body.replace(/\n/g,' / '));sent++;continue}
@@ -160,9 +196,10 @@ async function runUser(doc){
     fresh.forEach(e=>state.sent[e.id]=TODAY);
   }
   const lim=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
-  for(const k in state.sent)if(state.sent[k]<lim)delete state.sent[k];
+  const limK=new Date(Date.now()-500*864e5).toISOString().slice(0,10);
+  for(const k in state.sent)if(state.sent[k]<(k.startsWith('konzert:')?limK:lim))delete state.sent[k];
   if(!DRY){
-    await stRef.set({sent:state.sent,av:state.av,digestWeek:state.digestWeek||null,lastRun:TODAY,lastCount:fresh.length},{merge:false});
+    await stRef.set({sent:state.sent,av:state.av,concertInit:!!state.concertInit,digestWeek:state.digestWeek||null,lastRun:TODAY,lastCount:fresh.length},{merge:false});
     if(dead.length){const upd={};dead.forEach(id=>upd['subs.'+id]={...user.subs[id],off:true,ts:Date.now()});await doc.ref.update(upd)}
   }
   return {uid:uid.slice(0,6),items:items.length,events:fresh.length,sent,dead:dead.length,errors};
