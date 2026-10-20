@@ -117,7 +117,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .tab-l{margin-left:2px}
 /* Handy: Menü als Leiste am unteren Rand */
 @media (max-width:899px){
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(3,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(4,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
     padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
   .tab{flex-direction:column;gap:3px;padding:6px 2px 4px;border-bottom:0;font-size:11.5px;font-weight:600;min-width:0}
   .tab-ic svg{width:24px;height:24px}
@@ -301,6 +301,12 @@ select.inp{flex:0 1 220px}
 .rule-b{padding:0 0 14px}
 .chip.chip-x{background:color-mix(in oklab,var(--bad) 14%,var(--surface));border-color:var(--bad);color:var(--bad)}
 .chip.chip-x svg{width:12px;height:12px}
+.gs-bar{position:relative}
+.gs-bar .inp{width:100%;padding:12px 14px 12px 42px;font-size:16px;border-radius:12px;background:var(--surface)}
+.gs-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-2);display:grid}
+.gs-ic svg{width:20px;height:20px}
+.chip-ic{display:inline-grid}
+.chip-ic svg{width:15px;height:15px}
 .pk-hint{padding:26px 0;text-align:center;color:var(--ink-2)}
 .fbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:14px}
 .fl{display:grid;gap:3px}
@@ -449,6 +455,7 @@ const IC={
   m_podcast:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>',
   m_game:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 7h10a5 5 0 0 1 4.8 6.4l-1.1 3.8a2.5 2.5 0 0 1-4.3.9L14.5 16h-5l-1.9 2.1a2.5 2.5 0 0 1-4.3-.9l-1.1-3.8A5 5 0 0 1 7 7z"/><path d="M8 10v4M6 12h4"/><circle cx="16" cy="11" r=".6" fill="currentColor"/><circle cx="17.5" cy="13" r=".6" fill="currentColor"/></svg>',
   cog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
   home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>',
   layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>',
   heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>',
@@ -1251,6 +1258,11 @@ function card(it,mode,reasons){
     acts=ui.knownOpen===it.k
       ?'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'Liebling</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="known" data-k="'+k+'">Zurück</button>'
       :'<button class="btn" data-act="watch" data-k="'+k+'">'+IC.mark+'Merken</button><button class="btn" data-act="known" data-k="'+k+'">'+IC.check+'Kenne ich</button><button class="btn ghost" data-act="hide" data-k="'+k+'">'+IC.x+'Kein Interesse</button>'+lnk;
+  }else if(mode==='search'){
+    const st=S.items[it.k]&&S.items[it.k].status;
+    const b=(a,l,ic,on)=>'<button class="btn'+(on?' pri':'')+(a==='love'?' lovebtn':'')+'" data-act="gsSet" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+!!on+'"'+(a==='love'?' title="Lieblingstitel"':'')+'>'+ic+l+'</button>';
+    acts=b('watch',st==='watch'?'Gemerkt':'Merken',IC.mark,st==='watch')+b('like','Gefällt mir',IC.up,st==='like')+b('love','',st==='love'?IC.heartF:IC.heart,st==='love')+
+      (st&&st!=='watch'&&st!=='like'&&st!=='love'?'<span class="note" style="align-self:center">'+(st==='dislike'?'gefällt nicht':'ausgeblendet')+'</span>':'');
   }else if(mode==='watch'){
     acts='<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
@@ -1261,7 +1273,7 @@ function keyPrompt(m){if(m==='game')return '<div class="empty"><p><b>Games</b> b
 
 /* ---------- Ansichten ---------- */
 /* [id, Langname (Desktop), Kurzname (Handy), Symbol] */
-const TABS=[['entdecken','Entdecken','Entdecken','home'],['merkliste','Merkliste','Merkliste','mark'],['neu','Neuerscheinungen','Neu','bell']];
+const TABS=[['entdecken','Entdecken','Entdecken','home'],['suchen','Suchen','Suchen','search'],['merkliste','Merkliste','Merkliste','mark'],['neu','Neuerscheinungen','Neu','bell']];
 function renderTabs(){
   renderAcct();
   const wl=Object.values(S.items).filter(x=>x.status==='watch').length;
@@ -1294,6 +1306,13 @@ function discoverBlock(m,n){
   return '<div class="grid">'+v.list.map(c=>card(c.it,'discover',c.reasons)).join('')+'</div>'+(v.more&&ui.med!=='alle'?'<div class="more"><button class="btn" data-act="more" data-m="'+m+'">Mehr anzeigen</button></div>':'');
 }
 const VIEWS={
+  suchen(){
+    const G=ui.gs||(ui.gs={q:'',m:'alle',res:{},busy:{},err:{}});
+    let h='<div class="head"><h2>Suchen</h2></div>'+
+      '<div class="gs-bar"><span class="gs-ic">'+IC.search+'</span><input class="inp" id="gsQ" type="search" placeholder="Film, Serie, Band, Buch, Podcast oder Spiel" value="'+esc(G.q)+'" autocomplete="off" enterkeyhint="search"></div>'+
+      '<div class="chips" style="margin-top:12px">'+[['alle','Alle']].concat(gsMedia().map(m=>[m,MEDIA[m].label])).map(([id,l])=>'<button class="chip" data-act="gsMed" data-m="'+id+'" aria-pressed="'+(G.m===id)+'">'+(id==='alle'?'':'<span class="chip-ic">'+IC['m_'+id]+'</span>')+l+'</button>').join('')+'</div>';
+    return h+'<div id="gsRes" style="margin-top:16px">'+gsResHtml()+'</div>';
+  },
   entdecken(){
     const fs=ui.med==='alle'||isFS(ui.med);
     let h='<div class="head"><h2>'+(ui.med==='alle'?'Vorschläge für Dich':'<span class="h-ic f-'+ui.med+'">'+IC['m_'+ui.med]+'</span>'+MEDIA[ui.med].label)+'</h2>';
@@ -1704,7 +1723,7 @@ function act(k,st){
   toast(st?LBL[st]:'Entfernt',()=>{restore(k,prev);render()});
 }
 const ACT={
-  tab(b){if(ui.tab===b.dataset.tab){window.scrollTo({top:0});return}ui.tab=b.dataset.tab;ui.knownOpen=null;render();window.scrollTo({top:0});navPush()},
+  tab(b){if(ui.tab===b.dataset.tab){window.scrollTo({top:0});if(ui.tab==='suchen'){const i=$('#gsQ');if(i)i.focus()}return}ui.tab=b.dataset.tab;ui.knownOpen=null;render();window.scrollTo({top:0});navPush();if(ui.tab==='suchen')setTimeout(()=>{const i=$('#gsQ');if(i&&!i.value)i.focus()},60)},
   med(b){if(ui.med===b.dataset.m)return;ui.med=b.dataset.m;ui.knownOpen=null;render();window.scrollTo({top:0});navPush()},
   theme(b){S.settings.theme=b.dataset.v;save();applyTheme();render()},
   watch(b){act(b.dataset.k,'watch')},
@@ -1768,6 +1787,11 @@ const ACT={
   drMed(b){const m=b.dataset.m;ui.drawer=false;doCloseDrawer();ui.knownOpen=null;ui.tab='entdecken';ui.med=m;
     try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
   drTab(b){const t=b.dataset.tab;ui.drawer=false;doCloseDrawer();ui.tab=t;try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
+  gsMed(b){const G=ui.gs;if(!G)return;G.m=b.dataset.m;render();gsSearch();window.scrollTo({top:0})},
+  gsSet(b){const k=b.dataset.k,st=b.dataset.st;const it=REG.get(k)||S.items[k];if(!it)return;const cur=S.items[k]&&S.items[k].status;
+    const nx=cur===st?null:st;const prev=setStatus(it,nx);if(nx!=='watch')delete ui.pool[it.m];
+    const y=window.scrollY;gsUpdate();window.scrollTo(0,y);renderTabs();
+    toast(nx?LBL[nx]:'Entfernt',()=>{restore(k,prev);gsUpdate();renderTabs()})},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
   async install(){if(!installEvt){ui.instHelp=true;if(!ui.intro&&ui.tab!=='einstellungen'){ui.tab='einstellungen';navPush()}render();if(ui.intro)renderIntro();setTimeout(()=>{const h=document.querySelector('.insthelp');if(h)h.scrollIntoView({block:'center',behavior:'smooth'})},50);return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
@@ -1805,7 +1829,37 @@ document.addEventListener('change',e=>{
     if(k==='onlyMine'||k==='includeFree')resetPools(['film','serie']);render();return}
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
-document.addEventListener('input',e=>{if(e.target.id==='addQ'&&ui.add){ui.add.q=e.target.value;addSearch()}if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
+document.addEventListener('input',e=>{if(e.target.id==='gsQ'&&ui.gs){ui.gs.q=e.target.value;gsSearch()}if(e.target.id==='addQ'&&ui.add){ui.add.q=e.target.value;addSearch()}if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
+/* ---------- Suche über alle Bereiche ---------- */
+const gsMedia=()=>ORDER.filter(m=>!needsKey(m));
+function gsResHtml(){
+  const G=ui.gs;if(!G)return '';
+  if(G.q.trim().length<2){
+    const recent=Object.values(S.items).sort((a,b)=>b.ts-a.ts).slice(0,6);
+    return '<p class="note">Mindestens zwei Zeichen eingeben. Treffer lassen sich direkt merken oder bewerten, Tippen auf Cover oder Titel öffnet die Details.</p>'+
+      (recent.length?'<div class="subh">Zuletzt bewertet</div><div class="grid">'+recent.map(i=>card(i,'search')).join('')+'</div>':'');
+  }
+  const ms=G.m==='alle'?gsMedia():[G.m];let h='';let any=false,busy=false;
+  ms.forEach(m=>{const r=G.res[m];if(G.busy[m])busy=true;
+    if(r&&r.length){any=true;const lim=G.m==='alle'?4:24;
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+r.length+'</span></h3>'+(G.m==='alle'&&r.length>lim?'<button class="btn ghost" data-act="gsMed" data-m="'+m+'">Alle '+r.length+' →</button>':'')+'</div><div class="grid">'+r.slice(0,lim).map(it=>card(it,'search')).join('')+'</div></section>'}
+    else if(G.err[m]&&G.m!=='alle')h+='<p class="err">'+esc(G.err[m])+'</p>';
+  });
+  if(!any)return busy?skel(3):'<div class="empty"><p>Keine Treffer für „'+esc(G.q)+'“'+(G.m!=='alle'?' in '+MEDIA[G.m].label:'')+'.</p></div>';
+  return h+(busy?'<p class="note" style="margin-top:12px">Weitere Bereiche werden durchsucht …</p>':'');
+}
+function gsUpdate(){const el=$('#gsRes');if(el&&ui.tab==='suchen')el.innerHTML=gsResHtml();
+  /* Verfügbarkeit für gefundene Filme/Serien nachladen */
+  const G=ui.gs;if(!G)return;const need=['film','serie'].flatMap(m=>(G.res[m]||[]).slice(0,G.m==='alle'?4:24)).filter(it=>!AV.has(it.k));
+  if(need.length&&!G.avBusy){G.avBusy=true;pool(need,6,it=>availFetch(it)).finally(()=>{G.avBusy=false;const e=$('#gsRes');if(e&&ui.tab==='suchen'){const y=window.scrollY;e.innerHTML=gsResHtml();window.scrollTo(0,y)}})}}
+let gsT=null,gsRun=0;
+function gsSearch(){const G=ui.gs;if(!G)return;clearTimeout(gsT);const q=G.q.trim();
+  if(q.length<2){G.res={};gsUpdate();return}
+  gsT=setTimeout(()=>{const run=++gsRun;G.res={};G.err={};const ms=G.m==='alle'?gsMedia():[G.m];
+    ms.forEach(m=>{G.busy[m]=true;const A=adapter(m);if(!A){G.busy[m]=false;return}
+      timeout(A.search(q),15000).then(r=>{if(run!==gsRun)return;G.res[m]=(r||[]).map(reg)}).catch(e=>{if(run===gsRun)G.err[m]=e.message})
+        .finally(()=>{if(run!==gsRun)return;G.busy[m]=false;gsUpdate()})});
+    gsUpdate()},450)}
 /* ---------- Seitenmenü (Burger) ---------- */
 function openDrawer(){ui.drawer=true;renderDrawer();navPush({ov:'drawer'})}
 function closeDrawer(){if(history.state&&history.state.ov==='drawer'){history.back();return}doCloseDrawer()}
@@ -1842,7 +1896,10 @@ window.addEventListener('popstate',e=>{
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.drawer){closeDrawer();return}if(ui.detail)closeDetail();else if(ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
+  const fq=document.activeElement&&document.activeElement.id==='gsQ'?document.activeElement.selectionStart:null;
   renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
+  if(fq!==null){const i=$('#gsQ');if(i){i.focus();try{i.setSelectionRange(fq,fq)}catch(e){}}}
+  if(ui.tab==='suchen'&&ui.gs&&ui.gs.q.trim().length>=2&&!Object.keys(ui.gs.res).length&&!Object.values(ui.gs.busy).some(Boolean))gsSearch();
   if(ui.intro&&introSteps()[ui.intro.i]==='services')renderIntro();
 }
 
