@@ -59,6 +59,34 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
   margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
 .top .wrap{display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 24px;padding-top:12px}
 .brand{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-right:auto}
+.burger{border:0;background:none;width:40px;height:40px;margin-left:-8px;border-radius:10px;display:grid;place-items:center;color:var(--ink);cursor:pointer}
+.burger:hover{background:var(--surface-2)}
+.burger svg{width:24px;height:24px}
+.h-ic{display:inline-grid;vertical-align:-3px;margin-right:8px;color:var(--mc)}
+.h-ic svg{width:24px;height:24px}
+.drawer{position:fixed;inset:0;z-index:22;background:transparent;transition:background .2s}
+.drawer.open{background:var(--shade)}
+.dr-panel{position:absolute;top:0;bottom:0;left:0;width:min(300px,84vw);background:var(--bg);display:flex;flex-direction:column;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 10px calc(env(safe-area-inset-bottom,0px) + 14px) max(10px,env(safe-area-inset-left,0px));
+  transform:translateX(-100%);transition:transform .2s ease-out;box-shadow:4px 0 24px rgba(0,0,0,.25)}
+.drawer.open .dr-panel{transform:none}
+.dr-h{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 10px}
+.dr-brand{font-family:var(--f-display);font-weight:800;font-size:24px;letter-spacing:-.03em}
+.dr-brand i{font-style:normal;color:var(--accent)}
+.dr-sec{display:flex;flex-direction:column;gap:2px}
+.dr-cap{padding:6px 12px 6px}
+.dr-bottom{margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.dr-i{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:10px;font-weight:600;font-size:15px;color:var(--ink);flex-wrap:wrap}
+.dr-i:hover{background:var(--surface-2)}
+.dr-i:focus-visible{outline:2px solid var(--accent)}
+.dr-i.on{background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
+.dr-ic{width:24px;height:24px;display:grid;place-items:center;flex:none}
+.dr-ic svg{width:22px;height:22px}
+.dr-ic .tab-av{width:26px;height:26px}
+.dr-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dr-n{font-size:12px;color:var(--ink-2);font-weight:500}
+.dr-sub{flex-basis:100%;padding-left:38px;margin-top:-4px;font-size:12px;color:var(--ink-2);font-weight:500}
+@media (prefers-reduced-motion:reduce){.dr-panel,.drawer{transition:none}}
 .brand h1{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1}
 .brand h1 i{font-style:normal;color:var(--accent)}
 .brand small{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
@@ -89,7 +117,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .tab-l{margin-left:2px}
 /* Handy: Menü als Leiste am unteren Rand */
 @media (max-width:899px){
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(5,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(3,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
     padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
   .tab{flex-direction:column;gap:3px;padding:6px 2px 4px;border-bottom:0;font-size:11.5px;font-weight:600;min-width:0}
   .tab-ic svg{width:24px;height:24px}
@@ -360,7 +388,7 @@ select.inp{flex:0 1 220px}
 </style>
 
 <header class="top"><div class="wrap">
-  <div class="brand"><h1>Fundus<i>.</i></h1><small id="modeLabel"></small></div>
+  <div class="brand"><button class="burger" data-act="drawer" aria-label="Menü öffnen" aria-controls="drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Fundus<i>.</i></h1><small id="modeLabel"></small></div>
   <div class="topr"><div id="acct"></div></div>
   <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
 </div></header>
@@ -369,6 +397,7 @@ select.inp{flex:0 1 220px}
   <main id="view"></main>
   <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Version 2026-10-19 15:43.</p>
 </div>
+<div id="drawer" class="drawer" hidden></div>
 <div id="sheet" class="sheet" hidden></div>
 <div id="intro" class="intro" hidden></div>
 <div id="toast" class="toast" hidden></div>
@@ -412,6 +441,14 @@ const IC={
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>',
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>',
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  m_alle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
+  m_film:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="m3.5 9 16-4.5.9 3.2M8.5 7.6l2.2 2.4M14 6l2.2 2.5"/></svg>',
+  m_serie:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m9 2 3 4 3-4M8 21h8"/></svg>',
+  m_musik:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>',
+  m_buch:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>',
+  m_podcast:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg>',
+  m_game:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 7h10a5 5 0 0 1 4.8 6.4l-1.1 3.8a2.5 2.5 0 0 1-4.3.9L14.5 16h-5l-1.9 2.1a2.5 2.5 0 0 1-4.3-.9l-1.1-3.8A5 5 0 0 1 7 7z"/><path d="M8 10v4M6 12h4"/><circle cx="16" cy="11" r=".6" fill="currentColor"/><circle cx="17.5" cy="13" r=".6" fill="currentColor"/></svg>',
+  cog:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>',
   layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>',
   heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>',
@@ -1224,7 +1261,7 @@ function keyPrompt(m){if(m==='game')return '<div class="empty"><p><b>Games</b> b
 
 /* ---------- Ansichten ---------- */
 /* [id, Langname (Desktop), Kurzname (Handy), Symbol] */
-const TABS=[['entdecken','Entdecken','Entdecken','home'],['merkliste','Merkliste','Merkliste','mark'],['neu','Neuerscheinungen','Neu','bell'],['basis','Meine Basis','Basis','layers'],['einstellungen','Einstellungen','Profil','user']];
+const TABS=[['entdecken','Entdecken','Entdecken','home'],['merkliste','Merkliste','Merkliste','mark'],['neu','Neuerscheinungen','Neu','bell']];
 function renderTabs(){
   renderAcct();
   const wl=Object.values(S.items).filter(x=>x.status==='watch').length;
@@ -1259,10 +1296,10 @@ function discoverBlock(m,n){
 const VIEWS={
   entdecken(){
     const fs=ui.med==='alle'||isFS(ui.med);
-    let h='<div class="head"><h2>Vorschläge für Dich</h2>';
+    let h='<div class="head"><h2>'+(ui.med==='alle'?'Vorschläge für Dich':'<span class="h-ic f-'+ui.med+'">'+IC['m_'+ui.med]+'</span>'+MEDIA[ui.med].label)+'</h2>';
     if(fs)h+='<label class="switch"><input type="checkbox" id="sw-only" data-set="onlyMine"'+(S.settings.onlyMine?' checked':'')+(S.settings.providers.length?'':' disabled')+'> Nur meine Dienste</label>';
     if(fs)h+='<button class="btn pri" data-act="tonight">'+IC.moon+'Heute Abend</button>';
-    h+='</div>'+medChips();
+    h+='</div>';
     const act=(ui.med==='alle'?RULE_M:[ui.med]).filter(rulesActive);
     if(act.length)h+='<p class="note" style="margin-top:10px">Regeln aktiv für '+act.map(m=>MEDIA[m].label).join(', ')+'. <button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Ändern</button></p>';
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
@@ -1726,6 +1763,11 @@ const ACT={
   tnNo(){const T=ui.tonight;if(!T||!T.cur)return;setStatus(T.cur.it,'hide');toast('Wird nicht mehr vorgeschlagen');nextTonight()},
   addMed(b){const a=ui.add;if(!a)return;a.m=b.dataset.m;addSearch();addUpdate();const i=$('#addQ');if(i)i.focus()},
   addToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const on=S.items[k]&&S.items[k].status==='watch';setStatus(it,on?null:'watch');addUpdate()},
+  drawer(){openDrawer()},
+  drawerClose(){closeDrawer()},
+  drMed(b){const m=b.dataset.m;ui.drawer=false;doCloseDrawer();ui.knownOpen=null;ui.tab='entdecken';ui.med=m;
+    try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
+  drTab(b){const t=b.dataset.tab;ui.drawer=false;doCloseDrawer();ui.tab=t;try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
   login(){login()},logout(){logout()},syncNow(){pushNow()},
   async install(){if(!installEvt){ui.instHelp=true;if(!ui.intro&&ui.tab!=='einstellungen'){ui.tab='einstellungen';navPush()}render();if(ui.intro)renderIntro();setTimeout(()=>{const h=document.querySelector('.insthelp');if(h)h.scrollIntoView({block:'center',behavior:'smooth'})},50);return}installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;render()},
   async notifAsk(){try{await Notification.requestPermission()}catch(e){}render()},
@@ -1750,7 +1792,7 @@ const ACT={
 };
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');
-  if(!b){if(e.target.id==='sheet'){if(ui.detail)closeDetail();else closeSheet()}return}
+  if(!b){if(e.target.id==='drawer'){closeDrawer();return}if(e.target.id==='sheet'){if(ui.detail)closeDetail();else closeSheet()}return}
   if(b.disabled)return;
   const f=ACT[b.dataset.act];if(f){e.preventDefault();f(b,e)}
 });
@@ -1764,19 +1806,40 @@ document.addEventListener('change',e=>{
   if(t.dataset.prov!==undefined&&ui.provs){const g=ui.provs[+t.dataset.prov];const set=new Set(S.settings.providers);g.ids.forEach(id=>t.checked?set.add(id):set.delete(id));S.settings.providers=[...set];save();resetPools(['film','serie'])}
 });
 document.addEventListener('input',e=>{if(e.target.id==='addQ'&&ui.add){ui.add.q=e.target.value;addSearch()}if(e.target.id==='pickQ')pickSearch(e.target.value);if(e.target.id==='provQ'){ui.provQ=e.target.value;const g=$('#provGrid');if(g)g.innerHTML=provGridHtml()}});
+/* ---------- Seitenmenü (Burger) ---------- */
+function openDrawer(){ui.drawer=true;renderDrawer();navPush({ov:'drawer'})}
+function closeDrawer(){if(history.state&&history.state.ov==='drawer'){history.back();return}doCloseDrawer()}
+function doCloseDrawer(){ui.drawer=false;const el=$('#drawer');el.classList.remove('open');setTimeout(()=>{if(!ui.drawer){el.hidden=true;el.innerHTML=''}},200);document.body.style.overflow=''}
+function renderDrawer(){
+  const el=$('#drawer');if(!ui.drawer)return;
+  const cnt=m=>byStatus(m,'like').length;
+  const item=(act,attrs,ic,label,on,extra)=>'<button class="dr-i'+(on?' on':'')+'" data-act="'+act+'" '+attrs+'><span class="dr-ic">'+ic+'</span><span class="dr-l">'+label+'</span>'+(extra||'')+'</button>';
+  const isE=ui.tab==='entdecken';
+  const av=SYNC.user&&SYNC.user.photo?'<img class="tab-av" src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':IC.user;
+  el.innerHTML='<div class="dr-panel" role="dialog" aria-modal="true" aria-label="Menü"><div class="dr-h"><span class="dr-brand">Fundus<i>.</i></span><button class="btn ghost" data-act="drawerClose" aria-label="Menü schließen">'+IC.x+'</button></div>'+
+    '<nav class="dr-sec" aria-label="Bereiche"><span class="st dr-cap">Bereiche</span>'+
+    item('drMed','data-m="alle"',IC.m_alle,'Alle',isE&&ui.med==='alle')+
+    ORDER.map(m=>item('drMed','data-m="'+m+'"',IC['m_'+m],MEDIA[m].label,isE&&ui.med===m,cnt(m)?'<span class="dr-n">'+cnt(m)+'</span>':'')).join('')+'</nav>'+
+    '<div class="dr-sec dr-bottom">'+
+    item('drTab','data-tab="basis"',IC.layers,'Meine Basis',ui.tab==='basis')+
+    item('drTab','data-tab="einstellungen"',av,SYNC.user?esc(SYNC.user.name||'Profil'):'Profil & Einstellungen',ui.tab==='einstellungen',SYNC.user?'<span class="dr-sub">Einstellungen</span>':'')+
+    '</div></div>';
+  el.hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(()=>el.classList.add('open'));
+}
 /* Zurück-Geste: jede Ebene (Reiter, Medium, Detail, Auswahl, Intro-Schritt) ist ein Verlaufseintrag */
 let navLock=false;
 function navPush(extra){if(navLock)return;try{history.pushState({tab:ui.tab,med:ui.med,...(extra||{})},'')}catch(e){}}
 window.addEventListener('popstate',e=>{
   const st=e.state||{};navLock=true;
   try{
+    if(ui.drawer&&st.ov!=='drawer'){doCloseDrawer();return}
     if(ui.detail&&st.ov!=='detail'){doCloseDetail();return}
     if((ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')&&st.ov!=='sheet'){doCloseSheet();return}
     if(ui.intro){const n=typeof st.ii==='number'?st.ii:0;if(n!==ui.intro.i){ui.intro.i=Math.min(n,introSteps().length-1);ui.pick=null;renderIntro();$('#intro').scrollTop=0}return}
     if(st.tab&&(st.tab!==ui.tab||(st.med||'alle')!==ui.med)){ui.tab=st.tab;ui.med=st.med||'alle';ui.knownOpen=null;render();window.scrollTo({top:0})}
   }finally{navLock=false}
 });
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.detail)closeDetail();else if(ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(ui.drawer){closeDrawer();return}if(ui.detail)closeDetail();else if(ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')closeSheet()});
 
 function render(){
   renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
