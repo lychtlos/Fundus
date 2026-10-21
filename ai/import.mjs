@@ -26,10 +26,10 @@ for(const {uid,dir} of index){
   if(tips.length>=3){
     const hist=[...tips.map(x=>({k:x.k,t:x.title})),...(user.ai.hist||[])].slice(0,HIST);
     ai={at:now,model,tips,hist,err:''};
-    console.log(dir+': '+tips.length+' Tipps → '+tips.map(x=>x.m+':'+x.title).join(' | '));
+    console.log('::notice title=KI-Tipps::'+dir+': '+tips.length+' Tipps → '+tips.map(x=>x.m+':'+x.title).join(' | '));
   }else{
     fail++;const msg=err||(raw?'Zu wenige gültige Tipps ('+tips.length+')':'KI-Lauf ohne Ergebnis');
-    console.log(dir+': '+msg);
+    console.log('::error title=KI-Tipps::'+dir+': '+msg+' (geprüft: '+Object.keys(checked).length+', Auswahl: '+(Array.isArray(raw)?raw.length:'keine')+')');
     ai={errAt:now,err:msg};
   }
   if(db){

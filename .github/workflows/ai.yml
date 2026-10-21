@@ -49,12 +49,14 @@ jobs:
           set +e
           claude -p "$(cat PROMPT.md)" --model "$MODEL" --permission-mode dontAsk \
             --allowedTools "Read,Write,Edit,Bash(node verify.mjs *)" \
-            --max-turns 60 --output-format json > claude.json
+            --max-turns 60 --output-format json > claude.json 2> claude.err
           code=$?
           set -e
+          [ -s claude.err ] && echo "::warning title=Claude stderr::$(head -c 400 claude.err | tr '\n' ' ')"
           node -e '
             const fs=require("fs");let o={};try{o=JSON.parse(fs.readFileSync("claude.json","utf8"))}catch(e){}
-            console.log("Exit:",process.argv[1],"| Fehler:",!!o.is_error,"| Runden:",o.num_turns,"| Ergebnis:",String(o.result||"").slice(0,300));
+            const raw=fs.existsSync("claude.json")?fs.readFileSync("claude.json","utf8"):"";
+            console.log("::notice title=Claude::Exit "+process.argv[1]+" | Fehler "+!!o.is_error+" | Runden "+o.num_turns+" | "+String(o.result||o.subtype||raw||"keine Ausgabe").replace(/\s+/g," ").slice(0,400));
             let err="";
             if(o.is_error||process.argv[1]!=="0"){const r=String(o.result||o.subtype||"");
               err=/auth|login|token|401|403|credential/i.test(r)?"Anmeldung bei Claude fehlgeschlagen – Token mit claude setup-token erneuern":/limit|usage|quota|429/i.test(r)?"Abo-Limit erreicht, nächster Versuch morgen":"KI-Lauf abgebrochen: "+r.slice(0,120)}

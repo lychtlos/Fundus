@@ -57,7 +57,7 @@ for(const [uid,u] of users){
   fs.writeFileSync(dir+'/profile.md',p);
   writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist},provNames:pv});
   index.push({uid,dir,likes:pos.length});
-  console.log(dir+': '+pos.length+' positive Bewertungen, '+p.length+' Zeichen Profil');
+  console.log('::notice title=Profil::'+dir+': '+pos.length+' positive Bewertungen, '+p.length+' Zeichen');
 }
 writeJ('work/index.json',index);
 if(!index.length)console.log('Keine Konten mit genug Bewertungen.');
