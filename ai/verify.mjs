@@ -1,7 +1,7 @@
 /* Schritt 2 (von der KI aufgerufen): prüft Kandidaten gegen die echten Datenbanken.
    Aufruf: node verify.mjs u1   – liest work/u1/candidates.json: [{"m":"film","title":"…","hint":"2016"}]
    Ausgabe je Kandidat: OK (mit Schlüssel k) oder Grund der Ablehnung. Ergebnis auch in work/u1/checked.json. */
-import {lookup,passRules,knownSets,norm,readJ,writeJ,MEDIA,sleep} from './lib.mjs';
+import {lookup,passRules,knownSets,norm,readJ,writeJ,MEDIA,sleep,isPopular} from './lib.mjs';
 const id=process.argv[2];
 if(!/^u\d+$/.test(id||'')){console.log('Aufruf: node verify.mjs u1');process.exit(2)}
 const dir='work/'+id,user=readJ(dir+'/user.json',null);
@@ -28,6 +28,7 @@ for(const c of cands){
   if(r.extra.prov){const pn=[...new Set(r.extra.prov.map(p=>p.name))];const hit=pn.filter(n=>[...mine].some(x=>n.toLowerCase().startsWith(x)));
     r.extra.mine=hit;info+=' | Streaming DE: '+(pn.length?pn.slice(0,4).join(', '):'keins')+(mine.size?(hit.length?' → IM ABO':' → nicht im Abo'):'')}
   if(r.extra.plats)info+=' | '+r.extra.plats.slice(0,5).join(', ');
+  if(isPopular(it,r.extra))info+=' | SEHR BEKANNT';
   if(m==='buch'&&!r.extra.deutsch)info+=' | keine deutsche Ausgabe gefunden';
   checked[it.k]={st,item:it,extra:r.extra,asked:t};
   out.push((st==='ok'?'✓ ':'✗ ')+tag+' → '+it.k+' „'+it.title+'“ ('+info+')'+(why?' – '+why:''));
@@ -35,4 +36,4 @@ for(const c of cands){
 }
 writeJ(dir+'/checked.json',checked);
 console.log(out.join('\n'));
-console.log('\n'+Object.values(checked).filter(x=>x.st==='ok').length+' geprüfte Treffer verfügbar. Auswahl in work/'+id+'/tips.json schreiben: [{"k":"film:123","why":"…"}]');
+console.log('\n'+Object.values(checked).filter(x=>x.st==='ok').length+' geprüfte Treffer verfügbar. Auswahl in work/'+id+'/tips.json schreiben: [{"k":"film:123","why":"…"}]. Höchstens ein Drittel darf SEHR BEKANNT sein.');

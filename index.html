@@ -177,7 +177,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .t{font-size:17px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
 .sub{margin:0;color:var(--ink-2);font-size:13.5px;overflow-wrap:anywhere}
 .why{margin:2px 0 0;font-size:13px;color:var(--ink)}
-.ai-sec .sec-h h3{display:flex;align-items:center;gap:8px}.ai-sec .sec-h svg{width:18px;height:18px;color:var(--acc)}.ai-sec .why{font-style:normal}.ai-sec .why::before{content:'✦ ';color:var(--acc)}
+.why.ai-why::before{content:'✦ ';color:var(--acc)}
 .why span{color:var(--ink-2)}
 .av{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin-top:4px;align-self:flex-start;max-width:100%}
 .av img{width:16px;height:16px;border-radius:3px}
@@ -1259,10 +1259,10 @@ const hasRating=it=>it.rating>0&&(it.votes==null||it.votes>=20);
 const rtClass=r=>r>=7.5?'hi':r>=6?'mid':'lo';
 function ratingHtml(it){if(!hasRating(it))return '';
   return '<span class="rt rt-'+rtClass(it.rating)+'" title="Bewertung auf TMDB'+(it.votes?', '+it.votes.toLocaleString('de-DE')+' Stimmen':'')+'">★ '+nf1.format(it.rating)+(it.votes?' <small>'+nfc.format(it.votes)+' Stimmen</small>':'')+'</span>'}
-function card(it,mode,reasons){
+function card(it,mode,reasons,isAi){
   reg(it);const M=MEDIA[it.m];const k=esc(it.k);
   const meta='<div class="meta"><span class="mtag">'+M.one+'</span>'+((it.genres||[]).length?'<span>'+esc(it.genres.slice(0,2).join(' · '))+'</span>':'')+'</div>';
-  const why=reasons&&reasons.length?'<p class="why">'+esc(reasons[0])+(reasons[1]?' <span>· '+esc(reasons[1])+'</span>':'')+'</p>':'';
+  const why=reasons&&reasons.length?'<p class="why'+(isAi?' ai-why':'')+'"'+(isAi?' title="KI-Tipp von Claude"':'')+'>'+esc(reasons[0])+(reasons[1]?' <span>· '+esc(reasons[1])+'</span>':'')+'</p>':'';
   const l=isFS(it.m)?null:links(it)[0];
   const lnk=l?'<a class="btn ghost lnk" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+IC.ext+'</a>':'';
   let acts='';
@@ -1311,18 +1311,9 @@ function aiTips(m){
   if(MODE!=='live'||S.settings.ai===false||!S.ai||!(S.ai.tips||[]).length)return [];
   return S.ai.tips.filter(t=>(m==='alle'||t.m===m)&&MEDIA[t.m]&&!S.items[t.k]&&passRules(t.m,t)).map(t=>{const it=reg({...REG.get(t.k),...t});return {it,why:t.why}});
 }
-function aiSection(m){
-  const L=aiTips(m);if(!L.length)return '';
-  const n=m==='alle'?(ui.aiAll?L.length:6):L.length;
-  const fs=L.slice(0,n).map(x=>x.it).filter(i=>isFS(i.m)&&!needsKey(i.m));
-  ['film','serie'].forEach(mm=>{const its=fs.filter(i=>i.m===mm&&!AV.has(i.k));if(its.length)ensureAv(mm,its)});
-  return '<section class="sec ai-sec" style="margin-top:22px"><div class="sec-h"><h3>'+IC.spark+'KI-Tipps'+(m==='alle'?'':' · '+MEDIA[m].label)+'</h3><span class="note">von Claude · '+new Date(S.ai.at).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+'</span></div>'+
-    '<div class="grid">'+L.slice(0,n).map(x=>card(x.it,'discover',[x.why])).join('')+'</div>'+
-    (L.length>n?'<div class="more"><button class="btn" data-act="aiAll">Alle '+L.length+' KI-Tipps</button></div>':'')+'</section>';
-}
 function aiBox(){
   const a=S.ai||{};
-  let h='<p>Jede Nacht wertet Claude Deine Bewertungen aus allen Bereichen aus, sucht 12 bis 15 Titel und begründet jeden. Jeder Titel wird vorher gegen TMDB, Deezer, Open Library, Apple Podcasts und IGDB geprüft. Läuft über Dein Claude-Abo, ohne Zusatzkosten. Nötig: Anmeldung (Konto) und mindestens 5 Bewertungen.</p>';
+  let h='<p>Jede Nacht wertet Claude Deine Bewertungen aus allen Bereichen aus und sucht je Bereich bis zu 5 Titel mit Begründung. Sie stehen in „Entdecken“ an erster Stelle (mit ✦ markiert), danach folgen die üblichen Vorschläge. Jeder Titel wird vorher gegen TMDB, Deezer, Open Library, Apple Podcasts und IGDB geprüft. Läuft über Dein Claude-Abo, ohne Zusatzkosten. Nötig: Anmeldung (Konto) und mindestens 5 Bewertungen.</p>';
   h+='<div class="opts"><label class="switch"><input type="checkbox" id="sw-ai" data-set="ai"'+(S.settings.ai!==false?' checked':'')+'> KI-Tipps anzeigen und nachts erstellen</label>';
   if(a.at)h+='<p class="note" style="margin:0">Letzte Tipps: '+fmtDT(a.at)+' · '+(a.tips||[]).length+' Titel'+(a.model?' · Modell '+esc(a.model):'')+'</p>';
   else h+='<p class="note" style="margin:0">'+(SYNC.user?'Noch keine Tipps. Der erste Lauf erfolgt nachts.':'Für KI-Tipps bitte anmelden.')+'</p>';
@@ -1331,14 +1322,26 @@ function aiBox(){
 }
 function discoverBlock(m,n){
   if(needsKey(m))return keyPrompt(m);
-  if(!byStatus(m,'like').length&&!byStatus(m,'watch').length)return emptyBase(m);
-  if(ui.err[m])return '<p class="err">Vorschläge konnten nicht geladen werden: '+esc(ui.err[m])+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">Erneut versuchen</button>';
+  /* zuerst die KI-Tipps des Bereichs, danach mit den herkömmlichen Vorschlägen auffüllen */
+  const only=isFS(m)&&S.settings.onlyMine&&S.settings.providers.length;
+  let A=aiTips(m).filter(x=>ui.med!==m||passF(m,x.it));
+  if(isFS(m)){const look=A.map(x=>x.it).filter(i=>!AV.has(i.k));if(look.length)ensureAv(m,look)}
+  if(only)A=A.filter(x=>AV.has(x.it.k)&&avSum(x.it)?.hits.length);
+  const aiH=A.slice(0,n).map(x=>card(x.it,'discover',[x.why],true)).join('');
+  const hasBase=byStatus(m,'like').length||byStatus(m,'watch').length;
+  if(!hasBase)return A.length?'<div class="grid">'+aiH+'</div>':emptyBase(m);
+  if(A.length>=n&&ui.med!==m)return '<div class="grid">'+aiH+'</div>';
+  if(ui.err[m])return (A.length?'<div class="grid">'+aiH+'</div>':'')+'<p class="err">Vorschläge konnten nicht geladen werden: '+esc(ui.err[m])+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">Erneut versuchen</button>';
   ensurePool(m);
-  if(!ui.pool[m])return skel(Math.min(n,6));
-  const v=visible(m,n);
-  if(!v.list.length&&!v.pending&&ui.med===m&&fltActive(m))return '<div class="empty"><p>Keine Vorschläge mit diesen Filtern. Filter lockern oder neue Vorschläge laden.</p><button class="btn" data-act="fltReset" data-m="'+m+'">Filter zurücksetzen</button><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
-  if(!v.list.length)return v.pending?skel(3):'<div class="empty"><p>'+(isFS(m)&&S.settings.onlyMine?'Keine Vorschläge bei Deinen Diensten gefunden. Schalte „Nur meine Dienste“ aus oder lade neue Vorschläge.':'Keine weiteren Vorschläge. Erweitere Deine Basis oder lade neu.')+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
-  return '<div class="grid">'+v.list.map(c=>card(c.it,'discover',c.reasons)).join('')+'</div>'+(v.more&&ui.med!=='alle'?'<div class="more"><button class="btn" data-act="more" data-m="'+m+'">Mehr anzeigen</button></div>':'');
+  if(!ui.pool[m])return A.length?'<div class="grid">'+aiH+'</div>'+(A.length<n?skel(Math.min(n-A.length,3)):''):skel(Math.min(n,6));
+  const ak=new Set(A.map(x=>x.it.k));
+  const rest=Math.max(0,n-A.length);
+  const v=visible(m,rest+A.length);
+  const fill=v.list.filter(c=>!ak.has(c.it.k)).slice(0,rest);
+  const more=A.length>n||v.more||v.list.filter(c=>!ak.has(c.it.k)).length>rest;
+  if(!A.length&&!fill.length&&!v.pending&&ui.med===m&&fltActive(m))return '<div class="empty"><p>Keine Vorschläge mit diesen Filtern. Filter lockern oder neue Vorschläge laden.</p><button class="btn" data-act="fltReset" data-m="'+m+'">Filter zurücksetzen</button><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
+  if(!A.length&&!fill.length)return v.pending?skel(3):'<div class="empty"><p>'+(isFS(m)&&S.settings.onlyMine?'Keine Vorschläge bei Deinen Diensten gefunden. Schalte „Nur meine Dienste“ aus oder lade neue Vorschläge.':'Keine weiteren Vorschläge. Erweitere Deine Basis oder lade neu.')+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
+  return '<div class="grid">'+aiH+fill.map(c=>card(c.it,'discover',c.reasons)).join('')+'</div>'+(more&&ui.med!=='alle'?'<div class="more"><button class="btn" data-act="more" data-m="'+m+'">Mehr anzeigen</button></div>':'');
 }
 const VIEWS={
   suchen(){
@@ -1357,7 +1360,6 @@ const VIEWS={
     const act=(ui.med==='alle'?RULE_M:[ui.med]).filter(rulesActive);
     if(act.length)h+='<p class="note" style="margin-top:10px">Regeln aktiv für '+act.map(m=>MEDIA[m].label).join(', ')+'. <button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Ändern</button></p>';
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
-    h+=aiSection(ui.med);
     if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
     else{const blk=discoverBlock(ui.med,ui.shown[ui.med]||12);h+=filterBar(ui.med)+'<div style="margin-top:16px">'+blk+'</div>'}
     return h;
@@ -1772,7 +1774,6 @@ const ACT={
   unset(b){act(b.dataset.k,null)},
   known(b){ui.knownOpen=ui.knownOpen===b.dataset.k?null:b.dataset.k;render()},
   more(b){const m=b.dataset.m;ui.shown[m]=(ui.shown[m]||12)+12;render()},
-  aiAll(){ui.aiAll=true;render()},
   reshuffle(b){const m=b.dataset.m;resetPools(m==='alle'?null:[m]);render()},
   pick(b){openSheet(b.dataset.m)},
   closePick(){closeSheet()},

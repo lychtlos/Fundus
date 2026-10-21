@@ -110,3 +110,12 @@ export function knownSets(user){
   const hist=new Set(((user.ai||{}).hist||[]));
   return {keys,names,hist};
 }
+
+/* sehr bekannt = Mainstream; höchstens ein Drittel der Tipps */
+export function isPopular(it,extra={}){
+  if(it.m==='film')return (it.votes||0)>=8000;
+  if(it.m==='serie')return (it.votes||0)>=3000;
+  if(it.m==='game')return (it.votes||0)>=1500;
+  if(it.m==='musik')return (extra.fans||0)>=1000000;
+  return false;
+}

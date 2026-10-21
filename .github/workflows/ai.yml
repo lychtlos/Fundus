@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       model:
-        description: 'Modell (sonnet, opus, haiku)'
+        description: 'Modell (opus, sonnet, haiku). Bei Fehler/Limit Ersatz: sonnet'
         required: false
-        default: 'sonnet'
+        default: 'opus'
 
 permissions:
   contents: read
@@ -20,9 +20,9 @@ concurrency:
 jobs:
   tips:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     env:
-      MODEL: ${{ github.event.inputs.model || 'sonnet' }}
+      MODEL: ${{ github.event.inputs.model || 'opus' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,26 +46,40 @@ jobs:
         run: |
           if [ "$(cat work/index.json)" = "[]" ]; then echo "Keine Konten"; exit 0; fi
           if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then echo "err=Secret CLAUDE_CODE_OAUTH_TOKEN fehlt" >> "$GITHUB_OUTPUT"; exit 0; fi
+          run_claude(){
+            rm -f claude.json claude.err
+            claude -p "$(cat PROMPT.md)" --model "$1" --permission-mode dontAsk \
+              --allowedTools "Read,Write,Edit,Bash(node verify.mjs *)" \
+              --max-turns 80 --output-format json > claude.json 2> claude.err
+            code=$?
+            [ -s claude.err ] && echo "::warning title=Claude stderr ($1)::$(head -c 400 claude.err | tr '\n' ' ')"
+            node -e '
+              const fs=require("fs");let o={};try{o=JSON.parse(fs.readFileSync("claude.json","utf8"))}catch(e){}
+              const raw=fs.existsSync("claude.json")?fs.readFileSync("claude.json","utf8"):"";
+              console.log("::notice title=Claude ("+process.argv[2]+")::Exit "+process.argv[1]+" | Fehler "+!!o.is_error+" | Runden "+o.num_turns+" | "+String(o.result||o.subtype||raw||"keine Ausgabe").replace(/\s+/g," ").slice(0,400));
+              let err="";
+              if(o.is_error||process.argv[1]!=="0"){const r=String(o.result||o.subtype||"");
+                err=/auth|login|token|401|credential/i.test(r)?"Anmeldung bei Claude fehlgeschlagen – Token mit claude setup-token erneuern":/limit|usage|quota|429/i.test(r)?"Abo-Limit erreicht, nächster Versuch morgen":"KI-Lauf abgebrochen: "+r.slice(0,120)}
+              fs.writeFileSync("claude.status",err);
+            ' "$code" "$1"
+          }
           set +e
-          claude -p "$(cat PROMPT.md)" --model "$MODEL" --permission-mode dontAsk \
-            --allowedTools "Read,Write,Edit,Bash(node verify.mjs *)" \
-            --max-turns 60 --output-format json > claude.json 2> claude.err
-          code=$?
+          run_claude "$MODEL"
+          err=$(cat claude.status)
+          used="$MODEL"
+          # anderes Problem als Anmeldung (z. B. Opus-Limit, Modell nicht im Abo): mit Sonnet wiederholen
+          if [ -n "$err" ] && [ "$MODEL" != "sonnet" ] && ! echo "$err" | grep -q "Anmeldung"; then
+            for d in work/u*/; do rm -f "$d/checked.json" "$d/tips.json" "$d/candidates.json"; done
+            run_claude sonnet; err=$(cat claude.status); used="sonnet (Ersatz)"
+          fi
           set -e
-          [ -s claude.err ] && echo "::warning title=Claude stderr::$(head -c 400 claude.err | tr '\n' ' ')"
-          node -e '
-            const fs=require("fs");let o={};try{o=JSON.parse(fs.readFileSync("claude.json","utf8"))}catch(e){}
-            const raw=fs.existsSync("claude.json")?fs.readFileSync("claude.json","utf8"):"";
-            console.log("::notice title=Claude::Exit "+process.argv[1]+" | Fehler "+!!o.is_error+" | Runden "+o.num_turns+" | "+String(o.result||o.subtype||raw||"keine Ausgabe").replace(/\s+/g," ").slice(0,400));
-            let err="";
-            if(o.is_error||process.argv[1]!=="0"){const r=String(o.result||o.subtype||"");
-              err=/auth|login|token|401|403|credential/i.test(r)?"Anmeldung bei Claude fehlgeschlagen – Token mit claude setup-token erneuern":/limit|usage|quota|429/i.test(r)?"Abo-Limit erreicht, nächster Versuch morgen":"KI-Lauf abgebrochen: "+r.slice(0,120)}
-            if(err)fs.appendFileSync(process.env.GITHUB_OUTPUT,"err="+err.replace(/\n/g," ")+"\n");
-          ' "$code"
+          echo "used=$used" >> "$GITHUB_OUTPUT"
+          [ -n "$err" ] && echo "err=$err" >> "$GITHUB_OUTPUT"
+          exit 0
       - name: Tipps prüfen und speichern
         working-directory: ai
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
           AI_ERROR: ${{ steps.claude.outputs.err }}
-          AI_MODEL: ${{ env.MODEL }}
+          AI_MODEL: ${{ steps.claude.outputs.used || env.MODEL }}
         run: node import.mjs
