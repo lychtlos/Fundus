@@ -438,7 +438,7 @@ const MEDIA={
   podcast:{label:'Podcasts',one:'Podcast',sq:true,desc:'Mit Hinweis auf neue Folgen'},
   game:{label:'Games',one:'Spiel',sq:false,desc:'Spiele und Release-Termine'}
 };
-const ORDER=['film','serie','musik','buch','podcast','game'];
+const ORDER=['serie','film','musik','buch','podcast','game'];
 const isFS=m=>m==='film'||m==='serie';
 const IC={
   play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>',
@@ -516,7 +516,7 @@ const DEF={tmdbKey:'',gbKey:'',rawgKey:'',tmKey:'',plz:'',radius:150,concerts:tr
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,del:{},metaTs:0,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
-function loadState(){try{const raw=localStorage.getItem(SKEY());if(raw){const o=JSON.parse(raw);return {...newState(),...o,settings:{...DEF,...(o.settings||{})}}}}catch(e){}return null}
+function loadState(){try{const raw=localStorage.getItem(SKEY());if(raw){const o=JSON.parse(raw);normItems(o.items);return {...newState(),...o,settings:{...DEF,...(o.settings||{})}}}}catch(e){}return null}
 let metaSig='';
 function localSave(){try{localStorage.setItem(SKEY(),JSON.stringify(S))}catch(e){}}
 function save(){
@@ -524,12 +524,20 @@ function save(){
   if(S.del){const lim=Date.now()-90*864e5;for(const k in S.del)if(S.del[k]<lim)delete S.del[k]}
   localSave();if(typeof scheduleSync==='function')scheduleSync();
 }
-const KEEP=['nr','k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig','gslugs','released','tba'];
+const KEEP=['fol','nr','k','m','id','title','sub','year','img','genres','gids','link','authors','subjects','seasons','demo','src','gq','authorName','tk','fyid','rating','votes','orig','gslugs','released','tba'];
 function strip(it){const o={};KEEP.forEach(f=>{if(it[f]!==undefined)o[f]=it[f]});return o}
-function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};if(!st){delete S.items[it.k];S.del[it.k]=Date.now()}else{S.items[it.k]={...strip(it),status:st,ts:Date.now()};delete S.del[it.k]}save();return prev}
+/* Status (Merkliste, Bewertung …) und „Verfolgen“ (fol) sind unabhängig: ein Eintrag bleibt, solange eins davon gesetzt ist */
+function setStatus(it,st){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};const fol=prev&&prev.fol;
+  if(!st&&!fol){delete S.items[it.k];S.del[it.k]=Date.now()}else{const o={...strip(it),status:st||undefined,ts:Date.now()};if(fol)o.fol=true;else delete o.fol;if(!st)delete o.status;S.items[it.k]=o;delete S.del[it.k]}save();return prev}
+function setFol(it,on){const prev=S.items[it.k]?{...S.items[it.k]}:null;S.del=S.del||{};
+  if(!on&&!(prev&&prev.status)){delete S.items[it.k];S.del[it.k]=Date.now()}else{const o={...strip(it),...(prev||{}),ts:Date.now()};if(on)o.fol=true;else delete o.fol;S.items[it.k]=o;delete S.del[it.k]}save();return prev}
+const isFolK=k=>!!(S.items[k]&&S.items[k].fol);
+const folList=()=>Object.values(S.items).filter(x=>x.m==='serie'&&x.fol).sort((a,b)=>b.ts-a.ts);
+/* alter Status 'follow' → Flag */
+function normItems(items){Object.values(items||{}).forEach(x=>{if(x.status==='follow'){delete x.status;x.fol=true}});return items}
 function restore(k,prev){S.del=S.del||{};if(prev){S.items[k]={...prev,ts:Date.now()};delete S.del[k]}else{delete S.items[k];S.del[k]=Date.now()}save()}
 /* 'like' umfasst auch Lieblingstitel ('love'); byExact unterscheidet */
-const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&(x.status===st||st==='like'&&(x.status==='love'||x.status==='follow'))).sort((a,b)=>b.ts-a.ts);
+const byStatus=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&(x.status===st||st==='like'&&(x.status==='love'||!x.status&&x.fol))).sort((a,b)=>b.ts-a.ts);
 const byExact=(m,st)=>Object.values(S.items).filter(x=>x.m===m&&x.status===st).sort((a,b)=>b.ts-a.ts);
 
 function applyTheme(){
@@ -1191,9 +1199,9 @@ function renderDetail(){
   const D=ui.detail;const el=$('#sheet');if(!D)return;
   const it=S.items[D.k]?{...D.it,...S.items[D.k]}:D.it;const d=D.data;const M=MEDIA[it.m];const k=esc(it.k);
   const st=S.items[it.k]&&S.items[it.k].status;
-  const stLbl={follow:'Wird verfolgt',watch:'Auf der Merkliste',love:'♥ Lieblingstitel',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
+  const stLbl={watch:'Auf der Merkliste',love:'♥ Lieblingstitel',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
   const btn=(a,l,ic)=>'<button class="btn'+(st===a?' pri':'')+'" data-act="dset" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+(st===a)+'">'+ic+l+'</button>';
-  const acts='<div class="dt-acts">'+(it.m==='serie'?btn('follow','Verfolgen',IC.play):'')+btn('watch','Merken',IC.mark)+btn('love','Liebling',st==='love'?IC.heartF:IC.heart)+btn('like','Gefällt mir',IC.up)+btn('dislike','Gefällt nicht',IC.down)+btn('hide','Kein Interesse',IC.x)+(st?'<button class="btn ghost" data-act="dset" data-st="" data-k="'+k+'">Zurücksetzen</button>':'')+'</div>';
+  const fo=isFolK(it.k);const acts='<div class="dt-acts">'+(it.m==='serie'?'<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'" title="Neue Folgen per Push">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>':'')+btn('watch','Merken',IC.mark)+btn('love','Liebling',st==='love'?IC.heartF:IC.heart)+btn('like','Gefällt mir',IC.up)+btn('dislike','Gefällt nicht',IC.down)+btn('hide','Kein Interesse',IC.x)+(st?'<button class="btn ghost" data-act="dset" data-st="" data-k="'+k+'">Zurücksetzen</button>':'')+'</div>';
   const lk='<div class="row">'+links(it).map(l=>'<a class="btn ghost" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+IC.ext+'</a>').join('')+'</div>';
   let main='';
   if(!d&&!D.err)main='<div class="skel" style="height:200px"></div>';
@@ -1282,10 +1290,10 @@ function card(it,mode,reasons,isAi){
   }else if(mode==='search'){
     const st=S.items[it.k]&&S.items[it.k].status;
     const b=(a,l,ic,on)=>'<button class="btn'+(on?' pri':'')+(a==='love'?' lovebtn':'')+'" data-act="gsSet" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+!!on+'"'+(a==='love'?' title="Lieblingstitel"':'')+'>'+ic+l+'</button>';
-    acts=(it.m==='serie'?b('follow',st==='follow'?'Verfolgt':'Verfolgen',IC.play,st==='follow'):'')+b('watch',st==='watch'?'Gemerkt':'Merken',IC.mark,st==='watch')+b('like','Gefällt mir',IC.up,st==='like')+b('love','',st==='love'?IC.heartF:IC.heart,st==='love')+
-      (st&&st!=='watch'&&st!=='like'&&st!=='love'&&st!=='follow'?'<span class="note" style="align-self:center">'+(st==='dislike'?'gefällt nicht':'ausgeblendet')+'</span>':'');
+    const fo=isFolK(it.k);acts=(it.m==='serie'?'<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>':'')+b('watch',st==='watch'?'Gemerkt':'Merken',IC.mark,st==='watch')+b('like','Gefällt mir',IC.up,st==='like')+b('love','',st==='love'?IC.heartF:IC.heart,st==='love')+
+      (st&&st!=='watch'&&st!=='like'&&st!=='love'?'<span class="note" style="align-self:center">'+(st==='dislike'?'gefällt nicht':'ausgeblendet')+'</span>':'');
   }else if(mode==='watch'){
-    acts=(it.m==='serie'?'<button class="btn" data-act="follow" data-k="'+k+'" title="Neue Folgen per Push, nicht mehr auf der Merkliste">'+IC.play+'Verfolgen</button>':'')+'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
+    acts=(it.m==='serie'?(()=>{const fo=isFolK(it.k);return '<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'" title="Neue Folgen per Push">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>'})():'')+'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
   return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
@@ -1410,7 +1418,7 @@ const VIEWS={
     const all=Object.values(S.items).filter(x=>x.status==='watch');
     if(!all.length)return h+'<div class="empty"><p>Die Merkliste ist leer. Unter „Entdecken“ landet mit „Merken“ ein Titel hier.</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
     const W=MODE==='live'&&S.settings.ai!==false&&S.ai&&S.ai.order||{};
-    const nf=byExact('serie','follow').length;
+    const nf=folList().length;
     if(nf)h+='<p class="note" style="margin-top:-6px">'+IC.play.replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' '+nf+(nf===1?' verfolgte Serie steht':' verfolgte Serien stehen')+' unter <button class="tbtn" data-act="tab" data-tab="neu" style="text-decoration:underline">Neuerscheinungen</button>.</p>';
     if(Object.keys(W).length)h+='<p class="note">✦ Reihenfolge von Claude: was am besten zu Dir passt, zuerst.</p>';
     ORDER.forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
@@ -1426,7 +1434,7 @@ const VIEWS={
     const R0=ui.rel;
     if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">Prüfe '+R0.done+' von '+R0.total+' Einträgen …'+(R0.fresh&&R0.fresh.length?' '+R0.fresh.length+' Treffer bisher':'')+'</span></div>';
     const L0=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
-    const isFol=e=>S.items[e.src.k]&&S.items[e.src.k].status==='follow';
+    const isFol=e=>isFolK(e.src.k);
     h+=followBox(L0.filter(isFol));
     const L=L0.filter(e=>!isFol(e)).concat(aiConcertEv(L0));
     const RD=aiRadar();
@@ -1445,7 +1453,7 @@ const VIEWS={
   basis(){
     let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro erneut starten</button></div><p class="lead">Grundlage aller Vorschläge. ♥ Lieblingstitel zählen doppelt (Herz antippen), alles mit „Gefällt mir“ fließt ein, „Gefällt mir nicht“ wertet ähnliche Titel ab, „Kein Interesse“ blendet nur aus.</p>';
     ORDER.forEach(m=>{
-      const lk=byStatus(m,'like'),dl=byStatus(m,'dislike'),hd=byStatus(m,'hide');
+      const lk=byStatus(m,'like').filter(i=>i.status),dl=byStatus(m,'dislike'),hd=byStatus(m,'hide');
       h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+lk.length+'</span></h3><button class="btn" data-act="pick" data-m="'+m+'">'+IC.plus+'Erweitern</button></div>';
       h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill'+(i.status==='love'?' is-love':'')+'"><button class="hb" data-act="loveTog" data-k="'+esc(i.k)+'" aria-label="'+(i.status==='love'?'Kein Lieblingstitel mehr':'Als Lieblingstitel markieren')+'" title="Lieblingstitel">'+(i.status==='love'?IC.heartF:IC.heart)+'</button><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
       if(dl.length||hd.length)h+='<details class="rated"><summary>Abgelehnt und ausgeblendet ('+(dl.length+hd.length)+')</summary><div class="base">'+dl.concat(hd).map(i=>'<span class="pill neg"><span>'+esc(i.title)+' · '+(i.status==='dislike'?'gefällt nicht':'kein Interesse')+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="Wieder vorschlagen">'+IC.x+'</button></span>').join('')+'</div></details>';
@@ -1504,7 +1512,7 @@ function keyBox(){
 function gbBox(){return '<p>Genres und ähnliche Bücher kommen von Open Library (deutsche Ausgaben), Titelsuche und neue Bücher Deiner Autoren von Google Books. Ein Standardschlüssel ist hinterlegt, ein eigener hat Vorrang.</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
 /* verfolgte Serien: eigener, umrandeter Bereich */
 function followBox(ev){
-  const fol=byExact('serie','follow');if(!fol.length)return '';
+  const fol=folList();if(!fol.length)return '';
   const withEv=new Set(ev.map(e=>e.src.k));
   const up=ev.filter(e=>e.up).sort((a,b)=>String(a.date).localeCompare(String(b.date))),past=ev.filter(e=>!e.up);
   let h='<section class="follow-box"><div class="subh">'+IC.play+'Verfolgt · '+fol.length+(fol.length===1?' Serie':' Serien')+'</div>';
@@ -1831,7 +1839,7 @@ let tT=null,undo=null;
 function toast(msg,und,extra){const t=$('#toast');undo=und||null;t.classList.toggle('wide',!!extra);t.innerHTML='<span>'+esc(msg)+'</span>'+(und?'<button data-act="undo">Rückgängig</button>':'')+(extra||'');t.hidden=false;clearTimeout(tT);tT=setTimeout(()=>{t.hidden=true;undo=null},extra?9000:4500)}
 
 /* ---------- Aktionen ---------- */
-const LBL={follow:'Wird verfolgt – neue Folgen kommen per Push',watch:'Auf der Merkliste',love:'♥ Lieblingstitel – zählt doppelt für Vorschläge',like:'Gefällt Dir – fließt in Vorschläge ein',dislike:'Gefällt Dir nicht – Ähnliches wird abgewertet',hide:'Wird nicht mehr vorgeschlagen'};
+const LBL={watch:'Auf der Merkliste',love:'♥ Lieblingstitel – zählt doppelt für Vorschläge',like:'Gefällt Dir – fließt in Vorschläge ein',dislike:'Gefällt Dir nicht – Ähnliches wird abgewertet',hide:'Wird nicht mehr vorgeschlagen'};
 function act(k,st){
   const it=REG.get(k)||S.items[k];if(!it)return;
   const prev=setStatus(it,st);ui.knownOpen=null;
@@ -1847,8 +1855,10 @@ const ACT={
   med(b){if(ui.med===b.dataset.m)return;ui.med=b.dataset.m;ui.knownOpen=null;render();window.scrollTo({top:0});navPush()},
   theme(b){S.settings.theme=b.dataset.v;save();applyTheme();render()},
   watch(b){act(b.dataset.k,'watch')},
-  follow(b){act(b.dataset.k,'follow')},
-  unfollow(b){act(b.dataset.k,null)},
+  folTog(b){const k=b.dataset.k;const it=REG.get(k)||S.items[k];if(!it)return;const on=!isFolK(k);const prev=setFol(it,on);
+    if(ui.detail)renderDetail();if(ui.tab==='suchen'&&ui.gs){const y=window.scrollY;gsUpdate();window.scrollTo(0,y);renderTabs()}else render();
+    toast(on?'Wird verfolgt – neue Folgen kommen per Push':'Nicht mehr verfolgt',()=>{restore(k,prev);if(ui.detail)renderDetail();render()})},
+  unfollow(b){const k=b.dataset.k;const it=S.items[k];if(it){setFol(it,false);render()}},
   like(b){act(b.dataset.k,'like')},
   love(b){act(b.dataset.k,'love')},
   loveTog(b){const k=b.dataset.k;const it=S.items[k];if(!it)return;setStatus(it,it.status==='love'?'like':'love');delete ui.pool[it.m];render()},
@@ -2049,7 +2059,7 @@ function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt
 /* nur eigene Felder schreiben; ai und wish schreibt der KI-Lauf */
 const OWN=['v','writer','updatedAt','items','del','subs','settings','genres','seen','snap','onboarded','lastCheck','metaTs','wishReq'];
 function mergeRemote(r){
-  const items={...S.items},del={...(S.del||{})};const lt=k=>Math.max(items[k]?items[k].ts||0:0,del[k]||0);
+  normItems(r.items);const items={...S.items},del={...(S.del||{})};const lt=k=>Math.max(items[k]?items[k].ts||0:0,del[k]||0);
   Object.entries(r.items||{}).forEach(([k,v])=>{if((v.ts||0)>lt(k)){items[k]=v;delete del[k]}});
   Object.entries(r.del||{}).forEach(([k,t])=>{if(t>lt(k)){delete items[k];del[k]=t}});
   S.items=items;S.del=del;

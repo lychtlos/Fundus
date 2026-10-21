@@ -37,16 +37,18 @@ for(const [uid,u] of users){
   if(WISH&&!(u.wishReq&&u.wishReq.q)){console.log('Kein Wunsch hinterlegt');continue}
   if(!WISH&&st.ai===false){console.log(uid.slice(0,6)+'…: KI-Tipps ausgeschaltet');continue}
   const items=Object.values(u.items||{});
-  const pos=items.filter(x=>x.status==='like'||x.status==='love');
+  items.forEach(x=>{if(x.status==='follow'){delete x.status;x.fol=true}});
+  const pos=items.filter(x=>x.status==='like'||x.status==='love'||x.fol&&!x.status);
   if(pos.length<MIN_LIKES){console.log(uid.slice(0,6)+'…: zu wenig Bewertungen ('+pos.length+')');continue}
   const dir='work/u'+(++n);fs.mkdirSync(dir);
   const by=(m,s)=>items.filter(x=>x.m===m&&s.includes(x.status)).sort((a,b)=>(b.ts||0)-(a.ts||0));
   let p='# Profil\n\nBewertungen dieses Kontos. ♥ = Lieblingstitel (zählt doppelt), dann „Gefällt mir“ (neueste zuerst).\n';
   for(const m of MEDIA){
     const love=by(m,['love']),like=by(m,['like']).slice(0,40),bad=by(m,['dislike']).slice(0,25),watch=by(m,['watch']).slice(0,25),hide=by(m,['hide']).slice(0,30);
-    if(!love.length&&!like.length&&!watch.length&&!bad.length)continue;
+    if(!love.length&&!like.length&&!watch.length&&!bad.length&&!items.some(x=>x.m===m&&x.fol))continue;
     p+='\n## '+LBL[m]+'\n';
     if(love.length)p+='♥ Lieblinge:\n'+love.map(line).join('\n')+'\n';
+    const fol=items.filter(x=>x.m===m&&x.fol);if(fol.length)p+='Verfolgt (schaut gerade, gefällt):\n'+fol.map(line).join('\n')+'\n';
     if(like.length)p+='Gefällt mir:\n'+like.map(line).join('\n')+'\n';
     if(bad.length)p+='Gefällt NICHT (Ähnliches meiden):\n'+bad.map(line).join('\n')+'\n';
     if(watch.length)p+='Schon auf der Merkliste:\n'+watch.map(line).join('\n')+'\n';

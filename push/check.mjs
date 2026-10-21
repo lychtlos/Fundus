@@ -178,8 +178,9 @@ async function runUser(doc){
   const stSnap=await stRef.get();const state={sent:{},av:{},...(stSnap.exists?stSnap.data():{})};
   const items=Object.values(user.items||{});
   const pick=(m,sts)=>items.filter(x=>x.m===m&&(sts.includes(x.status)||sts.includes('like')&&x.status==='love'));
-  const jobs=[...pick('serie',['follow']).map(it=>async()=>(await serie(it)).map(e=>({...e,follow:true}))),
-    ...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
+  const folIt=items.filter(x=>x.m==='serie'&&(x.fol||x.status==='follow'));
+  const jobs=[...folIt.map(it=>async()=>(await serie(it)).map(e=>({...e,follow:true}))),
+    ...pick('serie',['like','watch']).filter(x=>!x.fol).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
     ...pick('podcast',['like','watch']).map(it=>()=>podcast(it)),...pick('buch',['like','watch']).map(it=>()=>buch(it)),
     ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it)),
     ...pick('game',['like','watch']).map(it=>()=>game(it)),
