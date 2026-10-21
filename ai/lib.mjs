@@ -18,7 +18,7 @@ export async function j(url,opt={}){
   if(opt.itunes){const w=3500-(Date.now()-lastItunes);if(w>0)await sleep(w);lastItunes=Date.now()}
   for(let i=0;i<3;i++){
     const r=await fetch(url,{method:opt.body?'POST':'GET',body:opt.body,headers:{'user-agent':'Fundus/1.0 (github.com/lychtlos/Fundus)',...(opt.body?{'content-type':'text/plain'}:{})}});
-    if(r.status===429||(r.status===403&&opt.itunes)){await sleep(4000*(i+1));continue}
+    if(r.status===429||r.status>=500||(r.status===403&&opt.itunes)){await sleep(3000*(i+1));continue}
     if(!r.ok)throw new Error(r.status+' '+url.split('?')[0]);
     return r.json();
   }
@@ -118,4 +118,20 @@ export function isPopular(it,extra={}){
   if(it.m==='game')return (it.votes||0)>=1500;
   if(it.m==='musik')return (extra.fans||0)>=1000000;
   return false;
+}
+
+export const TODAY=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin'}).format(new Date());
+export const WEEKDAY=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Berlin',weekday:'short'}).format(new Date());
+export const WEEK=(()=>{const d=new Date(TODAY+'T12:00:00Z');const t=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return t.getUTCFullYear()+'-W'+Math.ceil(((t-y)/864e5+1)/7)})();
+export const dd=s=>Math.round((Date.parse(String(s).slice(0,10)+'T12:00:00Z')-Date.parse(TODAY+'T12:00:00Z'))/864e5);
+export const km=(a,b)=>{const R=6371,r=x=>x*Math.PI/180;const dLa=r(b.lat-a.lat),dLo=r(b.lon-a.lon);const h=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))};
+let lastNom=0;
+const GEO=process.env.GEO_MOCK?JSON.parse(process.env.GEO_MOCK):{};
+export async function geocode(city,country){
+  const key=city+'|'+(country||'');if(key in GEO)return GEO[key];
+  let r=null;
+  try{const d=await j('https://geocoding-api.open-meteo.com/v1/search?count=1&language=de&name='+encodeURIComponent(city));const x=(d.results||[])[0];if(x)r={lat:x.latitude,lon:x.longitude}}catch(e){}
+  if(!r)try{const w=1100-(Date.now()-lastNom);if(w>0)await sleep(w);lastNom=Date.now();
+    const d=await j('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(city+(country?', '+country:'')));if(d&&d[0])r={lat:+d[0].lat,lon:+d[0].lon}}catch(e){}
+  return GEO[key]=r;
 }

@@ -5,6 +5,10 @@ on:
     - cron: '13 2 * * *'   # täglich 02:13 UTC = 04:13 Sommerzeit / 03:13 Winterzeit
   workflow_dispatch:
     inputs:
+      force_digest:
+        description: 'Digest-Text auch heute schreiben (1 = ja)'
+        required: false
+        default: '0'
       model:
         description: 'Modell (opus, sonnet, haiku). Bei Fehler/Limit Ersatz: sonnet'
         required: false
@@ -20,7 +24,7 @@ concurrency:
 jobs:
   tips:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 75
     env:
       MODEL: ${{ github.event.inputs.model || 'opus' }}
     steps:
@@ -37,6 +41,8 @@ jobs:
         working-directory: ai
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          AI_UIDS: ${{ vars.AI_UIDS }}
+          FORCE_DIGEST: ${{ github.event.inputs.force_digest || '0' }}
         run: node export.mjs
       - name: Claude sucht und prüft Tipps
         id: claude
@@ -49,8 +55,8 @@ jobs:
           run_claude(){
             rm -f claude.json claude.err
             claude -p "$(cat PROMPT.md)" --model "$1" --permission-mode dontAsk \
-              --allowedTools "Read,Write,Edit,Bash(node verify.mjs *)" \
-              --max-turns 80 --output-format json > claude.json 2> claude.err
+              --allowedTools "Read,Write,Edit,WebSearch,WebFetch,Bash(node verify.mjs *),Bash(node radar.mjs *),Bash(node gametext.mjs *)" \
+              --max-turns 160 --output-format json > claude.json 2> claude.err
             code=$?
             [ -s claude.err ] && echo "::warning title=Claude stderr ($1)::$(head -c 400 claude.err | tr '\n' ' ')"
             node -e '
@@ -69,7 +75,7 @@ jobs:
           used="$MODEL"
           # anderes Problem als Anmeldung (z. B. Opus-Limit, Modell nicht im Abo): mit Sonnet wiederholen
           if [ -n "$err" ] && [ "$MODEL" != "sonnet" ] && ! echo "$err" | grep -q "Anmeldung"; then
-            for d in work/u*/; do rm -f "$d/checked.json" "$d/tips.json" "$d/candidates.json"; done
+            for d in work/u*/; do rm -f "$d"/{checked,tips,candidates,concerts,radar,radar_checked,order,gtx_en,gtx_de}.json "$d/digest.txt"; done
             run_claude sonnet; err=$(cat claude.status); used="sonnet (Ersatz)"
           fi
           set -e

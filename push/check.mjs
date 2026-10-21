@@ -178,13 +178,21 @@ async function runUser(doc){
   const stSnap=await stRef.get();const state={sent:{},av:{},...(stSnap.exists?stSnap.data():{})};
   const items=Object.values(user.items||{});
   const pick=(m,sts)=>items.filter(x=>x.m===m&&(sts.includes(x.status)||sts.includes('like')&&x.status==='love'));
-  const jobs=[...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
+  const jobs=[...pick('serie',['follow']).map(it=>async()=>(await serie(it)).map(e=>({...e,follow:true}))),
+    ...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
     ...pick('podcast',['like','watch']).map(it=>()=>podcast(it)),...pick('buch',['like','watch']).map(it=>()=>buch(it)),
     ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it)),
     ...pick('game',['like','watch']).map(it=>()=>game(it)),
     ...pick('musik',['like','watch']).map(it=>()=>concerts(it,user))];
   const events=[];let errors=0;
   for(const job of jobs){try{events.push(...await job())}catch(e){errors++;console.warn(uid.slice(0,6),e.message)}await sleep(150)}
+  /* aus dem nächtlichen KI-Lauf: Konzerte (Websuche) und Release-Radar (Umfeld) */
+  const AI=user.ai||{};
+  const aiConc=(AI.concerts||[]).filter(c=>c.date&&dd(c.date)>=0);
+  if(state.aiConcInit)aiConc.forEach(c=>events.push({id:'konzert:ki:'+c.id,kind:'konzert',title:c.artist+' live',text:c.date.split('-').reverse().join('.')+' · '+[c.venue,c.city].filter(Boolean).join(', ')}));
+  else aiConc.forEach(c=>state.sent['konzert:ki:'+c.id]=TODAY);
+  if(AI.concerts)state.aiConcInit=true;
+  (AI.radar||[]).filter(r=>r.date&&dd(r.date)<=0&&dd(r.date)>=-3).forEach(r=>events.push({id:'radar:'+r.id,title:r.artist,text:'Neu aus Deinem Umfeld: '+r.title}));
   const fresh=[];const seen=new Set();
   const firstConcerts=!state.concertInit;
   for(const e of events){if(state.sent[e.id]||seen.has(e.id))continue;seen.add(e.id);
@@ -198,9 +206,15 @@ async function runUser(doc){
       catch(e){if(e.statusCode===404||e.statusCode===410)dead.push(id);else console.warn('Push-Fehler',e.statusCode,e.body)}}};
   if(user.settings&&user.settings.digest!==false&&(WEEKDAY==='Sun'||FORCE_DIGEST)&&state.digestWeek!==WEEK){
     try{const d=await digest(user);
-      if(d.length){await send({title:'Deine Woche: '+d.length+' neue Vorschläge',body:d.map(c=>LBL_M[c.m]+': '+c.title+(c.prov?' (bei '+c.prov+')':'')).join('\n'),url:'./#entdecken',tag:'fundus-digest-'+WEEK});state.digestWeek=WEEK}
+      const dt=AI.digest&&AI.digest.week===WEEK&&AI.digest.text;
+      if(dt)await send({title:'Deine Woche bei Fundus',body:dt,url:'./#entdecken',tag:'fundus-digest-'+WEEK}),state.digestWeek=WEEK;
+      else if(d.length){await send({title:'Deine Woche: '+d.length+' neue Vorschläge',body:d.map(c=>LBL_M[c.m]+': '+c.title+(c.prov?' (bei '+c.prov+')':'')).join('\n'),url:'./#entdecken',tag:'fundus-digest-'+WEEK});state.digestWeek=WEEK}
     }catch(e){console.warn('Digest',e.message)}
   }
+  /* verfolgte Serien: eigene Mitteilung je Serie */
+  for(const e of fresh.filter(e=>e.follow)){await send({title:'▶ '+e.title,body:e.text,url:'./#neu',tag:'fundus-follow-'+e.id});state.sent[e.id]=TODAY}
+  const fol=new Set(fresh.filter(e=>e.follow).map(e=>e.id));
+  fresh.splice(0,fresh.length,...fresh.filter(e=>!fol.has(e.id)));
   if(fresh.length){
     const title=fresh.length===1?fresh[0].title:'Fundus: '+fresh.length+' Neuerscheinungen';
     const body=fresh.length===1?fresh[0].text:fresh.slice(0,5).map(e=>e.title+' – '+e.text).join('\n')+(fresh.length>5?'\n… und '+(fresh.length-5)+' weitere':'');
@@ -211,10 +225,10 @@ async function runUser(doc){
   const limK=new Date(Date.now()-500*864e5).toISOString().slice(0,10);
   for(const k in state.sent)if(state.sent[k]<(k.startsWith('konzert:')?limK:lim))delete state.sent[k];
   if(!DRY){
-    await stRef.set({sent:state.sent,av:state.av,concertInit:!!state.concertInit,digestWeek:state.digestWeek||null,lastRun:TODAY,lastCount:fresh.length},{merge:false});
+    await stRef.set({sent:state.sent,av:state.av,concertInit:!!state.concertInit,aiConcInit:!!state.aiConcInit,digestWeek:state.digestWeek||null,lastRun:TODAY,lastCount:fresh.length+fol.size},{merge:false});
     if(dead.length){const upd={};dead.forEach(id=>upd['subs.'+id]={...user.subs[id],off:true,ts:Date.now()});await doc.ref.update(upd)}
   }
-  return {uid:uid.slice(0,6),items:items.length,events:fresh.length,sent,dead:dead.length,errors};
+  return {uid:uid.slice(0,6),items:items.length,events:fresh.length+fol.size,follow:fol.size,sent,dead:dead.length,errors};
 }
 
 const users=await db.collection('artifacts').doc('fundus').collection('users').get();

@@ -1,13 +1,17 @@
 /* Schritt 1: Konten aus Firestore lesen, je Konto ein Profil (profile.md) für die KI schreiben.
    Ohne FIREBASE_SA: LOCAL_USERS=datei.json ({uid:{...}}) für Tests. */
 import fs from 'node:fs';
-import {MEDIA,LBL,j,TMDB,writeJ} from './lib.mjs';
+import {MEDIA,LBL,j,TMDB,writeJ,WEEK,WEEKDAY} from './lib.mjs';
 
-const MIN_LIKES=5;
+const WISH=process.env.ONLY_UID||'';
+const MIN_LIKES=WISH?1:5;
+/* optional: nur diese Konten (GitHub-Variable AI_UIDS, kommagetrennt) – schützt das Abo vor fremden Konten */
+const ALLOW=new Set(String(process.env.AI_UIDS||'').split(',').map(x=>x.trim()).filter(Boolean));
 async function loadUsers(){
   if(process.env.LOCAL_USERS)return Object.entries(JSON.parse(fs.readFileSync(process.env.LOCAL_USERS,'utf8')));
   const {default:admin}=await import('firebase-admin');
   admin.initializeApp({credential:admin.credential.cert(JSON.parse(process.env.FIREBASE_SA))});
+  if(WISH){const d=await admin.firestore().doc('artifacts/fundus/users/'+WISH).get();return d.exists?[[d.id,d.data()]]:[]}
   const s=await admin.firestore().collection('artifacts/fundus/users').get();
   return s.docs.map(d=>[d.id,d.data()]);
 }
@@ -29,7 +33,9 @@ fs.rmSync('work',{recursive:true,force:true});fs.mkdirSync('work');
 const index=[];let n=0;
 for(const [uid,u] of users){
   const st=u.settings||{};
-  if(st.ai===false){console.log(uid.slice(0,6)+'…: KI-Tipps ausgeschaltet');continue}
+  if(ALLOW.size&&!ALLOW.has(uid)){console.log(uid.slice(0,6)+'…: nicht freigegeben (AI_UIDS)');continue}
+  if(WISH&&!(u.wishReq&&u.wishReq.q)){console.log('Kein Wunsch hinterlegt');continue}
+  if(!WISH&&st.ai===false){console.log(uid.slice(0,6)+'…: KI-Tipps ausgeschaltet');continue}
   const items=Object.values(u.items||{});
   const pos=items.filter(x=>x.status==='like'||x.status==='love');
   if(pos.length<MIN_LIKES){console.log(uid.slice(0,6)+'…: zu wenig Bewertungen ('+pos.length+')');continue}
@@ -44,7 +50,9 @@ for(const [uid,u] of users){
     if(like.length)p+='Gefällt mir:\n'+like.map(line).join('\n')+'\n';
     if(bad.length)p+='Gefällt NICHT (Ähnliches meiden):\n'+bad.map(line).join('\n')+'\n';
     if(watch.length)p+='Schon auf der Merkliste:\n'+watch.map(line).join('\n')+'\n';
-    if(hide.length)p+='Kein Interesse: '+hide.map(x=>x.title).join(' · ')+'\n';
+    const hr=hide.filter(x=>x.nr),hn=hide.filter(x=>!x.nr);
+    if(hr.length)p+='Abgelehnt mit Grund (wichtig!): '+hr.map(x=>x.title+' ('+x.nr+')').join(' · ')+'\n';
+    if(hn.length)p+='Kein Interesse: '+hn.map(x=>x.title).join(' · ')+'\n';
   }
   const R=st.rules||{};const rl=Object.entries(R).map(([m,r])=>[m,[r.minYear?'nicht vor '+r.minYear:'',r.minR?'Bewertung ab '+r.minR:'',(r.exG||[]).length?'keine Genres: '+r.exG.join(', '):''].filter(Boolean)]).filter(x=>x[1].length);
   p+='\n# Einstellungen\n';
@@ -54,8 +62,27 @@ for(const [uid,u] of users){
   p+='Game-Plattformen: '+((st.platforms||[]).length?st.platforms.map(x=>PLAT[x]||x).join(', '):'alle')+'\n';
   const hist=((u.ai||{}).hist||[]);
   if(hist.length)p+='\n# Bereits als KI-Tipp gezeigt (nicht wiederholen)\n'+hist.map(h=>h.t).join(' · ')+'\n';
+  /* Zusatzaufgaben */
+  const tasks=[];
+  if(WISH){writeJ(dir+'/wish.json',{id:u.wishReq.id,q:String(u.wishReq.q).slice(0,300),ts:u.wishReq.ts});fs.writeFileSync(dir+'/profile.md',p);
+    writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist:[]},provNames:pv,tasks:[],week:WEEK});index.push({uid,dir,likes:pos.length});continue}
+  const watch=items.filter(x=>x.status==='watch').sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,60);
+  if(watch.length>=3){tasks.push('order');writeJ(dir+'/watch.json',watch.map(x=>({k:x.k,m:x.m,title:x.title,year:x.year||'',by:x.authorName||'',genres:(x.genres||[]).slice(0,3)})))}
+  let conc=null;
+  if(st.concerts!==false&&/^\d{5}$/.test(st.plz||'')){
+    try{const z=await j('https://api.zippopotam.us/de/'+st.plz);const pl=(z.places||[])[0];
+      if(pl){const bands=items.filter(x=>x.m==='musik'&&['love','like','watch'].includes(x.status)).sort((a,b)=>(b.status==='love')-(a.status==='love')||(b.ts||0)-(a.ts||0)).map(x=>x.title);
+        const N=12,off=((u.ai||{}).concOff||0)%Math.max(1,bands.length);const pick=bands.length<=N?bands:bands.slice(off).concat(bands.slice(0,off)).slice(0,N);
+        conc={plz:st.plz,city:pl['place name'],lat:+pl.latitude,lon:+pl.longitude,radius:+st.radius||150,bands:pick,next:(off+N)%Math.max(1,bands.length)};
+        if(pick.length){tasks.push('concerts');writeJ(dir+'/concert_job.json',conc)}}}catch(e){console.log('PLZ nicht auflösbar: '+e.message)}
+  }
+  if(items.some(x=>['musik','buch'].includes(x.m)&&['love','like'].includes(x.status)))tasks.push('radar');
+  tasks.push('gametext');
+  if(WEEKDAY==='Sun'||process.env.FORCE_DIGEST==='1')tasks.push('digest');
+  p+='\n# Aufgaben heute\n'+tasks.join(', ')+'\n';
+  if(conc&&conc.bands.length)p+='Konzerte: Wohnort '+conc.city+' ('+conc.plz+'), Umkreis '+conc.radius+' km. Bands heute: '+conc.bands.join(' · ')+'\n';
   fs.writeFileSync(dir+'/profile.md',p);
-  writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist},provNames:pv});
+  writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist,gtx:Object.keys((u.ai||{}).gtx||{})},provNames:pv,tasks,conc,week:WEEK});
   index.push({uid,dir,likes:pos.length});
   console.log('::notice title=Profil::'+dir+': '+pos.length+' positive Bewertungen, '+p.length+' Zeichen');
 }

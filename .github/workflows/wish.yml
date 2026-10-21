@@ -1,0 +1,67 @@
+name: Fundus Wunsch
+
+on:
+  workflow_dispatch:
+    inputs:
+      uid:
+        description: 'Konto (wird vom Worker gesetzt)'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fundus-wish-${{ github.event.inputs.uid }}
+  cancel-in-progress: false
+
+jobs:
+  wish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ONLY_UID: ${{ github.event.inputs.uid }}
+      AI_UIDS: ${{ vars.AI_UIDS }}
+      FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Abhängigkeiten
+        working-directory: ai
+        run: |
+          npm install --no-audit --no-fund
+          npm install -g @anthropic-ai/claude-code --no-audit --no-fund
+      - name: Wunsch und Profil lesen
+        working-directory: ai
+        run: |
+          node export.mjs
+          node wish_import.mjs quota
+      - name: Claude sucht
+        id: claude
+        working-directory: ai
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ "$(cat work/index.json)" = "[]" ] || [ -f work/STOP ]; then echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          set +e
+          claude -p "$(cat WISH_PROMPT.md)" --model sonnet --permission-mode dontAsk \
+            --allowedTools "Read,Write,Edit,WebSearch,WebFetch,Bash(node verify.mjs *)" \
+            --max-turns 40 --output-format json > claude.json 2> claude.err
+          code=$?
+          set -e
+          node -e '
+            const fs=require("fs");let o={};try{o=JSON.parse(fs.readFileSync("claude.json","utf8"))}catch(e){}
+            console.log("::notice title=Claude::Exit "+process.argv[1]+" | Runden "+o.num_turns+" | "+String(o.result||o.subtype||"").replace(/\s+/g," ").slice(0,300));
+            if(o.is_error||process.argv[1]!=="0"){const r=String(o.result||o.subtype||"");
+              const err=/auth|login|token|401|credential/i.test(r)?"Anmeldung bei Claude fehlgeschlagen – Token erneuern":/limit|usage|quota|429/i.test(r)?"Abo-Limit erreicht, bitte später erneut":"KI-Lauf abgebrochen";
+              fs.appendFileSync(process.env.GITHUB_OUTPUT,"err="+err+"\n")}
+          ' "$code"
+      - name: Ergebnis speichern und senden
+        if: steps.claude.outputs.skip != '1'
+        working-directory: ai
+        env:
+          AI_ERROR: ${{ steps.claude.outputs.err }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          VAPID_PUBLIC: BPbXST0UBvG6REMA1frrvW3xPKhxm8r5XFh-T9igYiEcuAnLQ7wI8NXYET8YRMFgVbx-RCIL_LgL5L04tSw43fI
+        run: node wish_import.mjs save
