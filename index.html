@@ -401,7 +401,7 @@ select.inp{flex:0 1 220px}
 <div class="wrap">
   <div id="banner"></div>
   <main id="view"></main>
-  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Version 2026-10-19 15:43.</p>
+  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Games: IGDB · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Version 2026-10-19 15:43.</p>
 </div>
 <div id="drawer" class="drawer" hidden></div>
 <div id="sheet" class="sheet" hidden></div>
@@ -429,7 +429,7 @@ const MEDIA={
   musik:{label:'Musik',one:'Künstler',sq:true,desc:'Bands und Interpreten'},
   buch:{label:'Bücher',one:'Buch',sq:false,desc:'Romane, Reihen, Autoren'},
   podcast:{label:'Podcasts',one:'Podcast',sq:true,desc:'Mit Hinweis auf neue Folgen'},
-  game:{label:'Games',one:'Spiel',sq:true,desc:'Spiele und Release-Termine'}
+  game:{label:'Games',one:'Spiel',sq:false,desc:'Spiele und Release-Termine'}
 };
 const ORDER=['film','serie','musik','buch','podcast','game'];
 const isFS=m=>m==='film'||m==='serie';
@@ -882,62 +882,73 @@ function demoAdapter(m){
   };
 }
 const DEMO={};ORDER.forEach(m=>DEMO[m]=demoAdapter(m));
-/* ---------- Games (RAWG) ---------- */
-const RAWG_DEFAULT='';
-const rawgKey=()=>(S.settings.rawgKey||'').trim()||RAWG_DEFAULT;
-const GATE_RAWG=limiter(15,1000);
-const rawg=(path,params={},ttl=24*H)=>{
-  const k=rawgKey();if(!k)return Promise.reject(new Error('RAWG-Schlüssel fehlt (Einstellungen)'));
-  const u=new URL('https://api.rawg.io/api'+path);Object.entries(params).forEach(([a,b])=>{if(b!==undefined&&b!=='')u.searchParams.set(a,b)});u.searchParams.set('key',k);
-  return cached('rawg'+u.pathname+u.search.replace(/&?key=[^&]*/,''),()=>getJSON(u.toString(),GATE_RAWG,'RAWG'),ttl);
-};
-const GAME_GENRES_DE={action:'Action',indie:'Indie',adventure:'Abenteuer','role-playing-games-rpg':'Rollenspiel',strategy:'Strategie',shooter:'Shooter',casual:'Casual',simulation:'Simulation',puzzle:'Puzzle',arcade:'Arcade',platformer:'Jump ’n’ Run',racing:'Rennspiel','massively-multiplayer':'MMO',sports:'Sport',fighting:'Prügelspiel',family:'Familie','board-games':'Brettspiel',educational:'Lernspiel',card:'Kartenspiel'};
-const PLATFORMS=[['pc','PC',1],['playstation','PlayStation',2],['xbox','Xbox',3],['nintendo','Nintendo',7],['mobile','Mobil',8]];
-const platParam=()=>{const sel=S.settings.platforms||[];const ids=PLATFORMS.filter(p=>sel.includes(p[0])).map(p=>p[2]);return ids.length?ids.join(','):undefined};
-const GEN_TAGS=/^(singleplayer|multiplayer|steam-achievements|full-controller-support|steam-cloud|steam-trading-cards|partial-controller-support|online-multiplayer|co-op|online-co-op|atmospheric|great-soundtrack|steam-leaderboards|controller|cloud-saves|in-app-purchases|free-to-play|exclusive|true-exclusive|achievements|remote-play.*|2d|3d|first-person|third-person|cross-platform-multiplayer|local-multiplayer|local-co-op|split-screen|vr|steam-workshop|includes-level-editor|stats|moddable|early-access|utilities|tutorial|kickstarter)$/;
+/* ---------- Games (IGDB über eigenen Cloudflare-Proxy) ---------- */
+const IGDB_URL='https://fundus-igdb.steffen-hinderks.workers.dev';
+const GATE_IGDB=limiter(4,1000);
+const igdb=(ep,body,ttl=24*H)=>cached('igdb:'+ep+':'+body,async()=>{await GATE_IGDB();const r=await fetchT(IGDB_URL+'/'+ep,{method:'POST',body,headers:{'Content-Type':'text/plain'}});
+  if(r.status===429)throw new Error('IGDB: zu viele Anfragen, bitte kurz warten');if(!r.ok)throw new Error('IGDB antwortet mit Fehler '+r.status);return r.json()},ttl);
+const IGI=(id,size)=>id?'https://images.igdb.com/igdb/image/upload/t_'+size+'/'+id+'.jpg':null;
+const G_DE={2:'Point & Click',4:'Prügelspiel',5:'Shooter',7:'Musikspiel',8:'Jump ’n’ Run',9:'Puzzle',10:'Rennspiel',11:'Echtzeitstrategie',12:'Rollenspiel',13:'Simulation',14:'Sport',15:'Strategie',16:'Rundenstrategie',24:'Taktik',25:'Hack & Slash',26:'Quiz',30:'Flipper',31:'Abenteuer',32:'Indie',33:'Arcade',34:'Visual Novel',35:'Karten- & Brettspiel',36:'MOBA'};
+const T_DE={1:'Action',17:'Fantasy',18:'Science-Fiction',19:'Horror',20:'Thriller',21:'Survival',22:'Historisch',23:'Stealth',27:'Komödie',38:'Open World',39:'Krieg',43:'Mystery',33:'Sandbox',31:'Drama',44:'Romanze'};
+const GAME_GENRES_DE=Object.assign({},...Object.entries(G_DE).map(([k,v])=>({['g'+k]:v})),...Object.entries(T_DE).map(([k,v])=>({['t'+k]:v})));
+const PLATFORMS=[['pc','PC',[6,14,3]],['playstation','PlayStation',[48,167]],['xbox','Xbox',[49,169]],['nintendo','Nintendo',[130,508]],['mobile','Mobil',[34,39]]];
+const platWhere=()=>{const sel=S.settings.platforms||[];const ids=PLATFORMS.filter(p=>sel.includes(p[0])).flatMap(p=>p[2]);return ids.length?' & platforms = ('+ids.join(',')+')':''};
+const G_FIELDS='fields name,slug,first_release_date,cover.image_id,genres,themes,platforms.abbreviation,total_rating,total_rating_count,status,game_status;';
+const G_BASE='game_type = (0,8,9) & version_parent = null & themes != (42)';
 function gameItem(g,genre){
-  const y=(g.released||'').slice(0,4);const plats=(g.parent_platforms||[]).map(p=>p.platform&&p.platform.name).filter(Boolean);
-  return reg({k:'game:'+g.id,m:'game',id:g.id,title:g.name,year:g.tba?'TBA':y,sub:[g.tba?'Termin offen':y,plats.slice(0,3).join(', ')].filter(Boolean).join(' · '),
-    img:g.background_image?g.background_image.replace('/media/games/','/media/crop/600/400/games/'):null,
-    rating:g.ratings_count>=20&&g.rating?g.rating*2:(g.metacritic?g.metacritic/10:null),votes:g.ratings_count||null,
-    genres:(g.genres||[]).map(x=>GAME_GENRES_DE[x.slug]||x.name).slice(0,3),gslugs:(g.genres||[]).map(x=>x.slug),released:g.released||'',tba:!!g.tba,
-    link:'https://rawg.io/games/'+(g.slug||g.id)});
+  const ts=g.first_release_date?new Date(g.first_release_date*1000):null;const y=ts?String(ts.getUTCFullYear()):'';
+  const plats=(g.platforms||[]).map(p=>p.abbreviation).filter(Boolean);
+  const gn=(g.genres||[]).map(x=>G_DE[x&&x.id||x]).filter(Boolean),tn=(g.themes||[]).map(x=>T_DE[x&&x.id||x]).filter(Boolean);
+  return reg({k:'game:'+g.id,m:'game',id:g.id,title:g.name,year:y||'TBA',sub:[y||'Termin offen',plats.slice(0,4).join(', ')].filter(Boolean).join(' · '),
+    img:g.cover?IGI(g.cover.image_id,'cover_big'):null,
+    rating:g.total_rating?g.total_rating/10:null,votes:g.total_rating_count||0,
+    genres:[...gn,...tn].slice(0,3),gslugs:[...(g.genres||[]).map(x=>'g'+(x.id||x)),...(g.themes||[]).map(x=>'t'+(x.id||x))],
+    released:ts?ts.toISOString().slice(0,10):'',tba:!ts,link:'https://www.igdb.com/games/'+(g.slug||g.id)});
 }
+const idList=a=>'('+a.map(Number).filter(Boolean).join(',')+')';
 const gameLive={
-  async genres(){const d=await rawg('/genres',{page_size:40},30*24*H);return (d.results||[]).map(g=>({id:g.slug,name:GAME_GENRES_DE[g.slug]||g.name}))},
-  async byGenre(gid,page=1){if(page>8)return [];const d=await rawg('/games',{genres:gid,ordering:'-added',page_size:30,page,parent_platforms:platParam(),exclude_additions:true});return (d.results||[]).map(g=>gameItem(g))},
-  async search(q){const d=await rawg('/games',{search:q,page_size:24,search_precise:true,exclude_additions:true},6e5);return (d.results||[]).map(g=>gameItem(g))},
+  async genres(){return Object.entries(G_DE).filter(([k])=>!['26','30','7'].includes(k)).map(([k,v])=>({id:'g'+k,name:v})).concat(Object.entries(T_DE).map(([k,v])=>({id:'t'+k,name:v})))},
+  async byGenre(gid,page=1){if(page>8)return [];const f=gid[0]==='g'?'genres':'themes';const id=+gid.slice(1);
+    const d=await igdb('games',G_FIELDS+' where '+f+' = ('+id+') & '+G_BASE+' & total_rating_count > 15'+platWhere()+'; sort total_rating_count desc; limit 30; offset '+(page-1)*30+';');
+    return d.map(g=>gameItem(g))},
+  async search(q){const d=await igdb('games','search "'+q.replace(/"/g,'')+'"; '+G_FIELDS+' where game_type = (0,8,9,10,11) & version_parent = null & themes != (42); limit 24;',6e5);return d.map(g=>gameItem(g))},
   async similar(s){
-    const d=await rawg('/games/'+s.id,{},7*24*H);const out=[];
-    const tags=(d.tags||[]).filter(t=>t.language==='eng'&&!GEN_TAGS.test(t.slug)).slice(0,3).map(t=>t.slug);
-    const gen=(d.genres||[]).slice(0,2).map(g=>g.slug).join(',');
-    if(tags.length){const r=await rawg('/games',{tags:tags.join(','),genres:gen||undefined,ordering:'-rating',metacritic:'70,100',page_size:30,parent_platforms:platParam(),exclude_additions:true});(r.results||[]).filter(g=>g.id!==s.id).forEach(g=>out.push({it:gameItem(g),w:0.8}))}
-    const dev=(d.developers||[])[0];
-    if(dev){const r=await rawg('/games',{developers:dev.id,ordering:'-rating',page_size:15,exclude_additions:true});(r.results||[]).filter(g=>g.id!==s.id).forEach(g=>out.push({it:gameItem(g),w:0.6,why:'Vom Studio '+dev.name}))}
-    try{const r=await rawg('/games/'+s.id+'/game-series',{page_size:10});(r.results||[]).forEach(g=>out.push({it:gameItem(g),w:0.9,why:'Aus der Reihe von „'+s.title+'“'}))}catch(e){}
+    const [d]=await igdb('games','fields similar_games,franchises,collections,involved_companies.company.name,involved_companies.developer; where id = '+(+s.id)+';',7*24*H);if(!d)return [];
+    const out=[];
+    if(d.similar_games&&d.similar_games.length)(await igdb('games',G_FIELDS+' where id = '+idList(d.similar_games)+' & '+G_BASE+platWhere()+'; limit 20;')).forEach((g,i)=>out.push({it:gameItem(g),w:1-i/40}));
+    const fr=(d.franchises||[])[0]||null,co=(d.collections||[])[0]||null;
+    if(fr||co)(await igdb('games',G_FIELDS+' where '+(fr?'franchises = ('+fr+')':'collections = ('+co+')')+' & id != '+(+s.id)+' & '+G_BASE+'; sort first_release_date desc; limit 10;')).forEach(g=>out.push({it:gameItem(g),w:0.7,why:'Aus der Reihe von „'+s.title+'“'}));
+    const dev=(d.involved_companies||[]).find(c=>c.developer&&c.company);
+    if(dev)(await igdb('games',G_FIELDS+' where involved_companies.company = '+dev.company.id+' & id != '+(+s.id)+' & '+G_BASE+' & total_rating_count > 5; sort total_rating desc; limit 10;')).forEach(g=>out.push({it:gameItem(g),w:0.5,why:'Vom Studio '+dev.company.name}));
     return out;
   },
-  async explore(base){const gs=[...new Set(base.flatMap(b=>b.gslugs||[]))];const g=shuffle(gs)[0]||'action';
-    const d=await rawg('/games',{genres:g,ordering:'-metacritic',page_size:20,page:1+Math.floor(Math.random()*3),parent_platforms:platParam(),exclude_additions:true});
-    return (d.results||[]).map(x=>({it:gameItem(x),w:1,why:'Entdecken · '+(GAME_GENRES_DE[g]||g)}))},
+  async explore(base){const gs=[...new Set(base.flatMap(b=>b.gslugs||[]))];const g=shuffle(gs)[0]||'g12';
+    const r=await this.byGenre(g,1+Math.floor(Math.random()*3));return r.map(it=>({it,w:1,why:'Entdecken · '+(GAME_GENRES_DE[g]||'')}))},
   async releases(it){
-    const ev=[];
-    if(S.items[it.k]&&S.items[it.k].status==='watch'){const d=await rawg('/games/'+it.id,{},12*H);
-      if(d.released&&dayDiff(d.released)>=-30&&dayDiff(d.released)<=365)ev.push({id:it.k+':rel:'+d.released,date:d.released,label:'Erscheint',text:(d.parent_platforms||[]).map(p=>p.platform.name).join(', ')});
-      else if(d.tba)ev.push({id:it.k+':tba',date:String(new Date().getFullYear()+1),label:'Angekündigt',text:'Termin noch offen'})}
-    else{const d=await rawg('/games/'+it.id,{},7*24*H);const dev=(d.developers||[])[0];
-      if(dev){const r=await rawg('/games',{developers:dev.id,dates:addDays(-60)+','+addDays(365),ordering:'released',page_size:10},12*H);
-        (r.results||[]).filter(g=>g.id!==it.id&&g.released&&!S.items['game:'+g.id]).forEach(g=>ev.push({id:'game:dev:'+g.id,date:g.released,label:dayDiff(g.released)>0?'Neues Spiel angekündigt':'Neues Spiel',text:g.name+' · '+dev.name,img:g.background_image,link:'https://rawg.io/games/'+(g.slug||g.id)}))}}
+    const now=Math.floor(Date.now()/1000);const ev=[];
+    const [d]=await igdb('games','fields name,first_release_date,game_status,platforms.abbreviation,involved_companies.company.name,involved_companies.developer; where id = '+(+it.id)+';',12*H);if(!d)return [];
+    if(S.items[it.k]&&S.items[it.k].status==='watch'){
+      if(d.first_release_date){const dt=new Date(d.first_release_date*1000).toISOString().slice(0,10);if(dayDiff(dt)>=-30&&dayDiff(dt)<=365)ev.push({id:it.k+':rel:'+dt,date:dt,label:'Erscheint',text:(d.platforms||[]).map(p=>p.abbreviation).join(', ')})}
+      else ev.push({id:it.k+':tba',date:String(new Date().getFullYear()+1),label:'Angekündigt',text:'Termin noch offen'});
+    }else{const dev=(d.involved_companies||[]).find(c=>c.developer&&c.company);
+      if(dev)(await igdb('games',G_FIELDS+' where involved_companies.company = '+dev.company.id+' & first_release_date >= '+(now-60*86400)+' & first_release_date <= '+(now+365*86400)+' & '+G_BASE+'; sort first_release_date asc; limit 10;',12*H))
+        .filter(g=>g.id!==it.id&&!S.items['game:'+g.id]).forEach(g=>{const x=gameItem(g);ev.push({id:'game:dev:'+g.id,date:x.released,label:dayDiff(x.released)>0?'Neues Spiel angekündigt':'Neues Spiel',text:g.name+' · '+dev.company.name,img:x.img,link:x.link})})}
     return ev;
   }
 };
 async function gameDetail(it){
-  const [d,shots,st]=await Promise.all([rawg('/games/'+it.id,{},7*24*H),rawg('/games/'+it.id+'/screenshots',{page_size:6},7*24*H).catch(()=>({})),rawg('/games/'+it.id+'/stores',{},7*24*H).catch(()=>({}))]);
-  const STORE={1:'Steam',2:'Xbox Store',3:'PlayStation Store',4:'App Store',5:'GOG',6:'Nintendo eShop',7:'Xbox 360',8:'Google Play',9:'itch.io',11:'Epic Games'};
-  return {backdrop:d.background_image_additional||d.background_image,overview:stripHtml(d.description_raw||d.description),overviewNote:'Beschreibung von RAWG, meist englisch.',
-    facts:[['Erscheint',d.tba?'Termin offen':fmtDate(d.released)],['Plattformen',(d.platforms||[]).map(p=>p.platform.name).join(', ')],['Entwickler',(d.developers||[]).map(x=>x.name).join(', ')],['Publisher',(d.publishers||[]).map(x=>x.name).join(', ')],['Genres',(d.genres||[]).map(g=>GAME_GENRES_DE[g.slug]||g.name).join(', ')],['Spielzeit',d.playtime?'ca. '+d.playtime+' Std.':''],['Metacritic',d.metacritic?String(d.metacritic):''],['Altersfreigabe',d.esrb_rating&&d.esrb_rating.name||'']],
-    sections:[{title:'Kaufen',rows:(st.results||[]).filter(x=>STORE[x.store_id]&&x.url).map(x=>({t:STORE[x.store_id],sub:'Shop öffnen',url:x.url}))}],
-    shots:(shots.results||[]).map(x=>x.image)};
+  const [d]=await igdb('games','fields summary,storyline,first_release_date,platforms.name,genres,themes,game_modes.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,videos.video_id,videos.name,screenshots.image_id,artworks.image_id,websites.type,websites.url,total_rating,total_rating_count,aggregated_rating; where id = '+(+it.id)+';',7*24*H);
+  if(!d)return {overview:'Keine Daten gefunden.'};
+  const STORE={13:'Steam',16:'Epic Games',17:'GOG',22:'Xbox Store',23:'PlayStation Store',24:'Nintendo eShop',10:'App Store (iPhone)',12:'Google Play'};
+  const vids=(d.videos||[]).slice().sort((a,b)=>(/trailer/i.test(b.name||'')-/trailer/i.test(a.name||'')));
+  const dev=(d.involved_companies||[]).filter(c=>c.developer).map(c=>c.company.name),pub=(d.involved_companies||[]).filter(c=>c.publisher).map(c=>c.company.name);
+  const art=(d.artworks||[])[0]||(d.screenshots||[])[0];
+  return {backdrop:art?IGI(art.image_id,'1080p'):null,overview:(d.summary||'')+(d.storyline?'\n\n'+d.storyline:''),overviewNote:d.summary?'Beschreibung von IGDB, meist englisch.':'',
+    facts:[['Erschienen',d.first_release_date?fmtDate(new Date(d.first_release_date*1000).toISOString().slice(0,10)):'Termin offen'],['Plattformen',(d.platforms||[]).map(p=>p.name).join(', ')],['Entwickler',dev.join(', ')],['Publisher',pub.join(', ')],
+      ['Genres',[...(d.genres||[]).map(x=>G_DE[x]),...(d.themes||[]).map(x=>T_DE[x])].filter(Boolean).join(', ')],['Spielmodi',(d.game_modes||[]).map(m=>m.name).join(', ')],['Kritiken',d.aggregated_rating?Math.round(d.aggregated_rating)+' / 100':'']],
+    trailer:vids[0]?{key:vids[0].video_id,name:vids[0].name}:null,
+    sections:[{title:'Kaufen',rows:(d.websites||[]).filter(w=>STORE[w.type]).map(w=>({t:STORE[w.type],sub:'Shop öffnen',url:w.url}))}],
+    shots:(d.screenshots||[]).slice(0,6).map(x=>IGI(x.image_id,'screenshot_med'))};
 }
 
 /* ---------- Konzerte in der Nähe (Ticketmaster) ---------- */
@@ -978,13 +989,12 @@ function concertBox(){const st=S.settings;
     '<button class="btn" data-act="savePlz" style="align-self:end">Speichern</button></div>'+(ui.plzMsg?'<p class="'+(ui.plzMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.plzMsg.t)+'</p>':'')+
     '<div class="row" style="margin-top:10px"><input class="inp" id="tmKey" type="password" autocomplete="off" placeholder="Ticketmaster-Schlüssel'+(TM_DEFAULT?' (optional, Standard hinterlegt)':'')+'" value="'+esc(st.tmKey||'')+'"><button class="btn" data-act="saveTm">Schlüssel speichern</button></div>';
 }
-function rawgBox(){const st=S.settings;const sel=st.platforms||[];
-  return '<p>Spiele-Daten von RAWG. Plattformen filtern die Vorschläge.</p><div class="chips wrapchips" style="margin-bottom:10px">'+PLATFORMS.map(([v,l])=>'<button class="chip" data-act="platTog" data-v="'+v+'" aria-pressed="'+sel.includes(v)+'">'+l+'</button>').join('')+'</div>'+
-    '<div class="row"><input class="inp" id="rawgKey" type="password" autocomplete="off" placeholder="RAWG-Schlüssel'+(RAWG_DEFAULT?' (optional, Standard hinterlegt)':'')+'" value="'+esc(st.rawgKey||'')+'"><button class="btn" data-act="saveRawg">Schlüssel speichern</button></div>'+(ui.rawgMsg?'<p class="'+(ui.rawgMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.rawgMsg.t)+'</p>':'');
+function rawgBox(){const sel=S.settings.platforms||[];
+  return '<p>Spiele-Daten von IGDB. Plattformen filtern Vorschläge und Genre-Listen; ohne Auswahl gilt alles.</p><div class="chips wrapchips">'+PLATFORMS.map(([v,l])=>'<button class="chip" data-act="platTog" data-v="'+v+'" aria-pressed="'+sel.includes(v)+'">'+l+'</button>').join('')+'</div>';
 }
 
 const LIVE={film:tmdbAdapter('film'),serie:tmdbAdapter('serie'),musik:musikLive,buch:buchLive,podcast:podcastLive,game:gameLive};
-const needsKey=m=>MODE==='live'&&(isFS(m)&&!tmdbKeyNow()||m==='game'&&!rawgKey());
+const needsKey=m=>MODE==='live'&&isFS(m)&&!tmdbKeyNow();
 const adapter=m=>MODE==='demo'?DEMO[m]:(needsKey(m)?null:LIVE[m]);
 
 /* ---------- Verfügbarkeit ---------- */
@@ -1234,7 +1244,7 @@ function links(it){
   if(it.m==='musik'){const svc={spotify:['Spotify','https://open.spotify.com/search/'+q],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],deezer:['Deezer',it.link&&String(it.link).includes('deezer')?it.link:'https://www.deezer.com/search/'+q],apple:['Apple Music','https://music.apple.com/de/search?term='+q]};
     const pref=svc[S.settings.musicService]?S.settings.musicService:'ytm';return [svc[pref]].concat(Object.keys(svc).filter(k=>k!==pref).map(k=>svc[k]))}
   if(isFS(it.m))return [['TMDB',it.link||'https://www.themoviedb.org/search?query='+q]];
-  if(it.m==='game')return [['Steam','https://store.steampowered.com/search/?term='+q],['RAWG',it.link||'https://rawg.io/search?query='+q]];
+  if(it.m==='game')return [['Steam','https://store.steampowered.com/search/?term='+q],['IGDB',it.link||'https://www.igdb.com/search?type=1&q='+q]];
   if(it.m==='buch')return [['Thalia','https://www.thalia.de/suche?sq='+q],['Open Library',it.link||'https://openlibrary.org/search?q='+q]];
   const id=/^\d+$/.test(String(it.id))?String(it.id):null;const apple=it.link||'https://podcasts.apple.com/de/search?term='+q;
   const svc={pocketcasts:['Pocket Casts',id?'https://pca.st/itunes/'+id:apple],apple:['Apple Podcasts',apple],spotify:['Spotify','https://open.spotify.com/search/'+q+'/podcasts'],ytm:['YouTube Music','https://music.youtube.com/search?q='+q],overcast:['Overcast',id?'https://overcast.fm/itunes'+id:apple]};
@@ -1769,7 +1779,6 @@ const ACT={
   async savePlz(){const v=($('#plz').value||'').trim();if(!/^\d{5}$/.test(v)){ui.plzMsg={ok:false,t:'Bitte fünfstellige PLZ eingeben.'};render();return}
     S.settings.plz=v;save();try{const g=await geoPlz(v);ui.plzMsg={ok:true,t:'Gespeichert: '+g.ort}}catch(e){ui.plzMsg={ok:false,t:e.message}}ui.rel=null;render()},
   async saveTm(){S.settings.tmKey=($('#tmKey').value||'').trim();save();try{await tm('/attractions.json',{keyword:'Metallica',size:1},6e5);ui.plzMsg={ok:true,t:'Ticketmaster-Schlüssel funktioniert.'}}catch(e){ui.plzMsg={ok:false,t:e.message}}render()},
-  async saveRawg(){S.settings.rawgKey=($('#rawgKey').value||'').trim();save();resetPools(['game']);try{await rawg('/genres',{page_size:1},6e5);ui.rawgMsg={ok:true,t:'RAWG-Schlüssel funktioniert.'}}catch(e){ui.rawgMsg={ok:false,t:e.message}}render()},
   platTog(b){const v=b.dataset.v;const a=new Set(S.settings.platforms||[]);a.has(v)?a.delete(v):a.add(v);S.settings.platforms=[...a];save();resetPools(['game']);render()},
   pushOn(){pushOn()},pushOff(){pushOff()},
   freshAll(){const m=ui.tab==='entdecken'?ui.med:'alle';resetPools(m==='alle'?null:[m]);ui.shown={};ui.knownOpen=null;

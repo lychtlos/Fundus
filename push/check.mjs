@@ -131,15 +131,17 @@ async function digest(user){
 }
 const LBL_M={film:'Film',serie:'Serie',musik:'Musik'};
 
-/* Games (RAWG): Merkliste → Erscheinungstag; Gefällt mir → neues Spiel des Studios erschienen */
-const RAWG_ENV=process.env.RAWG_KEY||'';
-async function game(it,user){
-  const k=(user.settings&&user.settings.rawgKey)||RAWG_ENV;if(!k)return [];
-  const g=await j('https://api.rawg.io/api/games/'+it.id+'?key='+k);
-  if(it.status==='watch')return g.released&&dd(g.released)<=0&&dd(g.released)>=-1?[{id:it.k+':rel:'+g.released,title:it.title,text:'Erscheint heute'}]:[];
-  const dev=(g.developers||[])[0];if(!dev)return [];
-  const r=await j('https://api.rawg.io/api/games?key='+k+'&developers='+dev.id+'&dates='+TODAY.slice(0,8)+'01,'+TODAY+'&ordering=-released&page_size=10');
-  return (r.results||[]).filter(x=>x.id!==it.id&&x.released&&dd(x.released)<=0&&dd(x.released)>=-1).map(x=>({id:'game:dev:'+x.id,title:dev.name,text:'Neues Spiel: '+x.name}));
+/* Games (IGDB über den Fundus-Proxy): Merkliste → Erscheinungstag; Gefällt mir → neues Spiel des Studios erschienen */
+const IGDB_URL=process.env.IGDB_URL||'https://fundus-igdb.steffen-hinderks.workers.dev';
+async function igdb(ep,body){const r=await fetch(IGDB_URL+'/'+ep,{method:'POST',body});if(!r.ok)throw new Error('IGDB '+r.status);return r.json()}
+const dayOf=t=>new Date(t*1000).toISOString().slice(0,10);
+async function game(it){
+  const [g]=await igdb('games','fields name,first_release_date,involved_companies.company.name,involved_companies.developer; where id = '+(+it.id)+';');if(!g)return [];
+  if(it.status==='watch')return g.first_release_date&&dd(dayOf(g.first_release_date))<=0&&dd(dayOf(g.first_release_date))>=-1?[{id:it.k+':rel:'+dayOf(g.first_release_date),title:it.title,text:'Erscheint heute'}]:[];
+  const dev=(g.involved_companies||[]).find(c=>c.developer&&c.company);if(!dev)return [];
+  const now=Math.floor(Date.now()/1000);
+  const r=await igdb('games','fields name,first_release_date; where involved_companies.company = '+dev.company.id+' & first_release_date >= '+(now-2*86400)+' & first_release_date <= '+now+' & game_type = (0,8,9) & version_parent = null; limit 10;');
+  return r.filter(x=>x.id!==it.id).map(x=>({id:'game:dev:'+x.id,title:dev.company.name,text:'Neues Spiel: '+x.name}));
 }
 /* Konzerte (Ticketmaster): neue Termine im Umkreis; erster Lauf merkt nur den Bestand */
 const TM_ENV=process.env.TM_KEY||'n2zn7nBOmZ6OjjIcVFQfRaApC2hhRnhh';
@@ -172,7 +174,7 @@ async function runUser(doc){
   const jobs=[...pick('serie',['like','watch']).map(it=>()=>serie(it)),...pick('musik',['like','watch']).map(it=>()=>musik(it)),
     ...pick('podcast',['like','watch']).map(it=>()=>podcast(it)),...pick('buch',['like','watch']).map(it=>()=>buch(it)),
     ...pick('film',['watch']).map(it=>()=>film(it,user,state)),...pick('film',['watch']).map(it=>()=>filmDates(it)),
-    ...pick('game',['like','watch']).map(it=>()=>game(it,user)),
+    ...pick('game',['like','watch']).map(it=>()=>game(it)),
     ...pick('musik',['like','watch']).map(it=>()=>concerts(it,user))];
   const events=[];let errors=0;
   for(const job of jobs){try{events.push(...await job())}catch(e){errors++;console.warn(uid.slice(0,6),e.message)}await sleep(150)}
