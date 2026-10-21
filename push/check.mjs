@@ -101,6 +101,13 @@ const WEEK=(()=>{const d=new Date(TODAY+'T12:00:00Z');const t=new Date(Date.UTC(
 const FORCE_DIGEST=process.env.FORCE_DIGEST==='1';
 async function digest(user){
   const items=Object.values(user.items||{});const known=new Set(items.map(x=>x.k));
+  /* frische KI-Tipps (höchstens 8 Tage alt) haben Vorrang */
+  const ai=user.ai||{};
+  if((ai.tips||[]).length&&Date.now()-(ai.at||0)<8*864e5){
+    const per={};const pick=[];
+    for(const t of ai.tips){if(known.has(t.k)||(per[t.m]||0)>=2)continue;per[t.m]=(per[t.m]||0)+1;pick.push({k:t.k,m:t.m,title:t.title,prov:t.prov});if(pick.length>=5)break}
+    if(pick.length>=3)return pick;
+  }
   const cand=new Map();
   const add=(k,title,m,score,extra)=>{if(known.has(k))return;const c=cand.get(k)||{k,title,m,score:0,...extra};c.score+=score;cand.set(k,c)};
   for(const m of ['film','serie']){
@@ -129,7 +136,7 @@ async function digest(user){
   for(const c of top.sort((a,b)=>b.score-a.score)){if(pick.length>=5)break;if(per[c.m]>=2)continue;per[c.m]++;pick.push(c)}
   return pick;
 }
-const LBL_M={film:'Film',serie:'Serie',musik:'Musik'};
+const LBL_M={film:'Film',serie:'Serie',musik:'Musik',buch:'Buch',podcast:'Podcast',game:'Game'};
 
 /* Games (IGDB über den Fundus-Proxy): Merkliste → Erscheinungstag; Gefällt mir → neues Spiel des Studios erschienen */
 const IGDB_URL=process.env.IGDB_URL||'https://fundus-igdb.steffen-hinderks.workers.dev';

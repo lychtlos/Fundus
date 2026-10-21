@@ -177,6 +177,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .t{font-size:17px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
 .sub{margin:0;color:var(--ink-2);font-size:13.5px;overflow-wrap:anywhere}
 .why{margin:2px 0 0;font-size:13px;color:var(--ink)}
+.ai-sec .sec-h h3{display:flex;align-items:center;gap:8px}.ai-sec .sec-h svg{width:18px;height:18px;color:var(--acc)}.ai-sec .why{font-style:normal}.ai-sec .why::before{content:'✦ ';color:var(--acc)}
 .why span{color:var(--ink-2)}
 .av{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border-radius:6px;padding:2px 8px;margin-top:4px;align-self:flex-start;max-width:100%}
 .av img{width:16px;height:16px;border-radius:3px}
@@ -434,6 +435,7 @@ const MEDIA={
 const ORDER=['film','serie','musik','buch','podcast','game'];
 const isFS=m=>m==='film'||m==='serie';
 const IC={
+  spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>',
   mark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
@@ -503,7 +505,7 @@ document.addEventListener('error',e=>{const t=e.target;if(t&&t.tagName==='IMG'&&
 
 /* ---------- Zustand ---------- */
 let MODE='demo';
-const DEF={tmdbKey:'',gbKey:'',rawgKey:'',tmKey:'',plz:'',radius:150,concerts:true,platforms:[],providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true,digest:true};
+const DEF={tmdbKey:'',gbKey:'',rawgKey:'',tmKey:'',plz:'',radius:150,concerts:true,platforms:[],providers:[],onlyMine:false,includeFree:true,musicService:'ytm',podcastService:'pocketcasts',theme:'system',autoCheck:true,digest:true,ai:true};
 let S=null;
 const SKEY=()=>'fundus.'+MODE;
 const newState=()=>({v:2,del:{},metaTs:0,onboarded:false,settings:{...DEF},items:{},genres:{},seen:{},snap:{}});
@@ -1304,6 +1306,29 @@ function medChips(){
   return '<div class="chips" role="group" aria-label="Medium">'+[['alle','Alle']].concat(ORDER.map(m=>[m,MEDIA[m].label])).map(([id,l])=>'<button class="chip" data-act="med" data-m="'+id+'" aria-pressed="'+(ui.med===id)+'">'+l+'</button>').join('')+'</div>';
 }
 function emptyBase(m){return '<div class="empty f-'+m+'"><p>Noch keine Basis für '+MEDIA[m].label+'. Wähle Genres und markiere, was Dir gefällt. Daraus entstehen die Vorschläge.</p><button class="btn pri" data-act="pick" data-m="'+m+'">'+IC.plus+'Genres &amp; Titel wählen</button></div>'}
+/* KI-Tipps: nachts von Claude ausgesucht (GitHub Action), über das Konto synchronisiert */
+function aiTips(m){
+  if(MODE!=='live'||S.settings.ai===false||!S.ai||!(S.ai.tips||[]).length)return [];
+  return S.ai.tips.filter(t=>(m==='alle'||t.m===m)&&MEDIA[t.m]&&!S.items[t.k]&&passRules(t.m,t)).map(t=>{const it=reg({...REG.get(t.k),...t});return {it,why:t.why}});
+}
+function aiSection(m){
+  const L=aiTips(m);if(!L.length)return '';
+  const n=m==='alle'?(ui.aiAll?L.length:6):L.length;
+  const fs=L.slice(0,n).map(x=>x.it).filter(i=>isFS(i.m)&&!needsKey(i.m));
+  ['film','serie'].forEach(mm=>{const its=fs.filter(i=>i.m===mm&&!AV.has(i.k));if(its.length)ensureAv(mm,its)});
+  return '<section class="sec ai-sec" style="margin-top:22px"><div class="sec-h"><h3>'+IC.spark+'KI-Tipps'+(m==='alle'?'':' · '+MEDIA[m].label)+'</h3><span class="note">von Claude · '+new Date(S.ai.at).toLocaleDateString('de-DE',{day:'numeric',month:'short'})+'</span></div>'+
+    '<div class="grid">'+L.slice(0,n).map(x=>card(x.it,'discover',[x.why])).join('')+'</div>'+
+    (L.length>n?'<div class="more"><button class="btn" data-act="aiAll">Alle '+L.length+' KI-Tipps</button></div>':'')+'</section>';
+}
+function aiBox(){
+  const a=S.ai||{};
+  let h='<p>Jede Nacht wertet Claude Deine Bewertungen aus allen Bereichen aus, sucht 12 bis 15 Titel und begründet jeden. Jeder Titel wird vorher gegen TMDB, Deezer, Open Library, Apple Podcasts und IGDB geprüft. Läuft über Dein Claude-Abo, ohne Zusatzkosten. Nötig: Anmeldung (Konto) und mindestens 5 Bewertungen.</p>';
+  h+='<div class="opts"><label class="switch"><input type="checkbox" id="sw-ai" data-set="ai"'+(S.settings.ai!==false?' checked':'')+'> KI-Tipps anzeigen und nachts erstellen</label>';
+  if(a.at)h+='<p class="note" style="margin:0">Letzte Tipps: '+fmtDT(a.at)+' · '+(a.tips||[]).length+' Titel'+(a.model?' · Modell '+esc(a.model):'')+'</p>';
+  else h+='<p class="note" style="margin:0">'+(SYNC.user?'Noch keine Tipps. Der erste Lauf erfolgt nachts.':'Für KI-Tipps bitte anmelden.')+'</p>';
+  if(a.err&&(a.errAt||0)>(a.at||0))h+='<p class="err" style="margin:0">Letzter Lauf '+fmtDT(a.errAt)+': '+esc(a.err)+'</p>';
+  return h+'</div>';
+}
 function discoverBlock(m,n){
   if(needsKey(m))return keyPrompt(m);
   if(!byStatus(m,'like').length&&!byStatus(m,'watch').length)return emptyBase(m);
@@ -1332,6 +1357,7 @@ const VIEWS={
     const act=(ui.med==='alle'?RULE_M:[ui.med]).filter(rulesActive);
     if(act.length)h+='<p class="note" style="margin-top:10px">Regeln aktiv für '+act.map(m=>MEDIA[m].label).join(', ')+'. <button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Ändern</button></p>';
     if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
+    h+=aiSection(ui.med);
     if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
     else{const blk=discoverBlock(ui.med,ui.shown[ui.med]||12);h+=filterBar(ui.med)+'<div style="margin-top:16px">'+blk+'</div>'}
     return h;
@@ -1385,6 +1411,7 @@ const VIEWS={
     h+='<div class="panel"><h3>Datenquelle Bücher</h3>'+gbBox()+'</div>';
     h+='<div class="panel"><h3>Games</h3>'+rawgBox()+'</div>';
     h+='<div class="panel"><h3>Konzerte in der Nähe</h3>'+concertBox()+'</div>';
+    h+='<div class="panel"><h3>KI-Tipps</h3>'+aiBox()+'</div>';
     h+='<div class="panel"><h3>Regeln für Vorschläge</h3>'+rulesPanel()+'</div>';
     h+='<div class="panel"><h3>Meine Streamingdienste</h3><p>Steuert, welche Filme und Serien als „bei Dir verfügbar“ gelten. Kanal- und Werbe-Varianten eines Dienstes sind zusammengefasst.</p>'+provPanel()+'</div>';
     h+='<div class="panel"><h3>Anzeige</h3><div class="opts">'+
@@ -1745,6 +1772,7 @@ const ACT={
   unset(b){act(b.dataset.k,null)},
   known(b){ui.knownOpen=ui.knownOpen===b.dataset.k?null:b.dataset.k;render()},
   more(b){const m=b.dataset.m;ui.shown[m]=(ui.shown[m]||12)+12;render()},
+  aiAll(){ui.aiAll=true;render()},
   reshuffle(b){const m=b.dataset.m;resetPools(m==='alle'?null:[m]);render()},
   pick(b){openSheet(b.dataset.m)},
   closePick(){closeSheet()},
@@ -1931,7 +1959,7 @@ async function fbInit(){
   return FB;
 }
 const userRef=()=>FB.F.doc(FB.db,'artifacts','fundus','users',SYNC.user.uid);
-function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt:Date.now(),items:S.items,del:S.del||{},subs:S.subs||{},settings:S.settings,genres:S.genres,seen:S.seen,snap:S.snap,onboarded:!!S.onboarded,lastCheck:S.lastCheck||0,metaTs:S.metaTs||0}))}
+function payload(){return JSON.parse(JSON.stringify({v:2,writer:CLIENT,updatedAt:Date.now(),items:S.items,del:S.del||{},subs:S.subs||{},settings:S.settings,genres:S.genres,seen:S.seen,snap:S.snap,onboarded:!!S.onboarded,lastCheck:S.lastCheck||0,metaTs:S.metaTs||0,ai:S.ai||null}))}
 function mergeRemote(r){
   const items={...S.items},del={...(S.del||{})};const lt=k=>Math.max(items[k]?items[k].ts||0:0,del[k]||0);
   Object.entries(r.items||{}).forEach(([k,v])=>{if((v.ts||0)>lt(k)){items[k]=v;delete del[k]}});
@@ -1940,6 +1968,7 @@ function mergeRemote(r){
   const subs={...(S.subs||{})};Object.entries(r.subs||{}).forEach(([k,v])=>{if(!subs[k]||(v.ts||0)>(subs[k].ts||0))subs[k]=v});S.subs=subs;
   if((r.metaTs||0)>(S.metaTs||0)){S.settings={...S.settings,...(r.settings||{})};S.genres=r.genres||S.genres;S.metaTs=r.metaTs}
   S.seen={...(r.seen||{}),...S.seen};S.snap={...(r.snap||{}),...S.snap};
+  const aT=a=>a?Math.max(a.at||0,a.errAt||0):0;if(r.ai&&aT(r.ai)>aT(S.ai))S.ai=r.ai;
   S.onboarded=S.onboarded||!!r.onboarded;S.lastCheck=Math.max(S.lastCheck||0,r.lastCheck||0);
   metaSig=JSON.stringify([S.settings,S.genres]);
 }
