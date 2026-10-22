@@ -215,6 +215,7 @@ details.rated summary{cursor:pointer;color:var(--ink-2);font-size:13.5px}
 details.rated .base{margin-top:8px}
 
 .rel{display:flex;flex-direction:column;gap:6px}
+.ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.fol-key{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--accent);vertical-align:-1px}
 .follow-box{border:2px solid var(--accent);border-radius:calc(var(--r) + 6px);padding:12px;margin:6px 0 18px;background:color-mix(in srgb,var(--accent) 6%,transparent)}.follow-box .subh{margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px}.follow-box .subh svg{width:18px;height:18px}.follow-box .rel{gap:8px}.fol-none{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ev{display:grid;grid-template-columns:48px 70px 1fr auto;gap:14px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px}
 .ev .art{width:48px}
@@ -1292,6 +1293,8 @@ function card(it,mode,reasons,isAi){
     const b=(a,l,ic,on)=>'<button class="btn'+(on?' pri':'')+(a==='love'?' lovebtn':'')+'" data-act="gsSet" data-st="'+a+'" data-k="'+k+'" aria-pressed="'+!!on+'"'+(a==='love'?' title="Lieblingstitel"':'')+'>'+ic+l+'</button>';
     const fo=isFolK(it.k);acts=(it.m==='serie'?'<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>':'')+b('watch',st==='watch'?'Gemerkt':'Merken',IC.mark,st==='watch')+b('like','Gefällt mir',IC.up,st==='like')+b('love','',st==='love'?IC.heartF:IC.heart,st==='love')+
       (st&&st!=='watch'&&st!=='like'&&st!=='love'?'<span class="note" style="align-self:center">'+(st==='dislike'?'gefällt nicht':'ausgeblendet')+'</span>':'');
+  }else if(mode==='fol'){
+    acts='<button class="btn pri" data-act="folTog" data-k="'+k+'" aria-pressed="true">'+IC.play+'Verfolgt</button>'+(S.items[it.k]&&S.items[it.k].status==='watch'?'<span class="note" style="align-self:center">auch auf der Merkliste</span>':'')+lnk;
   }else if(mode==='watch'){
     acts=(it.m==='serie'?(()=>{const fo=isFolK(it.k);return '<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'" title="Neue Folgen per Push">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>'})():'')+'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
@@ -1428,15 +1431,16 @@ const VIEWS={
   },
   neu(){
     let h='<div class="head"><h2>Neuerscheinungen</h2><button class="btn pri" data-act="check"'+(ui.rel&&ui.rel.busy?' disabled':'')+'>'+IC.bell+(ui.rel&&ui.rel.busy?'Prüfe …':'Jetzt prüfen')+'</button></div>';
-    h+='<p class="lead">Verfolgte Serien stehen oben, neue Folgen kommen dazu per Push. Geprüft werden außerdem alle Einträge mit „Gefällt mir“ oder auf der Merkliste: neue Folgen und Staffeln, neue Alben, neue Bücher der Autoren, neue Podcast-Folgen und Filme, die neu bei Deinen Diensten laufen.</p>';
+    h+='<p class="lead">Geprüft werden verfolgte Serien (grün umrandet, eigene Push-Mitteilung) und alle Einträge mit „Gefällt mir“ oder auf der Merkliste: neue Folgen und Staffeln, neue Alben, neue Bücher der Autoren, neue Podcast-Folgen und Filme, die neu bei Deinen Diensten laufen.</p>';
     if(!ui.rel){const c=relLoad();ui.rel={busy:false,list:c?c.list:[],at:c&&c.at,errors:0};
       if(!c||Date.now()-c.at>6*H)queueMicrotask(checkReleases)}
     const R0=ui.rel;
     if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">Prüfe '+R0.done+' von '+R0.total+' Einträgen …'+(R0.fresh&&R0.fresh.length?' '+R0.fresh.length+' Treffer bisher':'')+'</span></div>';
     const L0=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
     const isFol=e=>isFolK(e.src.k);
-    h+=followBox(L0.filter(isFol));
-    const L=L0.filter(e=>!isFol(e)).concat(aiConcertEv(L0));
+    const nf=folList().length;
+    if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> Grün umrandet: verfolgte Serien ('+nf+'). <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Übersicht</button></p>';
+    const L=L0.concat(aiConcertEv(L0));
     const RD=aiRadar();
     if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
     if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
@@ -1449,6 +1453,14 @@ const VIEWS={
     else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte in Deiner Nähe: PLZ und Ticketmaster-Schlüssel in den Einstellungen eintragen.</p>';
     if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' Einträge konnten nicht geprüft werden (Dienst nicht erreichbar oder Limit)':'',R0.skipped?R0.skipped+' übersprungen (Zeitlimit)':''].filter(Boolean).join(' · ')+'. Beim nächsten Prüfen erneut versucht.</p>';
     return h+relNote();
+  },
+  verfolgt(){
+    const L=folList();
+    let h='<div class="head"><h2>Verfolgt</h2></div><p class="lead">Serien, die Du gerade schaust. Neue Folgen und Staffeln kommen als eigene Push-Mitteilung und sind unter „Neuerscheinungen“ grün umrandet. Verfolgen geht unabhängig von der Merkliste.</p>';
+    if(!L.length)return h+'<div class="empty"><p>Noch keine Serie verfolgt. Tippe bei einer Serie auf „Verfolgen“, z. B. in der Merkliste, der Suche oder der Detailansicht.</p><button class="btn" data-act="tab" data-tab="suchen">Serie suchen</button></div>';
+    const ev=((ui.rel&&ui.rel.list)||(relLoad()||{}).list||[]).filter(e=>e.m==='serie');
+    const nx=k=>{const e=ev.filter(x=>x.src&&x.src.k===k).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];return e?(dayDiff(e.date)>0?'Nächste Folge: '+fmtDate(e.date):'Neu: '+fmtDate(e.date))+' · '+e.text:''};
+    return h+'<div class="grid">'+L.map(i=>card(i,'fol',nx(i.k)?[nx(i.k)]:null)).join('')+'</div>';
   },
   basis(){
     let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro erneut starten</button></div><p class="lead">Grundlage aller Vorschläge. ♥ Lieblingstitel zählen doppelt (Herz antippen), alles mit „Gefällt mir“ fließt ein, „Gefällt mir nicht“ wertet ähnliche Titel ab, „Kein Interesse“ blendet nur aus.</p>';
@@ -1511,7 +1523,7 @@ function keyBox(){
 }
 function gbBox(){return '<p>Genres und ähnliche Bücher kommen von Open Library (deutsche Ausgaben), Titelsuche und neue Bücher Deiner Autoren von Google Books. Ein Standardschlüssel ist hinterlegt, ein eigener hat Vorrang.</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
 /* verfolgte Serien: eigener, umrandeter Bereich */
-function followBox(ev){
+function followBox_unused(ev){
   const fol=folList();if(!fol.length)return '';
   const withEv=new Set(ev.map(e=>e.src.k));
   const up=ev.filter(e=>e.up).sort((a,b)=>String(a.date).localeCompare(String(b.date))),past=ev.filter(e=>!e.up);
@@ -1545,7 +1557,8 @@ function evRow(e){
   if(d.length===4){big=d;small='Jahr'}else{const [y,mo,da]=d.split('-');big=da+'.'+mo+'.';small=y}
   const rel=e.up&&d.length>4?(dayDiff(e.date)===1?'morgen':'in '+dayDiff(e.date)+' Tagen'):'';
   const it=e.img?{...e.src,img:e.img}:e.src;
-  return '<div class="ev f-'+e.m+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span><span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+(e.kind==='konzert'&&e.ename&&normName(e.ename)!==normName(e.src.title)?' · '+esc(e.ename):'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.kind==='konzert'){lab='Tickets'}else if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
+  const fo=e.m==='serie'&&isFolK(e.src.k);
+  return '<div class="ev f-'+e.m+(fo?' is-fol':'')+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span>'+(fo?'<span class="fol-tag">'+IC.play+'Verfolgt</span>':'')+'<span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+(e.kind==='konzert'&&e.ename&&normName(e.ename)!==normName(e.src.title)?' · '+esc(e.ename):'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.kind==='konzert'){lab='Tickets'}else if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
 }
 /* Neuerscheinungen: Ergebnisse erscheinen schrittweise, letzter Stand wird gespeichert.
    Zeitlimit je Eintrag 25 s, gesamt 3 Min.; hängt nichts mehr dauerhaft. */
@@ -2008,6 +2021,7 @@ function renderDrawer(){
     item('drMed','data-m="alle"',IC.m_alle,'Alle',isE&&ui.med==='alle')+
     ORDER.map(m=>item('drMed','data-m="'+m+'"',IC['m_'+m],MEDIA[m].label,isE&&ui.med===m,cnt(m)?'<span class="dr-n">'+cnt(m)+'</span>':'')).join('')+'</nav>'+
     '<div class="dr-sec dr-bottom">'+
+    item('drTab','data-tab="verfolgt"',IC.play,'Verfolgt',ui.tab==='verfolgt',folList().length?'<span class="dr-n">'+folList().length+'</span>':'')+
     item('drTab','data-tab="basis"',IC.layers,'Meine Basis',ui.tab==='basis')+
     item('drTab','data-tab="einstellungen"',av,SYNC.user?esc(SYNC.user.name||'Profil'):'Profil & Einstellungen',ui.tab==='einstellungen',SYNC.user?'<span class="dr-sub">Einstellungen</span>':'')+
     '</div></div>';
