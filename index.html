@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0D6A5B"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Fundus"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style></head><body>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0D6A5B"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Fundus"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style></head><body>
 <title>Fundus</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,7 +43,8 @@ html:root[data-ft="dark"]{
   color-scheme:dark}
 [hidden]{display:none!important}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-variant-numeric:tabular-nums;font-size:15px;line-height:1.5;margin:0;
+html,body{overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
+body{touch-action:manipulation;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-variant-numeric:tabular-nums;font-size:15px;line-height:1.5;margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 img{max-width:100%}
@@ -215,6 +216,7 @@ details.rated summary{cursor:pointer;color:var(--ink-2);font-size:13.5px}
 details.rated .base{margin-top:8px}
 
 .rel{display:flex;flex-direction:column;gap:6px}
+.ev .ev-art{align-self:center}.ev .t .tbtn{font:inherit;color:inherit;text-align:left;padding:0;border:0;background:none;cursor:pointer;overflow-wrap:anywhere}
 .ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.fol-key{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--accent);vertical-align:-1px}
 .follow-box{border:2px solid var(--accent);border-radius:calc(var(--r) + 6px);padding:12px;margin:6px 0 18px;background:color-mix(in srgb,var(--accent) 6%,transparent)}.follow-box .subh{margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px}.follow-box .subh svg{width:18px;height:18px}.follow-box .rel{gap:8px}.fol-none{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ev{display:grid;grid-template-columns:48px 70px 1fr auto;gap:14px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px}
@@ -1565,7 +1567,9 @@ function evRow(e){
   const rel=e.up&&d.length>4?(dayDiff(e.date)===1?'morgen':'in '+dayDiff(e.date)+' Tagen'):'';
   const it=e.img?{...e.src,img:e.img}:e.src;
   const fo=e.m==='serie'&&isFolK(e.src.k);
-  return '<div class="ev f-'+e.m+(fo?' is-fol':'')+'">'+art(it)+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span>'+(fo?'<span class="fol-tag">'+IC.play+'Verfolgt</span>':'')+'<span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+esc(e.src.title)+'</div><p class="sub">'+esc(e.text||'')+(e.kind==='konzert'&&e.ename&&normName(e.ename)!==normName(e.src.title)?' · '+esc(e.ename):'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.kind==='konzert'){lab='Tickets'}else if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
+  const canD=e.src&&e.src.k&&e.src.id!=='ki';if(canD&&!REG.has(e.src.k))reg({...e.src});
+  const dk=canD?' data-act="detail" data-k="'+esc(e.src.k)+'"':'';
+  return '<div class="ev f-'+e.m+(fo?' is-fol':'')+'">'+(canD?'<button class="art-btn ev-art"'+dk+' aria-label="Details zu '+esc(e.src.title)+'">'+art(it)+'</button>':art(it))+'<div class="d"><b>'+big+'</b><small>'+small+'</small></div><div class="x"><div class="meta"><span class="mtag">'+M.one+'</span>'+(fo?'<span class="fol-tag">'+IC.play+'Verfolgt</span>':'')+'<span>'+esc(e.label)+'</span>'+(rel?'<span>'+rel+'</span>':'')+'</div><div class="t">'+(canD?'<button class="tbtn"'+dk+'>'+esc(e.src.title)+'</button>':esc(e.src.title))+'</div><p class="sub">'+esc(e.text||'')+(e.kind==='konzert'&&e.ename&&normName(e.ename)!==normName(e.src.title)?' · '+esc(e.ename):'')+'</p></div><div class="tagrow flagcol">'+(e.isNew?'<span class="flag new">Neu</span>':'')+(e.demo?'<span class="flag demo">Beispiel</span>':'')+(()=>{let l=e.link;let lab='Öffnen';if(e.kind==='konzert'){lab='Tickets'}else if(e.m==='musik'){const x=links({...e.src,title:e.src.title+' '+(e.text||''),link:null})[0];l=x[1];lab=x[0]}else if(e.m==='podcast'){const x=links(e.src)[0];l=x[1];lab=x[0]}return l?'<a class="btn ghost" href="'+esc(l)+'" target="_blank" rel="noopener" aria-label="In '+esc(lab)+' öffnen">'+IC.ext+'</a>':''})()+'</div></div>';
 }
 /* Neuerscheinungen: Ergebnisse erscheinen schrittweise, letzter Stand wird gespeichert.
    Zeitlimit je Eintrag 25 s, gesamt 3 Min.; hängt nichts mehr dauerhaft. */
