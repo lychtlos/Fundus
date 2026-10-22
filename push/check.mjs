@@ -196,7 +196,9 @@ async function runUser(doc){
   (AI.radar||[]).filter(r=>r.date&&dd(r.date)<=0&&dd(r.date)>=-3).forEach(r=>events.push({id:'radar:'+r.id,title:r.artist,text:'Neu aus Deinem Umfeld: '+r.title}));
   const fresh=[];const seen=new Set();
   const firstConcerts=!state.concertInit;
-  for(const e of events){if(state.sent[e.id]||seen.has(e.id))continue;seen.add(e.id);
+  /* gleiche Folge aus zwei Quellen (TMDB/TVmaze) nur einmal; verfolgte zuerst (laufen vorne) */
+  const evKey=e=>{const m=String(e.text||'').match(/S\d+E\d+/);return m?'ep|'+normName(e.title)+'|'+m[0]:e.id};
+  for(const e of events){const ek=evKey(e);if(state.sent[e.id]||seen.has(e.id)||seen.has(ek))continue;seen.add(e.id);seen.add(ek);
     if(e.kind==='konzert'&&firstConcerts){state.sent[e.id]=TODAY;continue}   // Bestand beim ersten Lauf nur merken
     fresh.push(e)}
   if(events.some(e=>e.kind==='konzert')||((user.settings||{}).plz&&((user.settings||{}).tmKey||TM_ENV)))state.concertInit=true;

@@ -117,7 +117,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .tab-l{margin-left:2px}
 /* Handy: Menü als Leiste am unteren Rand */
 @media (max-width:899px){
-  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:grid;grid-template-columns:repeat(4,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;transform:translateZ(0);display:grid;grid-template-columns:repeat(4,1fr);gap:0;overflow:visible;background:var(--bg);border-top:1px solid var(--line);
     padding:6px max(4px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
   .tab{flex-direction:column;gap:3px;padding:6px 2px 4px;border-bottom:0;font-size:11.5px;font-weight:600;min-width:0}
   .tab-ic svg{width:24px;height:24px}
@@ -1440,7 +1440,7 @@ const VIEWS={
     const isFol=e=>isFolK(e.src.k);
     const nf=folList().length;
     if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> Grün umrandet: verfolgte Serien ('+nf+'). <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Übersicht</button></p>';
-    const L=L0.concat(aiConcertEv(L0));
+    const L=dedupeEv(L0).concat(aiConcertEv(L0));
     const RD=aiRadar();
     if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
     if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
@@ -1523,6 +1523,13 @@ function keyBox(){
 }
 function gbBox(){return '<p>Genres und ähnliche Bücher kommen von Open Library (deutsche Ausgaben), Titelsuche und neue Bücher Deiner Autoren von Google Books. Ein Standardschlüssel ist hinterlegt, ein eigener hat Vorrang.</p><div class="row"><input class="inp" id="gbKey" type="password" autocomplete="off" placeholder="Google-Books-Schlüssel (optional)" value="'+esc(S.settings.gbKey||'')+'"><button class="btn pri" data-act="saveGb">Speichern &amp; prüfen</button></div>'+(ui.gbMsg?'<p style="margin:8px 0 0" class="'+(ui.gbMsg.ok?'ok':'err')+'">'+esc(ui.gbMsg.t)+'</p>':'')}
 /* verfolgte Serien: eigener, umrandeter Bereich */
+/* gleiche Folge/gleiches Album aus zwei Quellen (z. B. TMDB und TVmaze) nur einmal; verfolgte Einträge haben Vorrang */
+function dedupeEv(list){
+  const key=e=>{const t=String(e.text||'');const ep=t.match(/S\d+E\d+/);return e.m+'|'+normName(e.src&&e.src.title)+'|'+(ep?ep[0]:normName(t).slice(0,30))+'|'+String(e.date).slice(0,10)};
+  const best=new Map();
+  list.forEach(e=>{const k=key(e),c=best.get(k);if(!c||(!isFolK(c.src.k)&&isFolK(e.src.k)))best.set(k,e)});
+  const keep=new Set(best.values());return list.filter(e=>keep.has(e));
+}
 function followBox_unused(ev){
   const fol=folList();if(!fol.length)return '';
   const withEv=new Set(ev.map(e=>e.src.k));
@@ -2148,6 +2155,11 @@ function acctPanel(){
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='einstellungen')render()});
 window.addEventListener('appinstalled',()=>{installEvt=null;toast('Fundus ist installiert');render()});
+/* Handy: Leiste unten direkt in <body>, nicht im mitlaufenden Kopf (Chrome auf Android blendet sie sonst beim Scrollen aus) */
+function placeNav(){const n=$('#tabs');if(!n)return;const mob=matchMedia('(max-width:899px)').matches;
+  if(mob&&n.parentElement!==document.body)document.body.appendChild(n);
+  else if(!mob&&n.parentElement===document.body)$('.top .wrap').appendChild(n)}
+placeNav();try{matchMedia('(max-width:899px)').addEventListener('change',placeNav)}catch(e){}
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
 function installSteps(){const u=navigator.userAgent;
   if(/iPhone|iPad|iPod/.test(u))return '<p><b>iPhone/iPad (Safari):</b> unten auf das Teilen-Symbol tippen → „Zum Home-Bildschirm“ → „Hinzufügen“.</p>';
