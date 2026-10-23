@@ -204,9 +204,9 @@ async function runUser(doc){
   if(events.some(e=>e.kind==='konzert')||((user.settings||{}).plz&&((user.settings||{}).tmKey||TM_ENV)))state.concertInit=true;
   let sent=0,dead=[];
   const send=async(payload)=>{for(const [id,s] of subs){
-      if(DRY){console.log('[Testlauf]',uid.slice(0,6),payload.title,'|',payload.body.replace(/\n/g,' / '));sent++;continue}
+      if(DRY){console.log('::notice title=Testlauf::'+payload.title+' | '+payload.body.replace(/\n/g,' / ').slice(0,300));sent++;continue}
       try{await webpush.sendNotification({endpoint:s.endpoint,keys:s.keys},JSON.stringify(payload),{TTL:86400});sent++}
-      catch(e){if(e.statusCode===404||e.statusCode===410)dead.push(id);else console.warn('Push-Fehler',e.statusCode,e.body)}}};
+      catch(e){if(e.statusCode===404||e.statusCode===410)dead.push(id);else console.log('::warning title=Push-Fehler::'+e.statusCode+' '+String(e.body||e.message).slice(0,200))}}};
   if(user.settings&&user.settings.digest!==false&&(WEEKDAY==='Sun'||FORCE_DIGEST)&&state.digestWeek!==WEEK){
     try{const d=await digest(user);
       const dt=AI.digest&&AI.digest.week===WEEK&&AI.digest.text;
@@ -237,4 +237,4 @@ async function runUser(doc){
 const users=await db.collection('artifacts').doc('fundus').collection('users').get();
 console.log('Stichtag',TODAY,'·',users.size,'Konten',DRY?'· Testlauf ohne Versand':'');
 if(!users.size)throw new Error('Keine Konten gefunden – Dienstkonto gehört evtl. zu einem anderen Projekt');
-for(const d of users.docs){try{console.log(await runUser(d))}catch(e){console.error('Konto',d.id.slice(0,6),e.message)}}
+for(const d of users.docs){try{const r=await runUser(d);console.log('::notice title=Konto '+d.id.slice(0,6)+'::'+JSON.stringify(r))}catch(e){console.error('Konto',d.id.slice(0,6),e.message)}}
