@@ -2,7 +2,10 @@ name: Fundus täglicher Check
 
 on:
   schedule:
-    - cron: '7 6 * * *'   # täglich 06:07 UTC = 08:07 Sommerzeit / 07:07 Winterzeit
+    - cron: '37 4 * * *'  # täglich 04:37 UTC = 06:37 Sommerzeit / 05:37 Winterzeit (GitHub startet oft verspätet)
+  workflow_run:            # zusätzlich direkt nach dem nächtlichen KI-Lauf (Konzerte, Radar, Digest-Text sind dann frisch)
+    workflows: ['Fundus KI-Tipps']
+    types: [completed]
   push:                    # Änderung am Prüfskript = Testlauf ohne Versand
     branches: [main]
     paths: ['push/**', '.github/workflows/push.yml']
@@ -19,6 +22,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: fundus-push
+  cancel-in-progress: false
 
 jobs:
   check:

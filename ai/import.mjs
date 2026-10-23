@@ -4,7 +4,7 @@
    Fehlen Tipps, bleiben die alten stehen und es wird ein Fehlerhinweis gesetzt (Exit-Code 1). */
 import fs from 'node:fs';
 import {readJ,passRules,knownSets,norm,isPopular,dd,km,geocode,WEEK} from './lib.mjs';
-const MAX=30,PER_M=5,HIST=200;
+const MAX=30,PER_M=5,HIST=300,KEEP_M=20;
 const index=readJ('work/index.json',[]);
 const err=process.env.AI_ERROR||'';
 const model=process.env.AI_MODEL||'';
@@ -33,9 +33,13 @@ for(const {uid,dir} of index){
   }
   while(tips.filter(t=>isPopular(t,checked[t.k].extra||{})).length>Math.ceil(tips.length/3)){const i=tips.map(t=>isPopular(t,checked[t.k].extra||{})).lastIndexOf(true);tips.splice(i,1)}
   if(tips.length>=5){
-    ai.at=now;ai.model=model;ai.tips=tips;ai.err='';
+    /* neue Tipps vorne; ältere, noch nicht bewertete bleiben stehen (je Bereich höchstens KEEP_M) */
+    const seenK=new Set(tips.map(t=>t.k));const pm={};
+    const all=[...tips.map(t=>({...t,ts:now})),...(cur.tips||[]).filter(t=>t&&t.k&&!seenK.has(t.k)&&!keys.has(t.k)&&!names.has(t.m+'|'+norm(t.title))&&passRules(user,t))]
+      .filter(t=>{pm[t.m]=(pm[t.m]||0)+1;return pm[t.m]<=KEEP_M});
+    ai.at=now;ai.model=model;ai.tips=all;ai.err='';
     ai.hist=[...tips.map(x=>({k:x.k,t:x.title})),...(cur.hist||[])].slice(0,HIST);
-    log.push(tips.length+' Tipps ('+Object.entries(per).map(([m,n])=>m+' '+n).join(', ')+')');
+    log.push(tips.length+' neue Tipps, '+(all.length-tips.length)+' ältere offen ('+Object.entries(per).map(([m,n])=>m+' '+n).join(', ')+')');
   }else{
     fail++;ai.errAt=now;ai.err=err||(raw?'Zu wenige gültige Tipps ('+tips.length+')':'KI-Lauf ohne Ergebnis');
     note('error',dir+': '+ai.err+' (geprüft: '+Object.keys(checked).length+', Auswahl: '+(Array.isArray(raw)?raw.length:'keine')+')');
@@ -61,7 +65,7 @@ for(const {uid,dir} of index){
 
   /* 3. Release-Radar */
   const rc=readJ(dir+'/radar_checked.json',null);
-  if(rc){const ids=new Set();ai.radar=[...Object.values(rc),...(cur.radar||[])].filter(r=>dd(r.date)>=-45&&!ids.has(r.rid)&&ids.add(r.rid)).slice(0,40);log.push('Radar: '+Object.keys(rc).length)}
+  if(rc){const ids=new Set();ai.radar=[...Object.values(rc),...(cur.radar||[])].filter(r=>dd(r.date)>=-84&&!ids.has(r.rid)&&ids.add(r.rid)).slice(0,40);log.push('Radar: '+Object.keys(rc).length)}
 
   /* 4. Merkliste-Reihenfolge */
   const wl=readJ(dir+'/watch.json',null),ord=readJ(dir+'/order.json',null);

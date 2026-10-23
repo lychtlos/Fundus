@@ -1442,14 +1442,15 @@ const VIEWS={
     const isFol=e=>isFolK(e.src.k);
     const nf=folList().length;
     if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> Grün umrandet: verfolgte Serien ('+nf+'). <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Übersicht</button></p>';
-    const L=dedupeEv(L0).concat(aiConcertEv(L0));
+    const recent=e=>{const d=String(e.date);return d.length===4?+d>=new Date().getFullYear():dayDiff(d)>=-84};
+    const L=dedupeEv(L0.filter(recent)).concat(aiConcertEv(L0));
     const RD=aiRadar();
     if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
     if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
     const conc=L.filter(e=>e.kind==='konzert').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const up=L.filter(e=>e.up&&e.kind!=='konzert'),past=L.filter(e=>!e.up&&e.kind!=='konzert');
     if(up.length)h+='<div class="subh">Kommend</div><div class="rel">'+up.map(evRow).join('')+'</div>';
-    if(past.length)h+='<div class="subh">Erschienen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
+    if(past.length)h+='<div class="subh">Erschienen · letzte 12 Wochen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
     if(RD.length)h+='<div class="subh">Neu aus Deinem Umfeld <span class="note" style="text-transform:none;letter-spacing:0">· ✦ von Claude</span></div><div class="rel">'+RD.map(evRow).join('')+'</div>';
     if(conc.length)h+='<div class="subh">Konzerte in Deiner Nähe</div><div class="rel">'+conc.map(evRow).join('')+'</div>';
     else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte in Deiner Nähe: PLZ und Ticketmaster-Schlüssel in den Einstellungen eintragen.</p>';
@@ -1555,7 +1556,7 @@ function aiConcertEv(L){
 /* Release-Radar: neue Alben/Bücher von Künstlern, die noch nicht in den Listen sind */
 function aiRadar(){
   if(MODE!=='live'||S.settings.ai===false||!S.ai||!(S.ai.radar||[]).length)return [];
-  return S.ai.radar.filter(r=>r.date&&dayDiff(r.date)>=-45&&!(r.k&&S.items[r.k]&&['hide','dislike'].includes(S.items[r.k].status))).map(r=>{
+  return S.ai.radar.filter(r=>r.date&&dayDiff(r.date)>=-84&&!(r.k&&S.items[r.k]&&['hide','dislike'].includes(S.items[r.k].status))).map(r=>{
     const src=reg({k:r.k||r.m+':ki:'+normName(r.artist),m:r.m,id:r.id||'ki',title:r.artist,img:r.img||null,link:r.link||null});
     return {id:'radar:'+r.rid,m:r.m,date:r.date,up:dayDiff(r.date)>0,label:r.m==='buch'?'Neues Buch':'Neues Album',text:r.title+(r.why?' · ✦ '+r.why:''),img:r.img,link:r.link,src};
   }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
@@ -2103,7 +2104,7 @@ async function onUser(u){
   try{
     const snap=await FB.F.getDoc(userRef());
     if(snap.exists()){mergeRemote(snap.data());localSave();applyTheme();resetPools();AV.clear()}
-    await pushNow();
+    await pushNow();ensurePushSub();
     SYNC.unsub=FB.F.onSnapshot(userRef(),s=>{
       if(!s.exists()||s.metadata.hasPendingWrites)return;const d=s.data();if(d.writer===CLIENT)return;
       mergeRemote(d);localSave();applyTheme();resetPools();SYNC.at=Date.now();SYNC.state='ok';
@@ -2187,7 +2188,21 @@ const b64u=s=>{const p='='.repeat((4-s.length%4)%4);const b=atob((s+p).replace(/
 const subKey=ep=>String(ep).replace(/[^a-zA-Z0-9]/g,'').slice(-32);
 const deviceName=()=>{const u=navigator.userAgent;return (/Android/.test(u)?'Android':/iPhone|iPad|iPod/.test(u)?'iPhone/iPad':/Windows/.test(u)?'Windows':/Macintosh/.test(u)?'Mac':/Linux/.test(u)?'Linux':'Browser')+(isStandalone()?' (App)':' (Browser)')};
 const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&/^https?:$/.test(location.protocol);
-async function pushStateNow(){if(!pushSupported())return 'unsupported';try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();return sub?'on':'off'}catch(e){return 'off'}}
+/* aktiv nur, wenn das Gerät abonniert ist UND im Konto steht (sonst kann der tägliche Job nichts senden) */
+async function pushStateNow(){if(!pushSupported())return 'unsupported';try{const reg=await navigator.serviceWorker.getRegistration();const sub=reg&&await reg.pushManager.getSubscription();
+  if(!sub)return 'off';const e=(S.subs||{})[subKey(sub.endpoint)];return e&&!e.off?'on':'off'}catch(e){return 'off'}}
+/* Selbstheilung: erlaubtes, aber nicht (mehr) im Konto eingetragenes Abo wieder eintragen; als ungültig markiertes erneuern */
+async function ensurePushSub(){
+  try{
+    if(!SYNC.user||!pushSupported()||Notification.permission!=='granted')return;
+    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+    S.subs=S.subs||{};
+    if(sub&&S.subs[subKey(sub.endpoint)]&&S.subs[subKey(sub.endpoint)].off){await sub.unsubscribe();sub=null}
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+    const j=sub.toJSON(),k=subKey(j.endpoint),c=S.subs[k];
+    if(!c||c.off||!c.keys||c.keys.auth!==j.keys.auth){S.subs[k]={endpoint:j.endpoint,keys:j.keys,device:deviceName(),ts:Date.now()};save();await pushNow();ui.pushSt=undefined}
+  }catch(e){}
+}
 async function pushOn(){
   if(!SYNC.user){toast('Bitte zuerst mit Google anmelden');return}
   try{
