@@ -395,6 +395,32 @@ select.inp{flex:0 1 220px}
 .insthelp{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--surface-2);font-size:13.5px}
 .insthelp p{margin:0}
 
+/* Splash beim Start: immer dunkel wie der native PWA-Startbildschirm, Medien-Symbole im Kreis um das Logo */
+.splash{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 45%,#16302A 0%,#0E1412 62%);color:#E4EBE8;transition:opacity .45s ease,visibility .45s;overflow:hidden}
+.splash.out{opacity:0;visibility:hidden}
+.sp-ring{position:relative;width:320px;height:320px;animation:spspin 18s linear infinite}
+.sp-o{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(calc(var(--i)*60deg)) translateY(-134px) rotate(calc(var(--i)*-60deg))}
+.sp-t{position:absolute;left:-29px;top:-29px;width:58px;height:58px;border-radius:18px;display:grid;place-items:center;color:var(--sc);
+  background:color-mix(in srgb,var(--sc) 16%,#0E1412);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sc) 45%,transparent),0 8px 24px color-mix(in srgb,var(--sc) 22%,transparent);
+  opacity:0;transform:scale(.4);animation:sppop .5s cubic-bezier(.3,1.6,.5,1) forwards,spcounter 18s linear infinite;animation-delay:calc(var(--i)*90ms + 120ms),0s}
+.sp-t svg{width:28px;height:28px}
+.sp-c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.sp-logo{font-family:var(--f-display);font-weight:800;font-size:38px;letter-spacing:-.04em;line-height:1;opacity:0;transform:translateY(8px);animation:spup .6s ease-out .55s forwards}
+.sp-logo i{font-style:normal;color:#4EC1A7}
+.sp-bar{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 56px);left:50%;width:64px;height:3px;margin-left:-32px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.sp-bar i{position:absolute;inset:0;width:40%;border-radius:2px;background:#4EC1A7;animation:spload 1.1s ease-in-out infinite}
+@keyframes sppop{to{opacity:1;transform:scale(1)}}
+@keyframes spup{to{opacity:1;transform:none}}
+@keyframes spspin{to{transform:rotate(360deg)}}
+@keyframes spcounter{to{rotate:-360deg}}
+@keyframes spload{0%{left:-40%}100%{left:100%}}
+@media (prefers-reduced-motion:reduce){.sp-ring,.sp-t,.sp-logo,.sp-bar i{animation:none!important;opacity:1!important;transform:none!important}}
+/* große Symbole in leeren Zuständen und Abschnittsköpfen */
+.empty-ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;background:color-mix(in oklab,var(--accent) 12%,transparent);color:var(--accent)}
+.empty-ic svg{width:24px;height:24px}
+.sec-h h3 .h-ic{margin-right:0}
+.sec-h h3 .h-ic svg{width:20px;height:20px}
+.sec-h h3:has(.h-ic)::before{display:none}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgba(0,0,0,.18)}
 .toast button{background:none;border:0;color:var(--bg);font-weight:700;text-decoration:underline}
 .toast.wide{flex-wrap:wrap;row-gap:8px}.toast .nr{display:flex;flex-wrap:wrap;gap:6px;width:100%}.toast .nr button{text-decoration:none;font-weight:600;border:1px solid color-mix(in srgb,var(--bg) 45%,transparent);border-radius:999px;padding:4px 10px;font-size:13px}
@@ -403,6 +429,7 @@ select.inp{flex:0 1 220px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
+<div id="splash" class="splash" aria-hidden="true"><div class="sp-ring"><span class="sp-o" style="--i:0"><span class="sp-t" style="--sc:#7F9CE0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="m3.5 9 16-4.5.9 3.2M8.5 7.6l2.2 2.4M14 6l2.2 2.5"/></svg></span></span><span class="sp-o" style="--i:1"><span class="sp-t" style="--sc:#B98ADB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="m9 2 3 4 3-4M8 21h8"/></svg></span></span><span class="sp-o" style="--i:2"><span class="sp-t" style="--sc:#E58A74"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg></span></span><span class="sp-o" style="--i:3"><span class="sp-t" style="--sc:#D2AE4E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span></span><span class="sp-o" style="--i:4"><span class="sp-t" style="--sc:#5CC4CC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/></svg></span></span><span class="sp-o" style="--i:5"><span class="sp-t" style="--sc:#9BCB5E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 7h10a5 5 0 0 1 4.8 6.4l-1.1 3.8a2.5 2.5 0 0 1-4.3.9L14.5 16h-5l-1.9 2.1a2.5 2.5 0 0 1-4.3-.9l-1.1-3.8A5 5 0 0 1 7 7z"/><path d="M8 10v4M6 12h4"/></svg></span></span></div><div class="sp-c"><span class="sp-logo">Fundus<i>.</i></span></div><div class="sp-bar"><i></i></div></div>
 <header class="top"><div class="wrap">
   <div class="brand"><button class="burger" data-act="drawer" aria-label="Menü öffnen" aria-controls="drawer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Fundus<i>.</i></h1><small id="modeLabel"></small></div>
   <div class="topr"><div id="acct"></div></div>
@@ -411,7 +438,7 @@ select.inp{flex:0 1 220px}
 <div class="wrap">
   <div id="banner"></div>
   <main id="view"></main>
-  <p class="foot">Datenquellen: TMDB (Filme, Serien) – „This product uses the TMDB API but is not endorsed or certified by TMDB.“ · Streaming-Verfügbarkeit: JustWatch · Termine Serien: TMDB, TVmaze · Games: IGDB · Musik: Deezer, Apple Music · Bücher: Open Library, Google Books · Podcasts: Apple Podcasts, fyyd. Version 2026-10-19 15:43.</p>
+  <p class="foot" id="foot" hidden>Daten: TMDB, JustWatch, TVmaze, IGDB, Deezer, Apple, Open Library, Google Books, fyyd. This product uses the TMDB API but is not endorsed or certified by TMDB. Version 2026-10-24.</p>
 </div>
 <div id="drawer" class="drawer" hidden></div>
 <div id="sheet" class="sheet" hidden></div>
@@ -1003,14 +1030,14 @@ async function concertsFor(it){
   }).filter(e=>e&&dayDiff(e.date)>=0);
 }
 function concertBox(){const st=S.settings;
-  return '<p>Konzerte Deiner Künstler (Gefällt mir, ♥, Merkliste) im Umkreis Deiner PLZ, neue Termine auch per Push. Quelle ist Ticketmaster, die einzige frei nutzbare Konzert-Datenbank. Sie enthält in Deutschland nur einen Teil der Termine, viele Metal- und Clubkonzerte laufen über Eventim und andere und fehlen. In der Detailansicht eines Künstlers gibt es deshalb zusätzlich Links zur Suche bei Eventim und Songkick.</p>'+
+  return '<p>Konzerte Deiner Künstler im Umkreis.</p>'+
     '<div class="row"><label class="fl"><span class="st">PLZ</span><input class="inp" id="plz" inputmode="numeric" maxlength="5" placeholder="z. B. 10115" value="'+esc(st.plz||'')+'" style="width:110px;flex:none"></label>'+
     '<label class="fl"><span class="st">Umkreis</span><select class="inp" id="radius" data-set="radius">'+[['50','50 km'],['100','100 km'],['150','150 km'],['250','250 km'],['400','400 km'],['1000','ganz Deutschland']].map(([v,l])=>'<option value="'+v+'"'+(String(st.radius||150)===v?' selected':'')+'>'+l+'</option>').join('')+'</select></label>'+
     '<button class="btn" data-act="savePlz" style="align-self:end">Speichern</button></div>'+(ui.plzMsg?'<p class="'+(ui.plzMsg.ok?'ok':'err')+'" style="margin:8px 0 0">'+esc(ui.plzMsg.t)+'</p>':'')+
-    '<div class="row" style="margin-top:10px"><input class="inp" id="tmKey" type="password" autocomplete="off" placeholder="Ticketmaster-Schlüssel'+(TM_DEFAULT?' (optional, Standard hinterlegt)':'')+'" value="'+esc(st.tmKey||'')+'"><button class="btn" data-act="saveTm">Schlüssel speichern</button></div>';
+''; 
 }
 function rawgBox(){const sel=S.settings.platforms||[];
-  return '<p>Spiele-Daten von IGDB. Plattformen filtern Vorschläge und Genre-Listen; ohne Auswahl gilt alles.</p><div class="chips wrapchips">'+PLATFORMS.map(([v,l])=>'<button class="chip" data-act="platTog" data-v="'+v+'" aria-pressed="'+sel.includes(v)+'">'+l+'</button>').join('')+'</div>';
+  return '<p>Leer = alle Plattformen.</p><div class="chips wrapchips">'+PLATFORMS.map(([v,l])=>'<button class="chip" data-act="platTog" data-v="'+v+'" aria-pressed="'+sel.includes(v)+'">'+l+'</button>').join('')+'</div>';
 }
 
 const LIVE={film:tmdbAdapter('film'),serie:tmdbAdapter('serie'),musik:musikLive,buch:buchLive,podcast:podcastLive,game:gameLive};
@@ -1037,7 +1064,7 @@ function avHtml(it){
   if(s.hits.length)return '<span class="av av-yes">'+logo(s.hits[0])+'Bei '+esc(provNames(s.hits))+(s.hits.every(p=>p.free)?' · kostenlos':'')+'</span>';
   if(s.others.length)return '<span class="av av-other">'+logo(s.others[0])+esc(provNames(s.others))+' · nicht gebucht</span>';
   if(s.rent)return '<span class="av av-other">Nur Leihen oder Kaufen</span>';
-  return '<span class="av av-none">Derzeit nicht im Streaming</span>';
+  return '<span class="av av-none">Nicht im Streaming</span>';
 }
 function ensureAv(m,list){
   if(ui.avBusy[m]||!list.length)return;ui.avBusy[m]=true;
@@ -1196,7 +1223,7 @@ function avFull(it){
   const grp=(lab,arr)=>{const seen=new Set();const xs=arr.filter(p=>{const b=baseName(p.name);if(seen.has(b))return false;seen.add(b);return true});
     return xs.length?'<div class="avrow"><span class="st">'+lab+'</span>'+xs.map(p=>'<span class="avp'+(mine.has(p.id)?' mine':'')+'">'+(p.logo?'<img src="'+esc(p.logo)+'" alt="">':'')+esc(baseName(p.name))+'</span>').join('')+'</div>':''};
   const h=grp('Im Abo',av.flat)+grp('Kostenlos',av.free)+grp('Leihen, Kaufen',av.rent);
-  return '<div class="subh">Wo verfügbar (Deutschland)</div>'+(h||'<p class="note">Derzeit nicht im Streaming.</p>');
+  return '<div class="subh">Verfügbar</div>'+(h||'<p class="note">Nicht im Streaming</p>');
 }
 function renderDetail(){
   const D=ui.detail;const el=$('#sheet');if(!D)return;
@@ -1212,7 +1239,7 @@ function renderDetail(){
   if(d){
     if(d.tagline)main+='<p class="dt-tag">'+esc(d.tagline)+'</p>';
     const gde=it.m==='game'&&S.ai&&S.ai.gtx&&S.ai.gtx[it.k];
-    if(gde)main+='<p class="dt-ov">'+esc(gde)+'</p><p class="note">Beschreibung von IGDB, übersetzt von Claude.</p>';
+    if(gde)main+='<p class="dt-ov">'+esc(gde)+'</p><p class="note">✦ übersetzt</p>';
     else if(d.overview)main+='<p class="dt-ov">'+esc(d.overview)+'</p>'+(d.overviewNote?'<p class="note">'+esc(d.overviewNote)+'</p>':'');
     else if(it.m!=='musik')main+='<p class="note">Keine Beschreibung vorhanden.</p>';
     const facts=(d.facts||[]).filter(f=>f[1]);
@@ -1302,8 +1329,10 @@ function card(it,mode,reasons,isAi){
   }
   return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
+const secT=m=>'<span class="h-ic">'+IC['m_'+m]+'</span>'+MEDIA[m].label;
+const emptyIc=ic=>'<span class="empty-ic">'+IC[ic]+'</span>';
 const skel=n=>'<div class="grid">'+Array.from({length:n},()=>'<div class="skel"></div>').join('')+'</div>';
-function keyPrompt(m){if(m==='game')return '<div class="empty"><p><b>Games</b> brauchen einen kostenlosen RAWG-Schlüssel (rawg.io/apidocs).</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>';return '<div class="empty"><p><b>'+MEDIA[m].label+'</b> brauchen einen kostenlosen TMDB-Schlüssel. Ohne Schlüssel bleiben Filme und Serien leer.</p><button class="btn pri" data-act="tab" data-tab="einstellungen">Schlüssel eintragen</button></div>'}
+function keyPrompt(m){return '<div class="empty"><p>'+MEDIA[m].label+' gerade nicht erreichbar.</p></div>'}
 
 /* ---------- Ansichten ---------- */
 /* [id, Langname (Desktop), Kurzname (Handy), Symbol] */
@@ -1320,14 +1349,13 @@ function renderTabs(){
 }
 function renderBanner(){
   let h='';
-  if(MODE==='demo')h='<div class="banner"><span class="dot"></span><div><b>Demo-Modus.</b> Diese Ansicht darf keine externen Dienste abrufen. Titel sind real, Cover sind generiert, Streaming-Verfügbarkeit und Termine sind fiktiv. Als Datei im Browser geöffnet lädt die App echte Cover und Daten von TMDB, Deezer, Open Library und Apple Podcasts.</div></div>';
-  else if(!tmdbKeyNow())h='<div class="banner"><span class="dot"></span><div><b>Live-Modus.</b> Musik, Bücher und Podcasts laufen. Für Filme und Serien fehlt noch der TMDB-Schlüssel (Einstellungen).</div></div>';
+  if(MODE==='demo')h='<div class="banner"><span class="dot"></span><div><b>Demo</b> · Beispieldaten</div></div>';
   $('#banner').innerHTML=h;
 }
 function medChips(){
   return '<div class="chips" role="group" aria-label="Medium">'+[['alle','Alle']].concat(ORDER.map(m=>[m,MEDIA[m].label])).map(([id,l])=>'<button class="chip" data-act="med" data-m="'+id+'" aria-pressed="'+(ui.med===id)+'">'+l+'</button>').join('')+'</div>';
 }
-function emptyBase(m){return '<div class="empty f-'+m+'"><p>Noch keine Basis für '+MEDIA[m].label+'. Wähle Genres und markiere, was Dir gefällt. Daraus entstehen die Vorschläge.</p><button class="btn pri" data-act="pick" data-m="'+m+'">'+IC.plus+'Genres &amp; Titel wählen</button></div>'}
+function emptyBase(m){return '<div class="empty f-'+m+'"><p>Noch keine Basis für '+MEDIA[m].label+'.</p><button class="btn pri" data-act="pick" data-m="'+m+'">'+IC.plus+'Genres &amp; Titel wählen</button></div>'}
 /* KI-Tipps: nachts von Claude ausgesucht (GitHub Action), über das Konto synchronisiert */
 function aiTips(m){
   if(MODE!=='live'||S.settings.ai===false||!S.ai||!(S.ai.tips||[]).length)return [];
@@ -1338,18 +1366,18 @@ function wishBox(){
   if(MODE!=='live')return '';
   const R=S.wishReq,W=S.wish&&R&&S.wish.id===R.id?S.wish:null;
   let h='<div class="wish"><h3>'+IC.spark+'Wunsch an Claude</h3>';
-  if(!SYNC.user)return h+'<p class="note" style="margin:0">Beschreib, worauf Du Lust hast, Claude sucht passende Titel. Dafür bitte <button class="tbtn" data-act="login" style="text-decoration:underline">anmelden</button>.</p></div>';
+  if(!SYNC.user)return h+'<p class="note" style="margin:0">Erst <button class="tbtn" data-act="login" style="text-decoration:underline">anmelden</button>.</p></div>';
   const busy=R&&!W&&Date.now()-R.ts<15*60e3||W&&W.status==='running';
-  h+='<div class="wish-row"><input class="inp" id="wishQ" type="text" maxlength="300" placeholder="z. B. wie Dark, aber mit Humor · kurzes Buch für den Urlaub" value="'+esc(ui.wishQ||'')+'" enterkeyhint="send"'+(busy?' disabled':'')+'><button class="btn pri" data-act="wishGo"'+(busy?' disabled':'')+'>Fragen</button></div>';
+  h+='<div class="wish-row"><input class="inp" id="wishQ" type="text" maxlength="300" placeholder="z. B. wie Dark, nur lustiger" value="'+esc(ui.wishQ||'')+'" enterkeyhint="send"'+(busy?' disabled':'')+'><button class="btn pri" data-act="wishGo"'+(busy?' disabled':'')+'>Fragen</button></div>';
   if(ui.wishErr)h+='<p class="err st">'+esc(ui.wishErr)+'</p>';
-  else if(busy)h+='<p class="note st"><span class="spin"></span>Claude sucht zu „'+esc(R.q)+'“ … dauert etwa 2–4 Minuten. Du bekommst eine Push-Mitteilung.</p>';
-  else if(R&&!W)h+='<p class="note st">Zu „'+esc(R.q)+'“ kam keine Antwort. Bitte erneut fragen.</p>';
+  else if(busy)h+='<p class="note st"><span class="spin"></span>Claude sucht zu „'+esc(R.q)+'“ … ca. 3 Min.</p>';
+  else if(R&&!W)h+='<p class="note st">Keine Antwort. Erneut fragen.</p>';
   else if(W&&W.status==='err')h+='<p class="err st">„'+esc(W.q)+'“: '+esc(W.err||'Fehler')+'</p>';
   else if(W&&W.status==='done'){
     const L=(W.tips||[]).filter(t=>!S.items[t.k]).map(t=>{const it=reg({...REG.get(t.k),...t});return it});
     ['film','serie'].forEach(m=>{const its=L.filter(i=>i.m===m&&!AV.has(i.k)&&!needsKey(m));if(its.length)ensureAv(m,its)});
     h+='<p class="note st">„'+esc(W.q)+'“'+(W.intro?' · '+esc(W.intro):'')+' <button class="tbtn" data-act="wishClear" style="text-decoration:underline">Ausblenden</button></p>';
-    h+=L.length?'<div class="grid" style="margin-top:10px">'+L.map(i=>card(i,'discover',[i.why],true)).join('')+'</div>':'<p class="note">Alle Tipps sind schon bewertet oder gemerkt.</p>';
+    h+=L.length?'<div class="grid" style="margin-top:10px">'+L.map(i=>card(i,'discover',[i.why],true)).join('')+'</div>':'<p class="note">Alle Tipps schon bewertet.</p>';
   }
   return h+'</div>';
 }
@@ -1367,10 +1395,10 @@ async function wishGo(){
 }
 function aiBox(){
   const a=S.ai||{};
-  let h='<p>Jede Nacht wertet Claude Deine Bewertungen aus allen Bereichen aus und sucht je Bereich bis zu 5 Titel mit Begründung. Sie stehen in „Entdecken“ an erster Stelle (mit ✦ markiert), danach folgen die üblichen Vorschläge. Außerdem: Konzerte Deiner Bands per Websuche, neue Alben und Bücher aus Deinem Umfeld (Neuerscheinungen), Merkliste nach Passung sortiert, deutsche Game-Beschreibungen und sonntags ein Digest-Text. Jeder Titel wird vorher gegen TMDB, Deezer, Open Library, Apple Podcasts und IGDB geprüft. Läuft über Dein Claude-Abo, ohne Zusatzkosten. Nötig: Anmeldung (Konto) und mindestens 5 Bewertungen.</p>';
-  h+='<div class="opts"><label class="switch"><input type="checkbox" id="sw-ai" data-set="ai"'+(S.settings.ai!==false?' checked':'')+'> KI-Tipps anzeigen und nachts erstellen</label>';
+  let h='<p>Jede Nacht bis zu 5 Tipps je Bereich (✦). Ab 5 Bewertungen.</p>';
+  h+='<div class="opts"><label class="switch"><input type="checkbox" id="sw-ai" data-set="ai"'+(S.settings.ai!==false?' checked':'')+'> KI-Tipps</label>';
   if(a.at)h+='<p class="note" style="margin:0">Letzte Tipps: '+fmtDT(a.at)+' · '+(a.tips||[]).length+' Titel'+(a.model?' · Modell '+esc(a.model):'')+'</p>';
-  else h+='<p class="note" style="margin:0">'+(SYNC.user?'Noch keine Tipps. Der erste Lauf erfolgt nachts.':'Für KI-Tipps bitte anmelden.')+'</p>';
+  else h+='<p class="note" style="margin:0">'+(SYNC.user?'Noch keine Tipps.':'Anmeldung nötig.')+'</p>';
   if(a.err&&(a.errAt||0)>(a.at||0))h+='<p class="err" style="margin:0">Letzter Lauf '+fmtDT(a.errAt)+': '+esc(a.err)+'</p>';
   return h+'</div>';
 }
@@ -1393,85 +1421,84 @@ function discoverBlock(m,n){
   const v=visible(m,rest+A.length);
   const fill=v.list.filter(c=>!ak.has(c.it.k)).slice(0,rest);
   const more=A.length>n||v.more||v.list.filter(c=>!ak.has(c.it.k)).length>rest;
-  if(!A.length&&!fill.length&&!v.pending&&ui.med===m&&fltActive(m))return '<div class="empty"><p>Keine Vorschläge mit diesen Filtern. Filter lockern oder neue Vorschläge laden.</p><button class="btn" data-act="fltReset" data-m="'+m+'">Filter zurücksetzen</button><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
-  if(!A.length&&!fill.length)return v.pending?skel(3):'<div class="empty"><p>'+(isFS(m)&&S.settings.onlyMine?'Keine Vorschläge bei Deinen Diensten gefunden. Schalte „Nur meine Dienste“ aus oder lade neue Vorschläge.':'Keine weiteren Vorschläge. Erweitere Deine Basis oder lade neu.')+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
+  if(!A.length&&!fill.length&&!v.pending&&ui.med===m&&fltActive(m))return '<div class="empty"><p>Nichts passt zu den Filtern.</p><button class="btn" data-act="fltReset" data-m="'+m+'">Filter zurücksetzen</button><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
+  if(!A.length&&!fill.length)return v.pending?skel(3):'<div class="empty"><p>'+(isFS(m)&&S.settings.onlyMine?'Nichts bei Deinen Diensten.':'Keine weiteren Vorschläge.')+'</p><button class="btn" data-act="reshuffle" data-m="'+m+'">'+IC.shuffle+'Neue Vorschläge</button></div>';
   return '<div class="grid">'+aiH+fill.map(c=>card(c.it,'discover',c.reasons)).join('')+'</div>'+(more&&ui.med!=='alle'?'<div class="more"><button class="btn" data-act="more" data-m="'+m+'">Mehr anzeigen</button></div>':'');
 }
 const VIEWS={
   suchen(){
     const G=ui.gs||(ui.gs={q:'',m:'alle',res:{},busy:{},err:{}});
     let h='<div class="head"><h2>Suchen</h2></div>'+wishBox()+
-      '<div class="gs-bar"><span class="gs-ic">'+IC.search+'</span><input class="inp" id="gsQ" type="search" placeholder="Film, Serie, Band, Buch, Podcast oder Spiel" value="'+esc(G.q)+'" autocomplete="off" enterkeyhint="search"></div>'+
+      '<div class="gs-bar"><span class="gs-ic">'+IC.search+'</span><input class="inp" id="gsQ" type="search" placeholder="Suchen" value="'+esc(G.q)+'" autocomplete="off" enterkeyhint="search"></div>'+
       '<div class="chips" style="margin-top:12px">'+[['alle','Alle']].concat(gsMedia().map(m=>[m,MEDIA[m].label])).map(([id,l])=>'<button class="chip" data-act="gsMed" data-m="'+id+'" aria-pressed="'+(G.m===id)+'">'+(id==='alle'?'':'<span class="chip-ic">'+IC['m_'+id]+'</span>')+l+'</button>').join('')+'</div>';
     return h+'<div id="gsRes" style="margin-top:16px">'+gsResHtml()+'</div>';
   },
   entdecken(){
     const fs=ui.med==='alle'||isFS(ui.med);
-    let h='<div class="head"><h2>'+(ui.med==='alle'?'Vorschläge für Dich':'<span class="h-ic f-'+ui.med+'">'+IC['m_'+ui.med]+'</span>'+MEDIA[ui.med].label)+'</h2>';
+    let h='<div class="head"><h2>'+(ui.med==='alle'?'Für Dich':'<span class="h-ic f-'+ui.med+'">'+IC['m_'+ui.med]+'</span>'+MEDIA[ui.med].label)+'</h2>';
     if(fs)h+='<label class="switch"><input type="checkbox" id="sw-only" data-set="onlyMine"'+(S.settings.onlyMine?' checked':'')+(S.settings.providers.length?'':' disabled')+'> Nur meine Dienste</label>';
     if(fs)h+='<button class="btn pri" data-act="tonight">'+IC.moon+'Heute Abend</button>';
     h+='</div>';
     const act=(ui.med==='alle'?RULE_M:[ui.med]).filter(rulesActive);
-    if(act.length)h+='<p class="note" style="margin-top:10px">Regeln aktiv für '+act.map(m=>MEDIA[m].label).join(', ')+'. <button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Ändern</button></p>';
-    if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px">Lege in den Einstellungen Deine Streamingdienste fest, dann zeigt jede Karte, ob der Titel in Deinem Abo läuft.</p>';
-    if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+MEDIA[m].label+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
+    if(act.length)h+='<p class="note" style="margin-top:10px">Regeln aktiv · <button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Ändern</button></p>';
+    if(fs&&!S.settings.providers.length)h+='<p class="note" style="margin-top:10px"><button class="tbtn" data-act="tab" data-tab="einstellungen" style="text-decoration:underline">Streamingdienste festlegen</button></p>';
+    if(ui.med==='alle')h+=ORDER.map(m=>'<section class="sec f-'+m+'" style="margin-top:22px"><div class="sec-h"><h3>'+secT(m)+'</h3><button class="btn ghost" data-act="med" data-m="'+m+'">Alle '+MEDIA[m].label+' →</button></div>'+discoverBlock(m,3)+'</section>').join('');
     else{const blk=discoverBlock(ui.med,ui.shown[ui.med]||12);h+=filterBar(ui.med)+'<div style="margin-top:16px">'+blk+'</div>'}
     return h;
   },
   merkliste(){
-    let h='<div class="head"><h2>Merkliste</h2><button class="btn pri" data-act="addOpen">'+IC.plus+'Hinzufügen</button></div><p class="lead">Was Du sehen, hören oder lesen willst. Wenn Du es kennst, bewerte es. Das verbessert die nächsten Vorschläge.</p>';
+    let h='<div class="head"><h2>Merkliste</h2><button class="btn pri" data-act="addOpen">'+IC.plus+'Hinzufügen</button></div>';
     const all=Object.values(S.items).filter(x=>x.status==='watch');
-    if(!all.length)return h+'<div class="empty"><p>Die Merkliste ist leer. Unter „Entdecken“ landet mit „Merken“ ein Titel hier.</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
+    if(!all.length)return h+'<div class="empty">'+emptyIc('mark')+'<p>Merkliste leer.</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
     const W=MODE==='live'&&S.settings.ai!==false&&S.ai&&S.ai.order||{};
     const nf=folList().length;
-    if(nf)h+='<p class="note" style="margin-top:-6px">'+IC.play.replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' '+nf+(nf===1?' verfolgte Serie steht':' verfolgte Serien stehen')+' unter <button class="tbtn" data-act="tab" data-tab="neu" style="text-decoration:underline">Neuerscheinungen</button>.</p>';
-    if(Object.keys(W).length)h+='<p class="note">✦ Reihenfolge von Claude: was am besten zu Dir passt, zuerst.</p>';
+    if(nf)h+='<p class="note" style="margin-top:-6px">'+IC.play.replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">'+nf+' verfolgt</button></p>';
+    if(Object.keys(W).length)h+='<p class="note">✦ Nach Passung sortiert</p>';
     ORDER.forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
       if(isFS(m)&&!needsKey(m))ensureAv(m,its.filter(i=>!AV.has(i.k)));
-      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+its.length+'</span></h3></div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3></div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
     return h;
   },
   neu(){
     let h='<div class="head"><h2>Neuerscheinungen</h2><button class="btn pri" data-act="check"'+(ui.rel&&ui.rel.busy?' disabled':'')+'>'+IC.bell+(ui.rel&&ui.rel.busy?'Prüfe …':'Jetzt prüfen')+'</button></div>';
-    h+='<p class="lead">Geprüft werden verfolgte Serien (grün umrandet, eigene Push-Mitteilung) und alle Einträge mit „Gefällt mir“ oder auf der Merkliste: neue Folgen und Staffeln, neue Alben, neue Bücher der Autoren, neue Podcast-Folgen und Filme, die neu bei Deinen Diensten laufen.</p>';
     if(!ui.rel){const c=relLoad();ui.rel={busy:false,list:c?c.list:[],at:c&&c.at,errors:0};
       if(!c||Date.now()-c.at>6*H)queueMicrotask(checkReleases)}
     const R0=ui.rel;
-    if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">Prüfe '+R0.done+' von '+R0.total+' Einträgen …'+(R0.fresh&&R0.fresh.length?' '+R0.fresh.length+' Treffer bisher':'')+'</span></div>';
+    if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">'+R0.done+' / '+R0.total+(R0.fresh&&R0.fresh.length?' · '+R0.fresh.length+' Treffer':'')+'</span></div>';
     const L0=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
     const isFol=e=>isFolK(e.src.k);
     const nf=folList().length;
-    if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> Grün umrandet: verfolgte Serien ('+nf+'). <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Übersicht</button></p>';
+    if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Verfolgt ('+nf+')</button></p>';
     const recent=e=>{const d=String(e.date);return d.length===4?+d>=new Date().getFullYear():dayDiff(d)>=-84};
     const L=dedupeEv(L0.filter(recent)).concat(aiConcertEv(L0));
     const RD=aiRadar();
-    if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty"><p>Nichts Neues zu Deinen Einträgen.</p></div>')+relNote();
-    if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Stand der letzten Prüfung:</p>';
+    if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty">'+emptyIc('bell')+'<p>Nichts Neues.</p></div>')+relNote();
+    if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Letzter Stand</p>';
     const conc=L.filter(e=>e.kind==='konzert').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
     const up=L.filter(e=>e.up&&e.kind!=='konzert'),past=L.filter(e=>!e.up&&e.kind!=='konzert');
     if(up.length)h+='<div class="subh">Kommend</div><div class="rel">'+up.map(evRow).join('')+'</div>';
-    if(past.length)h+='<div class="subh">Erschienen · letzte 12 Wochen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
-    if(RD.length)h+='<div class="subh">Neu aus Deinem Umfeld <span class="note" style="text-transform:none;letter-spacing:0">· ✦ von Claude</span></div><div class="rel">'+RD.map(evRow).join('')+'</div>';
-    if(conc.length)h+='<div class="subh">Konzerte in Deiner Nähe</div><div class="rel">'+conc.map(evRow).join('')+'</div>';
-    else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte in Deiner Nähe: PLZ und Ticketmaster-Schlüssel in den Einstellungen eintragen.</p>';
-    if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' Einträge konnten nicht geprüft werden (Dienst nicht erreichbar oder Limit)':'',R0.skipped?R0.skipped+' übersprungen (Zeitlimit)':''].filter(Boolean).join(' · ')+'. Beim nächsten Prüfen erneut versucht.</p>';
+    if(past.length)h+='<div class="subh">Erschienen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
+    if(RD.length)h+='<div class="subh">✦ Release-Radar</div><div class="rel">'+RD.map(evRow).join('')+'</div>';
+    if(conc.length)h+='<div class="subh">Konzerte</div><div class="rel">'+conc.map(evRow).join('')+'</div>';
+    else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte: PLZ in den Einstellungen.</p>';
+    if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' nicht geprüft':'',R0.skipped?R0.skipped+' übersprungen':''].filter(Boolean).join(' · ')+'</p>';
     return h+relNote();
   },
   verfolgt(){
     const L=folList();
-    let h='<div class="head"><h2>Verfolgt</h2></div><p class="lead">Serien, die Du gerade schaust. Neue Folgen und Staffeln kommen als eigene Push-Mitteilung und sind unter „Neuerscheinungen“ grün umrandet. Verfolgen geht unabhängig von der Merkliste.</p>';
-    if(!L.length)return h+'<div class="empty"><p>Noch keine Serie verfolgt. Tippe bei einer Serie auf „Verfolgen“, z. B. in der Merkliste, der Suche oder der Detailansicht.</p><button class="btn" data-act="tab" data-tab="suchen">Serie suchen</button></div>';
+    let h='<div class="head"><h2>Verfolgt</h2></div>';
+    if(!L.length)return h+'<div class="empty">'+emptyIc('play')+'<p>Noch keine Serie verfolgt.</p><button class="btn" data-act="tab" data-tab="suchen">Serie suchen</button></div>';
     const ev=((ui.rel&&ui.rel.list)||(relLoad()||{}).list||[]).filter(e=>e.m==='serie');
     const nx=k=>{const e=ev.filter(x=>x.src&&x.src.k===k).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];return e?(dayDiff(e.date)>0?'Nächste Folge: '+fmtDate(e.date):'Neu: '+fmtDate(e.date))+' · '+e.text:''};
     return h+'<div class="grid">'+L.map(i=>card(i,'fol',nx(i.k)?[nx(i.k)]:null)).join('')+'</div>';
   },
   basis(){
-    let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro erneut starten</button></div><p class="lead">Grundlage aller Vorschläge. ♥ Lieblingstitel zählen doppelt (Herz antippen), alles mit „Gefällt mir“ fließt ein, „Gefällt mir nicht“ wertet ähnliche Titel ab, „Kein Interesse“ blendet nur aus.</p>';
+    let h='<div class="head"><h2>Meine Basis</h2><button class="btn" data-act="introStart">Intro</button></div><p class="note" style="margin:-6px 0 16px">♥ zählt doppelt</p>';
     ORDER.forEach(m=>{
       const lk=byStatus(m,'like').filter(i=>i.status),dl=byStatus(m,'dislike'),hd=byStatus(m,'hide');
-      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+lk.length+'</span></h3><button class="btn" data-act="pick" data-m="'+m+'">'+IC.plus+'Erweitern</button></div>';
-      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill'+(i.status==='love'?' is-love':'')+'"><button class="hb" data-act="loveTog" data-k="'+esc(i.k)+'" aria-label="'+(i.status==='love'?'Kein Lieblingstitel mehr':'Als Lieblingstitel markieren')+'" title="Lieblingstitel">'+(i.status==='love'?IC.heartF:IC.heart)+'</button><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Noch nichts ausgewählt.</p>';
-      if(dl.length||hd.length)h+='<details class="rated"><summary>Abgelehnt und ausgeblendet ('+(dl.length+hd.length)+')</summary><div class="base">'+dl.concat(hd).map(i=>'<span class="pill neg"><span>'+esc(i.title)+' · '+(i.status==='dislike'?'gefällt nicht':'kein Interesse')+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="Wieder vorschlagen">'+IC.x+'</button></span>').join('')+'</div></details>';
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+lk.length+'</span></h3><button class="btn" data-act="pick" data-m="'+m+'">'+IC.plus+'Erweitern</button></div>';
+      h+=lk.length?'<div class="base">'+lk.map(i=>'<span class="pill'+(i.status==='love'?' is-love':'')+'"><button class="hb" data-act="loveTog" data-k="'+esc(i.k)+'" aria-label="'+(i.status==='love'?'Kein Lieblingstitel mehr':'Als Lieblingstitel markieren')+'" title="Lieblingstitel">'+(i.status==='love'?IC.heartF:IC.heart)+'</button><button class="tbtn" data-act="detail" data-k="'+esc(i.k)+'">'+esc(i.title)+'</button><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="'+esc(i.title)+' entfernen">'+IC.x+'</button></span>').join('')+'</div>':'<p class="note">Leer</p>';
+      if(dl.length||hd.length)h+='<details class="rated"><summary>Abgelehnt ('+(dl.length+hd.length)+')</summary><div class="base">'+dl.concat(hd).map(i=>'<span class="pill neg"><span>'+esc(i.title)+' · '+(i.status==='dislike'?'gefällt nicht':'kein Interesse')+'</span><button data-act="unset" data-k="'+esc(i.k)+'" aria-label="Wieder vorschlagen">'+IC.x+'</button></span>').join('')+'</div></details>';
       h+='</section>';
     });
     return h;
@@ -1481,35 +1508,33 @@ const VIEWS={
     h+='<div class="panel"><h3>Konto</h3><div id="acctPanel">'+acctPanel()+'</div></div>';
     h+='<div class="panel"><h3>Push-Mitteilungen</h3>'+pushPanel()+'</div>';
     h+='<div class="panel"><h3>Als App installieren</h3>'+installPanel()+'</div>';
-    h+='<div class="panel"><h3>Darstellung</h3><p>Hell, dunkel oder wie das System.</p><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
-    h+='<div class="panel"><h3>Datenquelle Filme &amp; Serien</h3>'+keyBox()+'</div>';
-    h+='<div class="panel"><h3>Datenquelle Bücher</h3>'+gbBox()+'</div>';
+    h+='<div class="panel"><h3>Darstellung</h3><div class="row">'+[['light','Hell'],['dark','Dunkel'],['system','System']].map(([v,l])=>'<button class="chip" data-act="theme" data-v="'+v+'" aria-pressed="'+(st.theme===v)+'">'+l+'</button>').join('')+'</div></div>';
     h+='<div class="panel"><h3>Games</h3>'+rawgBox()+'</div>';
-    h+='<div class="panel"><h3>Konzerte in der Nähe</h3>'+concertBox()+'</div>';
+    h+='<div class="panel"><h3>Konzerte</h3>'+concertBox()+'</div>';
     h+='<div class="panel"><h3>KI-Tipps</h3>'+aiBox()+'</div>';
-    h+='<div class="panel"><h3>Regeln für Vorschläge</h3>'+rulesPanel()+'</div>';
-    h+='<div class="panel"><h3>Meine Streamingdienste</h3><p>Steuert, welche Filme und Serien als „bei Dir verfügbar“ gelten. Kanal- und Werbe-Varianten eines Dienstes sind zusammengefasst.</p>'+provPanel()+'</div>';
+    h+='<div class="panel"><h3>Regeln</h3>'+rulesPanel()+'</div>';
+    h+='<div class="panel"><h3>Streamingdienste</h3>'+provPanel()+'</div>';
     h+='<div class="panel"><h3>Anzeige</h3><div class="opts">'+
-      '<label class="switch"><input type="checkbox" id="sw-only2" data-set="onlyMine"'+(st.onlyMine?' checked':'')+'> Bei Filmen und Serien nur Titel aus meinen Diensten zeigen</label>'+
-      '<label class="switch"><input type="checkbox" id="sw-free" data-set="includeFree"'+(st.includeFree?' checked':'')+'> Kostenlose Angebote (Mediatheken, werbefinanziert) immer einbeziehen</label>'+
+      '<label class="switch"><input type="checkbox" id="sw-only2" data-set="onlyMine"'+(st.onlyMine?' checked':'')+'> Nur meine Dienste</label>'+
+      '<label class="switch"><input type="checkbox" id="sw-free" data-set="includeFree"'+(st.includeFree?' checked':'')+'> Gratis-Angebote einbeziehen</label>'+
       '</div></div>';
     h+='<div class="panel"><h3>Aktualisierung</h3>'+updBox()+'</div>';
-    h+='<div class="panel"><h3>Apps zum Öffnen</h3><p>Mit welcher App sich Musik- und Podcast-Vorschläge öffnen. Bei Pocket Casts und Overcast öffnet sich direkt der Podcast.</p>'+appsBox()+'</div>';
-    h+='<div class="panel"><h3>Daten</h3><p>'+Object.keys(S.items).length+' Einträge gespeichert. Export und Import als Text, z. B. zum Übertragen auf ein anderes Gerät.</p><div class="row"><button class="btn" data-act="introStart">Intro erneut starten</button><button class="btn" data-act="export">Export kopieren</button><button class="btn" data-act="importOpen">Import</button>'+
+    h+='<div class="panel"><h3>Apps</h3>'+appsBox()+'</div>';
+    h+='<div class="panel"><h3>Daten</h3><p>'+Object.keys(S.items).length+' Einträge</p><div class="row"><button class="btn" data-act="introStart">Intro erneut starten</button><button class="btn" data-act="export">Export kopieren</button><button class="btn" data-act="importOpen">Import</button>'+
       (ui.confirmReset?'<span class="err">Alle Einträge löschen?</span><button class="btn" data-act="reset" style="color:var(--bad)">Ja, löschen</button><button class="btn ghost" data-act="resetNo">Abbrechen</button>':'<button class="btn ghost" data-act="resetAsk">Alles zurücksetzen</button>')+'</div>'+
       (ui.importOpen?'<div style="margin-top:10px;display:grid;gap:8px"><textarea class="inp" id="importTxt" placeholder="Exportierten Text hier einfügen"></textarea><div class="row"><button class="btn pri" data-act="import">Übernehmen</button></div></div>':'')+'</div>';
     return h+'</div>';
   }
 };
 function appsBox(){const st=S.settings;
-  return '<div class="opts"><div class="row"><label for="musicService" style="min-width:150px">Musik öffnen in</label><select class="inp" id="musicService" data-set="musicService">'+[['ytm','YouTube Music'],['spotify','Spotify'],['deezer','Deezer'],['apple','Apple Music']].map(([v,l])=>'<option value="'+v+'"'+(st.musicService===v?' selected':'')+'>'+l+'</option>').join('')+'</select></div>'+
-  '<div class="row"><label for="podcastService" style="min-width:150px">Podcasts öffnen in</label><select class="inp" id="podcastService" data-set="podcastService">'+[['pocketcasts','Pocket Casts'],['apple','Apple Podcasts'],['spotify','Spotify'],['ytm','YouTube Music'],['overcast','Overcast']].map(([v,l])=>'<option value="'+v+'"'+(st.podcastService===v?' selected':'')+'>'+l+'</option>').join('')+'</select></div></div>'}
+  return '<div class="opts"><div class="row"><label for="musicService" style="min-width:150px">Musik</label><select class="inp" id="musicService" data-set="musicService">'+[['ytm','YouTube Music'],['spotify','Spotify'],['deezer','Deezer'],['apple','Apple Music']].map(([v,l])=>'<option value="'+v+'"'+(st.musicService===v?' selected':'')+'>'+l+'</option>').join('')+'</select></div>'+
+  '<div class="row"><label for="podcastService" style="min-width:150px">Podcasts</label><select class="inp" id="podcastService" data-set="podcastService">'+[['pocketcasts','Pocket Casts'],['apple','Apple Podcasts'],['spotify','Spotify'],['ytm','YouTube Music'],['overcast','Overcast']].map(([v,l])=>'<option value="'+v+'"'+(st.podcastService===v?' selected':'')+'>'+l+'</option>').join('')+'</select></div></div>'}
 function rulesPanel(){
   const gnames=m=>m==='film'?(gCache.movie||[]):m==='serie'?(gCache.tv||[]):m==='game'?Object.values(GAME_GENRES_DE).map(n=>({name:n})):BOOK_GENRES.map(g=>({name:g.name}));
   if(MODE==='live'&&!gCache.movie){Promise.all(['movie','tv'].map(t=>tmdbGenres(t))).then(()=>{if(ui.tab==='einstellungen')render()}).catch(()=>{})}
   const yrs=[[0,'Alle Jahre'],[1970,'ab 1970'],[1980,'ab 1980'],[1990,'ab 1990'],[2000,'ab 2000'],[2010,'ab 2010'],[2015,'ab 2015'],[2020,'ab 2020']];
   const rts=[[0,'Jede'],[6,'ab ★ 6'],[6.5,'ab ★ 6,5'],[7,'ab ★ 7'],[7.5,'ab ★ 7,5']];
-  return '<p>Gilt für Vorschläge, „Heute Abend“ und den Wochen-Digest. Die Genre-Auswahl und die Suche zeigen weiter alles, damit Du auch ältere Titel als „Gefällt mir“ markieren kannst.</p>'+
+  return 
     RULE_M.map(m=>{const r=rules(m);const open=ui.ruleOpen===m;
       const sum=[r.minYear?'ab '+r.minYear:'',r.minR?'ab ★ '+nf1.format(r.minR):'',r.exG.length?r.exG.length+' Genres aus':''].filter(Boolean).join(' · ')||'keine Einschränkung';
       return '<div class="rule f-'+m+'"><button class="rule-h" data-act="ruleOpen" data-m="'+m+'" aria-expanded="'+open+'"><span class="mtag">'+MEDIA[m].label+'</span><span class="note">'+esc(sum)+'</span><span class="chev">'+(open?'−':'+')+'</span></button>'+
@@ -1561,7 +1586,7 @@ function aiRadar(){
     return {id:'radar:'+r.rid,m:r.m,date:r.date,up:dayDiff(r.date)>0,label:r.m==='buch'?'Neues Buch':'Neues Album',text:r.title+(r.why?' · ✦ '+r.why:''),img:r.img,link:r.link,src};
   }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }
-function relNote(){return '<p class="note" style="margin-top:18px">Automatische Prüfung einmal täglich, solange die App geöffnet ist. Letzte Prüfung: '+fmtDT(S.lastCheck)+'.</p>'}
+function relNote(){return '<p class="note" style="margin-top:18px">Geprüft: '+fmtDT(S.lastCheck)+'</p>'}
 function evRow(e){
   const M=MEDIA[e.m];const d=String(e.date);let big,small;
   if(d.length===4){big=d;small='Jahr'}else{const [y,mo,da]=d.split('-');big=da+'.'+mo+'.';small=y}
@@ -1682,7 +1707,7 @@ function pickResHtml(p){
     if(!p.search||!p.search.length)return h+'<p class="pk-hint">Keine Treffer.</p>';
     return h+'<section class="pk-sec"><div class="pk-h"><h3>Suchergebnisse</h3><span class="st">'+p.search.length+'</span></div><div class="tiles">'+p.search.map(tileHtml).join('')+'</div></section>';
   }
-  if(!p.order.length)return h+'<p class="pk-hint">Wähle oben ein oder mehrere Genres. Jedes Genre bringt '+PER_GENRE+' neue Titel. Oder suche direkt nach einem Titel.</p>';
+  if(!p.order.length)return h+'<p class="pk-hint">Genre wählen oder suchen.</p>';
   return h+p.order.slice().reverse().map(gid=>{const b=p.blocks[gid];const name=gLabel(p,gid);
     const n=b.items.filter(it=>S.items[it.k]&&(S.items[it.k].status==='like'||S.items[it.k].status==='love')).length;
     return '<section class="pk-sec"><div class="pk-h"><h3>'+esc(name)+'</h3><span class="st">'+b.items.length+' Titel'+(n?' · '+n+' gewählt':'')+'</span></div>'+
@@ -1726,10 +1751,10 @@ function renderTonight(){
     '<div><span class="st">Wie lange?</span>'+tnChips('max',[['0','Egal'],['100','bis 1:40 Std.'],['120','bis 2 Std.'],['150','bis 2:30 Std.']])+'</div>'+
     '<div><span class="st">Bewertung</span>'+tnChips('minR',[['0','Egal'],['6.5','ab ★ 6,5'],['7','ab ★ 7'],['7.5','ab ★ 7,5']])+'</div>'+
     '<div class="row"><label class="fl"><span class="st">Genre</span><select class="inp" id="tnGenre" data-tn="genre"><option value="">Alle Genres</option>'+gnames.map(n=>'<option'+(o.genre===n?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label>'+
-    (S.settings.providers.length?'<label class="switch" style="align-self:end;padding-bottom:6px"><input type="checkbox" id="tnMine" data-tn="mine"'+(o.mine?' checked':'')+'> Nur bei meinen Diensten</label>':'<p class="note" style="margin:0;align-self:end">Tipp: Streamingdienste in den Einstellungen festlegen.</p>')+'</div></div>';
+    (S.settings.providers.length?'<label class="switch" style="align-self:end;padding-bottom:6px"><input type="checkbox" id="tnMine" data-tn="mine"'+(o.mine?' checked':'')+'> Nur bei meinen Diensten</label>':'')+'</div></div>';
   let res='';const c=T.cur;
-  if(T.busy&&!c)res='<div class="skel" style="height:260px"></div><p class="note">Suche passenden Titel …</p>';
-  else if(!c)res='<div class="empty"><p>'+esc(T.msg||'Nichts Passendes gefunden. Filter lockern oder mehr Titel als „Gefällt mir“ markieren.')+'</p></div>';
+  if(T.busy&&!c)res='<div class="skel" style="height:260px"></div><p class="note">Suche …</p>';
+  else if(!c)res='<div class="empty"><p>'+esc(T.msg||'Nichts gefunden. Filter lockern.')+'</p></div>';
   else{const it=c.it;const s=avSum(it);
     res='<article class="tn-card f-'+it.m+'">'+(c.backdrop?'<div class="tn-hero" style="background-image:url(&quot;'+esc(c.backdrop)+'&quot;)"></div>':'')+
       '<div class="tn-body"><button class="art-btn" data-act="detail" data-k="'+esc(it.k)+'">'+art(it)+'</button><div class="tn-txt">'+
@@ -1800,7 +1825,7 @@ function openAdd(){
 const addMedHtml=()=>ORDER.map(m=>'<button class="chip" data-act="addMed" data-m="'+m+'" aria-pressed="'+(ui.add.m===m)+'">'+MEDIA[m].label+'</button>').join('');
 function addResHtml(){const a=ui.add;if(!a)return '';
   if(a.err)return '<p class="err">'+esc(a.err)+'</p>';
-  if(a.q.trim().length<2)return '<p class="pk-hint">Bereich wählen und Suchbegriff eingeben.</p>';
+  if(a.q.trim().length<2)return '<p class="pk-hint">Suchbegriff eingeben.</p>';
   if(a.busy&&!a.res)return '<p class="pk-hint">Suche …</p>';
   if(!a.res||!a.res.length)return '<p class="pk-hint">Keine Treffer.</p>';
   return '<div class="tiles">'+a.res.map(it=>{reg(it);const st=S.items[it.k]&&S.items[it.k].status;const on=st==='watch';
@@ -1819,8 +1844,8 @@ function introSteps(){const I=ui.intro;const s=['welcome','services'];I.order().
 function introAcct(){
   if(!canSync())return '';
   if(!SYNC.ready)return '<div class="introacct"><p class="note" style="margin:0">Anmeldung wird geladen …</p></div>';
-  if(SYNC.user)return '<div class="introacct is-in">'+(SYNC.user.photo?'<img src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':'')+'<p style="margin:0">Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b>. Deine Auswahl wird gespeichert und auf allen Geräten verfügbar.</p></div>';
-  return '<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Mit Google anmelden</b><p class="note" style="margin:2px 0 0">Speichert Deine Auswahl auf allen Geräten und ist Voraussetzung für Push-Mitteilungen. Schon eingerichtet? Dann werden Deine Daten geladen.</p></div><button class="btn pri" data-act="login">'+IC.user+'Anmelden</button></div>';
+  if(SYNC.user)return '<div class="introacct is-in">'+(SYNC.user.photo?'<img src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':'')+'<p style="margin:0">Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b></p></div>';
+  return '<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Mit Google anmelden</b><p class="note" style="margin:2px 0 0">Sync und Push</p></div><button class="btn pri" data-act="login">'+IC.user+'Anmelden</button></div>';
 }
 function startIntro(){
   ui.intro={media:new Set(ORDER),i:0,order(){return ORDER.filter(m=>this.media.has(m))}};
@@ -1834,24 +1859,24 @@ function renderIntro(){
   let body='',foot='';
   const back=I.i>0?'<button class="btn ghost" data-act="introBack">Zurück</button>':'';
   if(step==='welcome'){
-    body='<span class="st">Schritt 1 · Einrichtung</span>'+introAcct()+'<h2>Was soll Fundus für Dich finden?</h2><p class="lead">Wähle die Bereiche. Danach legst Du pro Bereich Genres fest und markierst Titel, die Dir gefallen. Daraus entstehen Deine Vorschläge. Alles lässt sich später unter „Meine Basis“ ändern.</p>'+
-      '<div class="medpick">'+ORDER.map(m=>'<button class="medbtn f-'+m+'" data-act="introMed" data-m="'+m+'" aria-pressed="'+I.media.has(m)+'">'+art({k:'intro:'+m,m,title:MEDIA[m].label},'',true)+'<span class="tick">'+IC.check+'</span><b>'+MEDIA[m].label+'</b><small>'+MEDIA[m].desc+'</small></button>').join('')+'</div>';
-    foot=(MODE==='demo'?'<button class="btn ghost sp" data-act="introDemo">Überspringen und Beispielauswahl laden</button>':'<button class="btn ghost sp" data-act="introSkip">Später</button>')+'<button class="btn pri big" data-act="introNext"'+(I.media.size?'':' disabled')+'>Weiter</button>';
+    body=introAcct()+'<h2>Was soll Fundus finden?</h2>'+
+      '<div class="medpick">'+ORDER.map(m=>'<button class="medbtn f-'+m+'" data-act="introMed" data-m="'+m+'" aria-pressed="'+I.media.has(m)+'">'+art({k:'intro:'+m,m,title:MEDIA[m].label},'',true)+'<span class="tick">'+IC.check+'</span><b>'+MEDIA[m].label+'</b></button>').join('')+'</div>';
+    foot=(MODE==='demo'?'<button class="btn ghost sp" data-act="introDemo">Beispiel laden</button>':'<button class="btn ghost sp" data-act="introSkip">Später</button>')+'<button class="btn pri big" data-act="introNext"'+(I.media.size?'':' disabled')+'>Weiter</button>';
   }else if(step==='services'){
     const fs=[...I.media].some(isFS),ma=I.media.has('musik')||I.media.has('podcast'),gm=I.media.has('game')&&MODE==='live',mu=I.media.has('musik')&&MODE==='live';
-    body='<span class="st">Schritt '+(I.i+1)+' · Dienste und Apps</span><h2>Was nutzt Du?</h2><p class="lead">'+(fs?'Bei jedem Film und jeder Serie siehst Du dann, ob er in Deinem Abo läuft. ':'')+(ma?'Musik und Podcasts öffnen sich in Deinen Apps. ':'')+'Alles später in den Einstellungen änderbar.</p>'+
-      (fs?'<div class="subh">Streamingdienste</div>'+provPanel():'')+(ma?'<div class="subh">Apps</div><div class="panel">'+appsBox()+'</div>':'')+(gm?'<div class="subh">Games-Plattformen</div><div class="panel">'+rawgBox()+'</div>':'')+(mu?'<div class="subh">Konzerte in der Nähe</div><div class="panel">'+concertBox()+'</div>':'');
+    body='<h2>Was nutzt Du?</h2>'+
+      (fs?'<div class="subh">Streamingdienste</div>'+provPanel():'')+(ma?'<div class="subh">Apps</div><div class="panel">'+appsBox()+'</div>':'')+(gm?'<div class="subh">Games-Plattformen</div><div class="panel">'+rawgBox()+'</div>':'')+(mu?'<div class="subh">Konzerte</div><div class="panel">'+concertBox()+'</div>':'');
     foot=back+'<span class="sp"></span><button class="btn pri big" data-act="introNext">Weiter</button>';
   }else if(step.startsWith('pick:')){
     const m=step.slice(5);const k=I.order().indexOf(m);
     if(!ui.pick||ui.pick.m!==m||ui.pick.host!=='intro')initPick(m,'intro');
-    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({game:'Welche Spiele mochtest Du?',film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Wähle Genres und tippe an, was Dir gefällt. Zweimal tippen macht einen Titel zum Lieblingstitel ♥, der doppelt zählt. Drei bis zehn Titel reichen für gute Vorschläge.</p>'+
-      (needsKey(m)?'<div class="empty"><p>Für '+MEDIA[m].label+' fehlt der TMDB-Schlüssel. Trage ihn im Schritt „Streaming“ oder später in den Einstellungen ein.</p></div>':pickBoxHtml(ui.pick));
+    body='<span class="st f-'+m+'">'+MEDIA[m].label+' · '+(k+1)+' von '+I.order().length+'</span><h2>'+({game:'Welche Spiele mochtest Du?',film:'Welche Filme mochtest Du?',serie:'Welche Serien hast Du gern gesehen?',musik:'Welche Künstler hörst Du?',buch:'Welche Bücher haben Dir gefallen?',podcast:'Welche Podcasts hörst Du?'})[m]+'</h2><p class="lead">Antippen = gefällt · 2× = ♥</p>'+
+      (needsKey(m)?'<div class="empty"><p>'+MEDIA[m].label+' gerade nicht erreichbar.</p></div>':pickBoxHtml(ui.pick));
     foot=back+'<span class="note sp" id="pickCount">'+byStatus(m,'like').length+' ausgewählt</span><button class="btn pri big" data-act="introNext">'+(k===I.order().length-1?'Abschließen':'Weiter')+'</button>';
   }else{
-    const sums=I.order().map(m=>'<div class="sum f-'+m+'"><span class="mtag st">'+MEDIA[m].label+'</span><b>'+byStatus(m,'like').length+'</b><span class="note">Titel in der Basis</span></div>').join('');
-    const inst=(!isStandalone()&&/^https?:$/.test(location.protocol)&&MODE==='live')?'<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Als App installieren</b><p class="note" style="margin:2px 0 0">Eigenes Symbol, Vollbild, Push-Mitteilungen auch auf dem iPhone.</p>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'')+'</div><button class="btn" data-act="install">Installieren</button></div>':'';
-    body='<span class="st">Fertig</span><h2>Deine Basis steht.</h2><p class="lead">Die Vorschläge entstehen jetzt aus Deiner Auswahl. Bewerte unter „Entdecken“, was Du schon kennst. So werden sie mit der Zeit genauer.</p><div class="sumgrid">'+sums+'</div>'+inst;
+    const sums=I.order().map(m=>'<div class="sum f-'+m+'"><span class="mtag st">'+MEDIA[m].label+'</span><b>'+byStatus(m,'like').length+'</b><span class="note">Titel</span></div>').join('');
+    const inst=(!isStandalone()&&/^https?:$/.test(location.protocol)&&MODE==='live')?'<div class="introacct"><div style="flex:1 1 260px;min-width:0"><b>Als App installieren</b><p class="note" style="margin:2px 0 0">Vollbild und Push</p>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'')+'</div><button class="btn" data-act="install">Installieren</button></div>':'';
+    body='<h2>Deine Basis steht.</h2><div class="sumgrid">'+sums+'</div>'+inst;
     foot=back+'<span class="sp"></span><button class="btn pri big" data-act="introFinish">Zu den Vorschlägen</button>';
   }
   el.innerHTML='<div class="intro-in">'+bar+body+'<div class="intro-f">'+foot+'</div></div>';
@@ -1994,17 +2019,17 @@ function gsResHtml(){
   const G=ui.gs;if(!G)return '';
   if(G.q.trim().length<2){
     const recent=Object.values(S.items).sort((a,b)=>b.ts-a.ts).slice(0,6);
-    return '<p class="note">Mindestens zwei Zeichen eingeben. Treffer lassen sich direkt merken oder bewerten, Tippen auf Cover oder Titel öffnet die Details.</p>'+
+    return 
       (recent.length?'<div class="subh">Zuletzt bewertet</div><div class="grid">'+recent.map(i=>card(i,'search')).join('')+'</div>':'');
   }
   const ms=G.m==='alle'?gsMedia():[G.m];let h='';let any=false,busy=false;
   ms.forEach(m=>{const r=G.res[m];if(G.busy[m])busy=true;
     if(r&&r.length){any=true;const lim=G.m==='alle'?4:24;
-      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+MEDIA[m].label+' <span class="st">'+r.length+'</span></h3>'+(G.m==='alle'&&r.length>lim?'<button class="btn ghost" data-act="gsMed" data-m="'+m+'">Alle '+r.length+' →</button>':'')+'</div><div class="grid">'+r.slice(0,lim).map(it=>card(it,'search')).join('')+'</div></section>'}
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+r.length+'</span></h3>'+(G.m==='alle'&&r.length>lim?'<button class="btn ghost" data-act="gsMed" data-m="'+m+'">Alle '+r.length+' →</button>':'')+'</div><div class="grid">'+r.slice(0,lim).map(it=>card(it,'search')).join('')+'</div></section>'}
     else if(G.err[m]&&G.m!=='alle')h+='<p class="err">'+esc(G.err[m])+'</p>';
   });
-  if(!any)return busy?skel(3):'<div class="empty"><p>Keine Treffer für „'+esc(G.q)+'“'+(G.m!=='alle'?' in '+MEDIA[G.m].label:'')+'.</p></div>';
-  return h+(busy?'<p class="note" style="margin-top:12px">Weitere Bereiche werden durchsucht …</p>':'');
+  if(!any)return busy?skel(3):'<div class="empty">'+emptyIc('search')+'<p>Keine Treffer für „'+esc(G.q)+'“'+(G.m!=='alle'?' in '+MEDIA[G.m].label:'')+'.</p></div>';
+  return h+(busy?'<p class="note" style="margin-top:12px">Suche weiter …</p>':'');
 }
 function gsUpdate(){const el=$('#gsRes');if(el&&ui.tab==='suchen')el.innerHTML=gsResHtml();
   /* Verfügbarkeit für gefundene Filme/Serien nachladen */
@@ -2035,7 +2060,7 @@ function renderDrawer(){
     '<div class="dr-sec dr-bottom">'+
     item('drTab','data-tab="verfolgt"',IC.play,'Verfolgt',ui.tab==='verfolgt',folList().length?'<span class="dr-n">'+folList().length+'</span>':'')+
     item('drTab','data-tab="basis"',IC.layers,'Meine Basis',ui.tab==='basis')+
-    item('drTab','data-tab="einstellungen"',av,SYNC.user?esc(SYNC.user.name||'Profil'):'Profil & Einstellungen',ui.tab==='einstellungen',SYNC.user?'<span class="dr-sub">Einstellungen</span>':'')+
+    item('drTab','data-tab="einstellungen"',av,SYNC.user?esc(SYNC.user.name||'Profil'):'Einstellungen',ui.tab==='einstellungen',SYNC.user?'<span class="dr-sub">Einstellungen</span>':'')+
     '</div></div>';
   el.hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(()=>el.classList.add('open'));
 }
@@ -2056,7 +2081,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='wishQ
 
 function render(){
   const fq=document.activeElement&&document.activeElement.id==='gsQ'?document.activeElement.selectionStart:null;
-  renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();
+  renderTabs();renderBanner();$('#view').innerHTML=VIEWS[ui.tab]();const ft=$('#foot');if(ft)ft.hidden=ui.tab!=='einstellungen';
   if(fq!==null){const i=$('#gsQ');if(i){i.focus();try{i.setSelectionRange(fq,fq)}catch(e){}}}
   if(ui.tab==='suchen'&&ui.gs&&ui.gs.q.trim().length>=2&&!Object.keys(ui.gs.res).length&&!Object.values(ui.gs.busy).some(Boolean))gsSearch();
   if(ui.intro&&introSteps()[ui.intro.i]==='services')renderIntro();
@@ -2149,11 +2174,11 @@ function acctBtn(){
 }
 function renderAcct(){const el=$('#acct');if(el)el.innerHTML=acctHtml();const p=$('#acctPanel');if(p)p.innerHTML=acctPanel()}
 function acctPanel(){
-  if(MODE==='demo')return '<p>Anmeldung ist nur in der Live-Version verfügbar.</p>';
-  if(!canSync())return '<p>Anmeldung funktioniert nur in der online geöffneten App (lychtlos.github.io/Fundus), nicht als lokale Datei.</p>';
-  if(!SYNC.user)return '<p>Mit Google anmelden, damit Merkliste, Bewertungen, Genres und Einstellungen auf allen Geräten gleich sind. Ohne Anmeldung bleiben die Daten nur in diesem Browser.</p><button class="btn pri" data-act="login">'+IC.user+'Mit Google anmelden</button>';
+  if(MODE==='demo')return '<p>Nur in der Live-Version.</p>';
+  if(!canSync())return '<p>Nur online verfügbar.</p>';
+  if(!SYNC.user)return '<p>Sync auf allen Geräten.</p><button class="btn pri" data-act="login">'+IC.user+'Mit Google anmelden</button>';
   const st=SYNC.state==='err'?'<p class="err" style="margin:6px 0 0">'+esc(SYNC.err)+'</p>':'<p class="ok" style="margin:6px 0 0">'+(SYNC.state==='sync'?'Wird synchronisiert …':'Synchronisiert'+(SYNC.at?' um '+new Date(SYNC.at).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):''))+'</p>';
-  return '<p>Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b>'+(SYNC.user.name?' ('+esc(SYNC.user.email)+')':'')+'. Änderungen werden automatisch auf alle Geräte übertragen.</p>'+st+'<div class="row" style="margin-top:10px"><button class="btn" data-act="syncNow">Jetzt synchronisieren</button><button class="btn ghost" data-act="logout">Abmelden</button></div>';
+  return '<p>Angemeldet als <b>'+esc(SYNC.user.name||SYNC.user.email)+'</b></p>'+st+'<div class="row" style="margin-top:10px"><button class="btn" data-act="syncNow">Sync</button><button class="btn ghost" data-act="logout">Abmelden</button></div>';
 }
 
 /* ---------- Installation als App ---------- */
@@ -2174,9 +2199,9 @@ function installSteps(){const u=navigator.userAgent;
   return '<p><b>Chrome/Edge (PC):</b> In der Adressleiste rechts auf das Installieren-Symbol klicken, oder Menü (⋮) → „Streamen, speichern und teilen“ → „Seite als App installieren“.</p>';
 }
 function installPanel(){
-  if(isStandalone())return '<p class="ok" style="margin:0">Fundus läuft als installierte App.</p>';
-  if(!/^https?:$/.test(location.protocol)||MODE==='demo')return '<p>Installation ist in der online geöffneten App möglich (lychtlos.github.io/Fundus).</p>';
-  return '<p>Als eigene App auf dem Startbildschirm, im Vollbild ohne Browserleiste.</p><button class="btn pri" data-act="install">Als App installieren</button>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'');
+  if(isStandalone())return '<p class="ok" style="margin:0">Läuft als App.</p>';
+  if(!/^https?:$/.test(location.protocol)||MODE==='demo')return '<p>Nur online möglich.</p>';
+  return '<button class="btn pri" data-act="install">Als App installieren</button>'+(ui.instHelp?'<div class="insthelp">'+installSteps()+'</div>':'');
 }
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
@@ -2212,7 +2237,7 @@ async function pushOn(){
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
     const j=sub.toJSON();S.subs=S.subs||{};S.subs[subKey(j.endpoint)]={endpoint:j.endpoint,keys:j.keys,device:deviceName(),ts:Date.now()};
     save();await pushNow();
-    reg.showNotification('Fundus',{body:'Push-Mitteilungen sind aktiv. Neuerscheinungen kommen täglich gegen 8 Uhr.',icon:'icon-192.png',badge:'icon-192.png',tag:'fundus-test'});
+    reg.showNotification('Fundus',{body:'Push aktiv.',icon:'icon-192.png',badge:'icon-192.png',tag:'fundus-test'});
     ui.pushSt='on';render();
   }catch(e){toast('Push nicht möglich: '+(e.message||e));ui.pushSt=undefined;render()}
 }
@@ -2222,17 +2247,17 @@ async function pushOff(){
   ui.pushSt='off';render();
 }
 function pushPanel(){
-  if(!pushSupported())return '<p>Push-Mitteilungen gibt es nur in der online geöffneten bzw. installierten App'+(/iPhone|iPad|iPod/.test(navigator.userAgent)?' (iPhone: erst über „Zum Home-Bildschirm“ installieren, dann dort aktivieren)':'')+'.</p>';
+  if(!pushSupported())return '<p>Nur in der installierten App.</p>';
   if(ui.pushSt===undefined){ui.pushSt='…';pushStateNow().then(s=>{ui.pushSt=s;if(ui.tab==='einstellungen')render()})}
   const devs=Object.values(S.subs||{}).filter(s=>!s.off);
-  let h='<p>Einmal täglich gegen 8 Uhr: neue Serienfolgen und Staffeln (am Tag nach der Erstausstrahlung, da US-Termine bei uns nachts laufen), Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“, dazu Filme der Merkliste, die neu bei Deinen Diensten laufen. Kommt auch, wenn Fundus geschlossen ist.</p>';
-  if(!SYNC.user)return h+'<p class="note" style="margin:0">Voraussetzung ist die Anmeldung (Konto oben), damit der tägliche Abgleich Deine Listen kennt.</p>';
-  if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!isStandalone())return h+'<p class="note" style="margin:0">iPhone/iPad: Fundus zuerst über Teilen → „Zum Home-Bildschirm“ installieren und dort aktivieren.</p>';
-  h+=ui.pushSt==='on'?'<p class="ok" style="margin:0 0 10px">Auf diesem Gerät aktiv.</p><button class="btn" data-act="pushOff">Auf diesem Gerät ausschalten</button>'
-    :Notification.permission==='denied'?'<p class="err" style="margin:0">Mitteilungen sind im Browser blockiert. Bitte in den Website- bzw. App-Einstellungen erlauben.</p>'
-    :'<button class="btn pri" data-act="pushOn">'+IC.bell+'Push-Mitteilungen aktivieren</button>';
-  h+='<div style="margin-top:12px"><label class="switch"><input type="checkbox" id="sw-digest" data-set="digest"'+(S.settings.digest!==false?' checked':'')+'> Wochen-Digest: sonntags 5 neue Vorschläge</label></div>';
-  if(devs.length)h+='<p class="note" style="margin:10px 0 0">Aktive Geräte: '+devs.map(d=>esc(d.device||'Gerät')).join(', ')+'</p>';
+  let h='<p>Täglich ca. 8 Uhr: Neues zu Merkliste und Favoriten.</p>';
+  if(!SYNC.user)return h+'<p class="note" style="margin:0">Anmeldung nötig.</p>';
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&!isStandalone())return h+'<p class="note" style="margin:0">Erst zum Home-Bildschirm hinzufügen.</p>';
+  h+=ui.pushSt==='on'?'<p class="ok" style="margin:0 0 10px">Aktiv auf diesem Gerät</p><button class="btn" data-act="pushOff">Ausschalten</button>'
+    :Notification.permission==='denied'?'<p class="err" style="margin:0">Im Browser blockiert.</p>'
+    :'<button class="btn pri" data-act="pushOn">'+IC.bell+'Aktivieren</button>';
+  h+='<div style="margin-top:12px"><label class="switch"><input type="checkbox" id="sw-digest" data-set="digest"'+(S.settings.digest!==false?' checked':'')+'> Wochen-Digest (sonntags)</label></div>';
+  if(devs.length)h+='<p class="note" style="margin:10px 0 0">Geräte: '+devs.map(d=>esc(d.device||'Gerät')).join(', ')+'</p>';
   return h;
 }
 
@@ -2251,11 +2276,11 @@ const fmtDT=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digi
 function updBox(){
   const st=S.settings;const nxt=S.lastCheck?S.lastCheck+DAY:0;
   const nperm='Notification' in window?Notification.permission:'unsupported';
-  return '<p>Vorschläge werden täglich aus frischen Daten gebildet. Neue Folgen, Staffeln, Alben, Bücher und Podcast-Folgen zu Merkliste und „Gefällt mir“ prüft Fundus einmal täglich automatisch, sobald die App geöffnet ist.</p>'+
+  return 
     '<div class="opts"><label class="switch"><input type="checkbox" id="sw-auto" data-set="autoCheck"'+(st.autoCheck!==false?' checked':'')+'> Täglich automatisch prüfen</label>'+
     '<p class="note" style="margin:0">Letzte Prüfung: '+fmtDT(S.lastCheck)+(nxt&&st.autoCheck!==false?' · nächste ab '+fmtDT(nxt):'')+'</p>'+
-    (nperm==='default'?'<div><button class="btn" data-act="notifAsk">'+IC.bell+'Hinweise im Browser erlauben</button></div>':nperm==='granted'?'<p class="ok" style="margin:0">Browser-Hinweise sind erlaubt.</p>':nperm==='denied'?'<p class="note" style="margin:0">Browser-Hinweise sind blockiert (in den Browser-Einstellungen änderbar).</p>':'')+
-    '</div><p class="note" style="margin:10px 0 0">Ohne geöffnete App kann eine reine Web-App nicht prüfen. Dafür bräuchte es einen kleinen Server-Dienst.</p>';
+    (nperm==='default'?'<div><button class="btn" data-act="notifAsk">'+IC.bell+'Browser-Hinweise erlauben</button></div>':nperm==='granted'?'<p class="ok" style="margin:0">Browser-Hinweise erlaubt</p>':nperm==='denied'?'<p class="note" style="margin:0">Browser-Hinweise blockiert</p>':'')+
+    '</div>';
 }
 /* ---------- Start ---------- */
 function demoSeed(){
@@ -2267,6 +2292,11 @@ function demoSeed(){
   put('film','f16','dislike');
   return s;
 }
+const SPLASH_T0=performance.now();
+function hideSplash(){const el=$('#splash');if(!el||el.dataset.out)return;el.dataset.out='1';
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),500)},Math.max(0,1400-(performance.now()-SPLASH_T0)))}
+setTimeout(hideSplash,3000);
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#splash'))hideSplash()});
 async function start(){
   let live=false;
   /* Live, sobald irgendeine Datenquelle antwortet */
@@ -2284,7 +2314,7 @@ async function start(){
   if(location.hash==='#entdecken'&&S.onboarded){ui.tab='entdecken';ui.med='alle'}
   try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}
   if(!S.onboarded)startIntro();
-  dailyCheck();setInterval(dailyCheck,36e5);
+  hideSplash();dailyCheck();setInterval(dailyCheck,36e5);
 }
 S=newState();
 try{const t=localStorage.getItem('fundus.theme');if(t)S.settings.theme=t}catch(e){}
