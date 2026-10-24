@@ -59,7 +59,13 @@ class AppState(ctx: Context) {
 
     fun say(msg: String) { toast = msg }
 
+    /** Zeitpunkt des letzten vollständigen Ladens (Fundus + alle TMDB-Reihen). */
+    var lastFull = 0L
+        private set
+    private var checking = false
+
     fun refresh() {
+        lastFull = System.currentTimeMillis()
         scope.launch {
             loading = true; error = null
             try {
@@ -78,13 +84,52 @@ class AppState(ctx: Context) {
         }
     }
 
+    /**
+     * Prüft leicht, ob sich das Fundus-Konto geändert hat (z. B. in der Web-App),
+     * und übernimmt die Änderung ohne die TMDB-Reihen neu zu laden.
+     */
+    fun checkRemote() {
+        if (user == null || loading || checking) return
+        checking = true
+        scope.launch {
+            try {
+                if (Fundus.changedRemotely()) applyRemote()
+            } catch (_: Exception) {
+                // still: nächster Versuch beim nächsten Intervall
+            } finally {
+                checking = false
+            }
+        }
+    }
+
+    private suspend fun applyRemote() {
+        val before = fundus
+        fundus = Fundus.load()
+        Tmdb.userKey = fundus.tmdbKey
+        if (before.providers != fundus.providers || before.includeFree != fundus.includeFree) {
+            shelves = buildShelves()
+            return
+        }
+        val rated = ratedKeys()
+        val rest = shelves.filter { it.id != "watch" && it.id != "tips" }
+            .map { s -> s.copy(items = s.items.filter { it.k !in rated }) }
+            .filter { it.items.isNotEmpty() }
+        shelves = fundusShelves() + rest
+    }
+
+    private fun ratedKeys(): Set<String> =
+        fundus.items.filterValues { it["status"] in setOf("like", "love", "dislike", "hide") }.keys
+
+    private fun fundusShelves(): List<Shelf> = listOfNotNull(
+        fundus.watchlist().takeIf { it.isNotEmpty() }?.let { Shelf("watch", "Deine Merkliste", it) },
+        fundus.tips.takeIf { it.isNotEmpty() }?.let { Shelf("tips", "Tipps von Claude", it) },
+    )
+
     private suspend fun buildShelves(): List<Shelf> {
         val prov = providers
         val free = fundus.includeFree
         val names = allProviders.associateBy({ it.id }, { it.name })
-        val out = mutableListOf<Shelf>()
-        fundus.watchlist().takeIf { it.isNotEmpty() }?.let { out += Shelf("watch", "Deine Merkliste", it) }
-        fundus.tips.takeIf { it.isNotEmpty() }?.let { out += Shelf("tips", "Tipps von Claude", it) }
+        val out = fundusShelves().toMutableList()
 
         val yearAgo = java.time.LocalDate.now().minusMonths(10).toString()
         val jobs = mutableListOf<Pair<String, suspend () -> List<Title>>>()
@@ -106,7 +151,7 @@ class AppState(ctx: Context) {
         }
         jobs += "Im Trend diese Woche" to { Tmdb.trending() }
 
-        val known = fundus.items.filterValues { it["status"] in setOf("like", "love", "dislike", "hide") }.keys
+        val known = ratedKeys()
         val results = scopeAsync(jobs.map { it.second })
         jobs.forEachIndexed { i, (label, _) ->
             val list = results[i].filter { it.k !in known }.distinctBy { it.k }

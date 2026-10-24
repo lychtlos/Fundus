@@ -18,6 +18,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.tv.material3.Text
 import de.lychtlos.fundustv.data.Auth
 import de.lychtlos.fundustv.ui.C
@@ -30,10 +33,11 @@ import de.lychtlos.fundustv.ui.SearchMemory
 import de.lychtlos.fundustv.ui.SearchScreen
 import de.lychtlos.fundustv.ui.SettingsScreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var app: AppState
-    private var lastLoad = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +45,16 @@ class MainActivity : ComponentActivity() {
         app = AppState(applicationContext)
         val homeMem = HomeMemory()
         val searchMem = SearchMemory()
+
+        // solange die App sichtbar ist: alle 90 s prüfen, ob sich das Fundus-Konto geändert hat
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (isActive) {
+                    delay(90_000)
+                    app.checkRemote()
+                }
+            }
+        }
 
         setContent {
             FundusTheme {
@@ -74,10 +88,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // nach Rückkehr aus Netflix & Co. oder nach längerer Pause neu laden (Änderungen aus der Web-App)
-        if (System.currentTimeMillis() - lastLoad > 10 * 60 * 1000L) {
-            lastLoad = System.currentTimeMillis()
-            app.refresh()
-        }
+        // erster Start oder lange Pause: alles neu laden; sonst nur prüfen, ob sich das Konto geändert hat
+        if (System.currentTimeMillis() - app.lastFull > 30 * 60 * 1000L) app.refresh()
+        else app.checkRemote()
     }
 }

@@ -18,6 +18,26 @@ object Fundus {
     @Volatile var data: FundusData = FundusData()
         private set
 
+    /** Änderungszeit des Dokuments beim letzten Laden bzw. eigenen Schreiben. */
+    @Volatile private var updateTime: String? = null
+
+    /**
+     * Leichte Prüfung: lädt nur ein winziges Feld und vergleicht die Änderungszeit des Dokuments.
+     * @return true, wenn sich das Konto seit dem letzten Laden geändert hat.
+     */
+    suspend fun changedRemotely(): Boolean {
+        val u = Auth.user ?: return false
+        val url = Uri.parse(docUrl(u.uid)).buildUpon().appendQueryParameter("mask.fieldPaths", "writer").build().toString()
+        val doc = try {
+            Http.get(url, mapOf("Authorization" to "Bearer ${Auth.token()}"))
+        } catch (e: HttpError) {
+            if (e.code == 404) return false
+            throw Exception("Fundus-Daten: " + Auth.firebaseMsg(e))
+        }
+        val t = doc.optString("updateTime")
+        return t.isNotEmpty() && t != updateTime
+    }
+
     suspend fun load(): FundusData {
         val u = Auth.user ?: return FundusData().also { data = it }
         val doc = try {
@@ -26,6 +46,7 @@ object Fundus {
             if (e.code == 404) return FundusData().also { data = it }
             throw Exception("Fundus-Daten: " + Auth.firebaseMsg(e))
         }
+        updateTime = doc.optString("updateTime").ifEmpty { null }
         @Suppress("UNCHECKED_CAST")
         val f = decodeFields(doc.optJSONObject("fields"))
         val items = (f["items"] as? Map<String, Any?>).orEmpty()
@@ -104,7 +125,9 @@ object Fundus {
         val b = Uri.parse(docUrl(uid)).buildUpon()
         mask.forEach { b.appendQueryParameter("updateMask.fieldPaths", it) }
         try {
-            Http.patchJson(b.build().toString(), JSONObject().put("fields", fields), mapOf("Authorization" to "Bearer ${Auth.token()}"))
+            val r = Http.patchJson(b.build().toString(), JSONObject().put("fields", fields), mapOf("Authorization" to "Bearer ${Auth.token()}"))
+            // eigene Änderung nicht als fremde erkennen
+            r.optString("updateTime").ifEmpty { null }?.let { updateTime = it }
         } catch (e: HttpError) {
             throw Exception("Speichern fehlgeschlagen: " + Auth.firebaseMsg(e))
         }
