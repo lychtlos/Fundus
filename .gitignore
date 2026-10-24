@@ -1,1 +1,6 @@
 push/node_modules/
+
+tv/.gradle/
+tv/build/
+tv/app/build/
+tv/local.properties
