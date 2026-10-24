@@ -438,7 +438,7 @@ select.inp{flex:0 1 220px}
   @media (max-width:899px){.tabs{background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5)}}
 }
 /* ---------- Gleitender Tab-Indikator ---------- */
-.tabs{position:relative}
+@media (min-width:900px){.tabs{position:relative}}
 .tab{position:relative;z-index:1}
 .tab[aria-current="page"]{border-bottom-color:transparent}
 .tab-ind{position:absolute;left:0;top:0;z-index:0;pointer-events:none;border-radius:999px;background:var(--accent);height:3px;opacity:0}
