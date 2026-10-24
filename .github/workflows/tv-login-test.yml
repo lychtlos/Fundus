@@ -1,0 +1,65 @@
+name: Fundus TV Anmeldetest
+
+# Prüft die TV-Anmeldung ohne Fernseher: Google-Gerätelogin → Firebase → Fundus-Daten lesen.
+# Ablauf: Workflow starten, den angezeigten Code unter google.com/device eingeben.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Anmeldung testen
+        env:
+          CID: ${{ secrets.FUNDUS_TV_CLIENT_ID }}
+          CSEC: ${{ secrets.FUNDUS_TV_CLIENT_SECRET }}
+          FBKEY: AIzaSyBKUL_iThk5jhZr7npM5HJjQ-FBopBnO7Q
+          PROJECT: wanderlust-8b3ba
+        run: |
+          set -u
+          note() { echo "::notice title=Anmeldetest::$1"; echo "- $1" >> "$GITHUB_STEP_SUMMARY"; }
+          fail() { echo "::error title=Anmeldetest::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; exit 1; }
+          [ -n "$CID" ] && [ -n "$CSEC" ] || fail "Secrets fehlen"
+
+          dc=$(curl -s https://oauth2.googleapis.com/device/code -d client_id="$CID" -d scope="openid email profile")
+          code=$(echo "$dc" | jq -r '.user_code // empty')
+          [ -n "$code" ] || fail "Schritt 1 (Code anfordern): $(echo "$dc" | jq -c '{error,error_description}')"
+          dev=$(echo "$dc" | jq -r .device_code); iv=$(echo "$dc" | jq -r '.interval // 5')
+          note "CODE: $code  →  auf https://www.google.com/device eingeben (10 Minuten Zeit)"
+
+          end=$((SECONDS+600)); idt=""
+          while [ $SECONDS -lt $end ]; do
+            sleep "$iv"
+            tok=$(curl -s https://oauth2.googleapis.com/token -d client_id="$CID" -d client_secret="$CSEC" \
+              -d device_code="$dev" -d grant_type=urn:ietf:params:oauth:grant-type:device_code)
+            err=$(echo "$tok" | jq -r '.error // empty')
+            case "$err" in
+              "") idt=$(echo "$tok" | jq -r '.id_token // empty'); break ;;
+              authorization_pending) ;;
+              slow_down) iv=$((iv+2)) ;;
+              *) fail "Schritt 2 (Google-Anmeldung): $err $(echo "$tok" | jq -r '.error_description // ""')" ;;
+            esac
+          done
+          [ -n "$idt" ] || fail "Schritt 2: kein ID-Token (Zeit abgelaufen?)"
+          echo "::add-mask::$idt"
+          note "✅ Schritt 2: Google-Anmeldung ok"
+
+          fb=$(curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=$FBKEY" \
+            -H 'Content-Type: application/json' -H 'Referer: https://lychtlos.github.io/' \
+            -d "{\"postBody\":\"id_token=$idt&providerId=google.com\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}")
+          fbt=$(echo "$fb" | jq -r '.idToken // empty'); uid=$(echo "$fb" | jq -r '.localId // empty')
+          [ -n "$fbt" ] || fail "Schritt 3 (Firebase): $(echo "$fb" | jq -r '.error.message // "unbekannt"')"
+          echo "::add-mask::$fbt"
+          note "✅ Schritt 3: Firebase-Anmeldung ok"
+
+          doc=$(curl -s "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/(default)/documents/artifacts/fundus/users/$uid" \
+            -H "Authorization: Bearer $fbt" -H 'Referer: https://lychtlos.github.io/')
+          e=$(echo "$doc" | jq -r '.error.message // empty')
+          [ -z "$e" ] || fail "Schritt 4 (Fundus-Daten lesen): $e"
+          n=$(echo "$doc" | jq '[.fields.items.mapValue.fields // {} | to_entries[]] | length')
+          w=$(echo "$doc" | jq '[.fields.items.mapValue.fields // {} | to_entries[] | select(.value.mapValue.fields.status.stringValue=="watch")] | length')
+          note "✅ Schritt 4: Fundus-Daten gelesen – $n Einträge, davon $w auf der Merkliste"
