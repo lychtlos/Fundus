@@ -2191,7 +2191,6 @@ function renderDrawer(){
     ORDER.map(m=>item('drMed','data-m="'+m+'"',IC['m_'+m],MEDIA[m].label,isE&&ui.med===m,cnt(m)?'<span class="dr-n">'+cnt(m)+'</span>':'')).join('')+'</nav>'+
     '<div class="dr-sec dr-bottom">'+
     item('drTab','data-tab="verfolgt"',IC.play,'Verfolgt',ui.tab==='verfolgt',folList().length?'<span class="dr-n">'+folList().length+'</span>':'')+
-    item('drTab','data-tab="basis"',IC.layers,'Meine Basis',ui.tab==='basis')+
     item('drTab','data-tab="einstellungen"',av,SYNC.user?esc(SYNC.user.name||'Profil'):'Einstellungen',ui.tab==='einstellungen',SYNC.user?'<span class="dr-sub">Einstellungen</span>':'')+
     '</div></div>';
   el.hidden=false;document.body.style.overflow='hidden';requestAnimationFrame(()=>el.classList.add('open'));
