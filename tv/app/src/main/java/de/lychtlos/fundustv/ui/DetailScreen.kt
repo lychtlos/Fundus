@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalTvMaterial3Api::class)
+@file:OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package de.lychtlos.fundustv.ui
 
@@ -116,6 +116,8 @@ fun DetailScreen(app: AppState, start: Title) {
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 500f)))
         }
 
+        // Google TV scrollt fokussierte Elemente standardmäßig weit nach oben (Handlung wäre abgeschnitten) – hier nur so weit wie nötig
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides MinimalScroll) {
         LazyColumn(
             contentPadding = PaddingValues(start = 56.dp, top = 48.dp, bottom = 48.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -228,6 +230,21 @@ fun DetailScreen(app: AppState, start: Title) {
                     }
                 }
             }
+        }
+        }
+    }
+}
+
+/** Scrollt nur so weit, dass das fokussierte Element sichtbar ist. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private val MinimalScroll = object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        val end = offset + size
+        return when {
+            offset >= 0 && end <= containerSize -> 0f
+            offset < 0 && end > containerSize -> 0f
+            offset < 0 -> offset
+            else -> minOf(end - containerSize, offset)
         }
     }
 }

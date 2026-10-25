@@ -120,7 +120,7 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         if (url != null && pkg != null) {
             val i = Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(pkg)
             if (pkg == "com.netflix.ninja") i.putExtra("source", "30")
-            if (tryStart(ctx, i)) return null
+            if (tryStart(ctx, i)) return "Profilauswahl? Danach zurück und nochmal drücken"
         }
         if (pkg != null && launchApp(ctx, pkg)) {
             return "${t.title}: In ${p.name} bitte selbst suchen (kein direkter Link)."
