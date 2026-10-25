@@ -110,6 +110,22 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         return tryStart(ctx, i)
     }
 
+    /**
+     * Link auf die Titelseite statt auf die Wiedergabe: Netflix /watch/ → /title/,
+     * Parameter für automatisches Abspielen entfernen.
+     */
+    fun titlePage(url: String): String {
+        var u = url.replace(Regex("(?i)netflix\\.com/(?:[a-z-]+/)?watch/(\\d+)"), "netflix.com/title/$1")
+        val uri = Uri.parse(u)
+        val drop = setOf("autoplay", "autostart", "play", "playback", "t", "trackId", "action")
+        if (uri.queryParameterNames.any { it.lowercase() in drop }) {
+            val b = uri.buildUpon().clearQuery()
+            uri.queryParameterNames.filter { it.lowercase() !in drop }.forEach { k -> uri.getQueryParameters(k).forEach { b.appendQueryParameter(k, it) } }
+            u = b.build().toString()
+        }
+        return u
+    }
+
     fun tivimateInstalled(ctx: Context) = installed(ctx, Helper.TIVIMATE)
 
     /** TiviMate starten; mit eingeschaltetem Helfer wird der Titel dort ins Suchfeld eingetragen. */
@@ -127,7 +143,7 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         } catch (e: Exception) { null }
 
         if (url != null && pkg != null) {
-            val i = Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(pkg)
+            val i = Intent(Intent.ACTION_VIEW, Uri.parse(titlePage(url))).setPackage(pkg)
             if (pkg == "com.netflix.ninja") i.putExtra("source", "30")
             if (tryStart(ctx, i)) {
                 if (Helper.enabled(ctx)) { Helper.resend = Helper.Resend(pkg, Intent(i)); return null }

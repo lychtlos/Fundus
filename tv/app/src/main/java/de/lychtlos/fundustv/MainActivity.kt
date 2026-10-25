@@ -43,7 +43,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Auth.init(applicationContext)
         // Bilder weich einblenden
-        coil.Coil.setImageLoader(coil.ImageLoader.Builder(applicationContext).crossfade(260).build())
+        de.lychtlos.fundustv.data.Tmdb.dir = java.io.File(cacheDir, "tmdb")
+        // Bilder: großzügiger RAM-Speicher (30 %) und 300 MB auf dem Gerät, weich einblenden
+        coil.Coil.setImageLoader(
+            coil.ImageLoader.Builder(applicationContext)
+                .crossfade(220)
+                .memoryCache { coil.memory.MemoryCache.Builder(applicationContext).maxSizePercent(0.30).build() }
+                .diskCache { coil.disk.DiskCache.Builder().directory(cacheDir.resolve("img")).maxSizeBytes(300L * 1024 * 1024).build() }
+                .respectCacheHeaders(false)
+                .build()
+        )
         app = AppState(applicationContext)
         val mems = Memories()
 

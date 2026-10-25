@@ -12,19 +12,39 @@ object Tmdb {
     @Volatile var userKey: String = ""
     private val key get() = userKey.trim().ifEmpty { DEFAULT_KEY }
 
+    /* Antworten bleiben im RAM (6 h) und auf dem Gerät (Ordner dir), damit Start und Wechsel schnell gehen. */
     private val cache = ConcurrentHashMap<String, Pair<Long, JSONObject>>()
-    private const val TTL = 30 * 60 * 1000L
+    private const val TTL = 6 * 3600 * 1000L
+    @Volatile var dir: java.io.File? = null
 
-    private suspend fun call(path: String, params: Map<String, String?> = emptyMap()): JSONObject {
+    private fun file(url: String): java.io.File? = dir?.let {
+        val h = java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).joinToString("") { b -> "%02x".format(b) }
+        java.io.File(it, h)
+    }
+    private suspend fun diskGet(url: String, maxAge: Long): JSONObject? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val f = file(url) ?: return@withContext null
+        if (!f.exists() || System.currentTimeMillis() - f.lastModified() > maxAge) null
+        else runCatching { JSONObject(f.readText()) }.getOrNull()
+    }
+    private suspend fun diskPut(url: String, j: JSONObject) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        file(url)?.let { f -> runCatching { f.parentFile?.mkdirs(); f.writeText(j.toString()) } }
+    }
+
+    private suspend fun call(path: String, params: Map<String, String?> = emptyMap(), ttl: Long = TTL): JSONObject {
         val b = Uri.parse("https://api.themoviedb.org/3$path").buildUpon()
         if (!params.containsKey("language")) b.appendQueryParameter("language", "de-DE")
         params.forEach { (k, v) -> if (!v.isNullOrEmpty()) b.appendQueryParameter(k, v) }
         val headers = mutableMapOf<String, String>()
         if (key.length > 40) headers["Authorization"] = "Bearer $key" else b.appendQueryParameter("api_key", key)
         val url = b.build().toString()
-        cache[url]?.let { (t, j) -> if (System.currentTimeMillis() - t < TTL) return j }
-        val j = Http.get(url, headers)
+        cache[url]?.let { (t, j) -> if (System.currentTimeMillis() - t < ttl) return j }
+        diskGet(url, ttl)?.let { cache[url] = System.currentTimeMillis() to it; return it }
+        val j = try { Http.get(url, headers) } catch (e: Exception) {
+            // offline oder Fehler: lieber alte Daten als nichts
+            diskGet(url, Long.MAX_VALUE) ?: throw e
+        }
         cache[url] = System.currentTimeMillis() to j
+        diskPut(url, j)
         return j
     }
 
@@ -37,7 +57,7 @@ object Tmdb {
             m = m, id = id,
             title = (if (m == "film") r.str("title") else r.str("name")) ?: return null,
             year = date.take(4),
-            poster = img(r.str("poster_path")),
+            poster = img(r.str("poster_path"), "w342"),
             backdrop = img(r.str("backdrop_path"), "w1280"),
             rating = r.optDouble("vote_average").takeIf { !it.isNaN() && it > 0 },
             gids = r.optJSONArray("genre_ids")?.let { a -> (0 until a.length()).map { a.optInt(it) } }
@@ -95,7 +115,10 @@ object Tmdb {
     }
 
     suspend fun details(t: Title): Details {
-        val d = call("/${t.type}/${t.id}", mapOf("append_to_response" to "credits"))
+        val d = call("/${t.type}/${t.id}", mapOf(
+            "append_to_response" to if (t.m == "film") "credits,videos,release_dates" else "aggregate_credits,credits,videos,content_ratings",
+            "include_video_language" to "de,en,null",
+        ), ttl = 24 * 3600 * 1000L)
         val base = parse(t.m, d) ?: t
         val runtime = if (t.m == "film") {
             d.optInt("runtime").takeIf { it > 0 }?.let { "${it / 60} h ${it % 60} min" } ?: ""
@@ -105,6 +128,37 @@ object Tmdb {
         }
         val genres = d.optJSONArray("genres")?.objects()?.mapNotNull { it.str("name") } ?: emptyList()
         val cast = d.optJSONObject("credits")?.optJSONArray("cast")?.objects()?.take(6)?.mapNotNull { it.str("name") } ?: emptyList()
+        // Besetzung mit Foto und Rolle (Serien: über alle Staffeln)
+        val agg = d.optJSONObject("aggregate_credits")?.optJSONArray("cast")?.objects()
+        val people = (agg?.take(20)?.mapNotNull { p ->
+            val n = p.str("name") ?: return@mapNotNull null
+            val role = p.optJSONArray("roles")?.objects()?.firstOrNull()?.str("character") ?: ""
+            Person(n, role, img(p.str("profile_path"), "w185"))
+        } ?: d.optJSONObject("credits")?.optJSONArray("cast")?.objects()?.take(20)?.mapNotNull { p ->
+            val n = p.str("name") ?: return@mapNotNull null
+            Person(n, p.str("character") ?: "", img(p.str("profile_path"), "w185"))
+        })?.distinctBy { it.name } ?: emptyList()
+        val vids = d.optJSONObject("videos")?.optJSONArray("results")?.objects().orEmpty()
+            .filter { it.optString("site") == "YouTube" && it.optString("type") in setOf("Trailer", "Teaser") }
+            .sortedWith(compareBy({ it.optString("iso_639_1") != "de" }, { it.optString("type") != "Trailer" }))
+            .mapNotNull { v -> v.str("key")?.let { (v.str("name") ?: "Trailer") to it } }
+            .distinctBy { it.second }.take(3)
+        val cert = if (t.m == "film") {
+            d.optJSONObject("release_dates")?.optJSONArray("results")?.objects()?.firstOrNull { it.optString("iso_3166_1") == "DE" }
+                ?.optJSONArray("release_dates")?.objects()?.mapNotNull { it.str("certification") }?.firstOrNull() ?: ""
+        } else {
+            d.optJSONObject("content_ratings")?.optJSONArray("results")?.objects()?.firstOrNull { it.optString("iso_3166_1") == "DE" }?.str("rating") ?: ""
+        }
+        val status = when (d.optString("status")) {
+            "Returning Series" -> "Läuft"; "Ended" -> "Beendet"; "Canceled" -> "Abgesetzt"; "In Production" -> "In Produktion"
+            "Released" -> ""; "Post Production" -> "Bald im Kino"; "Planned" -> "Geplant"; else -> ""
+        }
+        val makers = if (t.m == "film") d.optJSONObject("credits")?.optJSONArray("crew")?.objects()?.filter { it.optString("job") == "Director" }?.mapNotNull { it.str("name") }.orEmpty()
+            else d.optJSONArray("created_by")?.objects()?.mapNotNull { it.str("name") }.orEmpty()
+        val next = d.optJSONObject("next_episode_to_air")?.let { e ->
+            val dt = e.str("air_date")?.split("-")?.let { p -> if (p.size == 3) p[2] + "." + p[1] + "." + p[0] else null } ?: return@let ""
+            "S" + e.optInt("season_number").toString().padStart(2, '0') + "E" + e.optInt("episode_number").toString().padStart(2, '0') + " am " + dt
+        } ?: ""
         return Details(
             title = base.copy(why = t.why, poster = base.poster ?: t.poster),
             overview = d.str("overview") ?: "",
@@ -112,6 +166,16 @@ object Tmdb {
             genres = genres,
             tagline = d.str("tagline") ?: "",
             cast = cast,
+            people = people,
+            trailers = vids,
+            cert = cert,
+            status = status,
+            seasons = d.optInt("number_of_seasons"),
+            episodes = d.optInt("number_of_episodes"),
+            makers = makers.take(3),
+            makersLabel = if (t.m == "film") "Regie" else "Idee",
+            nextEpisode = next,
+            networks = d.optJSONArray("networks")?.objects()?.mapNotNull { it.str("name") }.orEmpty().take(2),
         )
     }
 

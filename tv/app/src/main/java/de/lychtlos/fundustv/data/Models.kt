@@ -34,7 +34,19 @@ data class Details(
     val genres: List<String>,
     val tagline: String,
     val cast: List<String>,
+    val people: List<Person> = emptyList(),
+    val trailers: List<Pair<String, String>> = emptyList(),   // (Name, YouTube-Schlüssel)
+    val cert: String = "",                                     // FSK
+    val status: String = "",
+    val seasons: Int = 0,
+    val episodes: Int = 0,
+    val makers: List<String> = emptyList(),                    // Regie bzw. Idee
+    val makersLabel: String = "",
+    val nextEpisode: String = "",
+    val networks: List<String> = emptyList(),
 )
+
+data class Person(val name: String, val role: String, val photo: String?)
 
 /** Ausschnitt aus dem Fundus-Konto (artifacts/fundus/users/{uid}). */
 data class FundusData(
@@ -82,7 +94,7 @@ data class FundusData(
                 is String -> v.toIntOrNull()
                 else -> null
             } ?: return null
-            val img = (o["img"] as? String)?.replace("/w342/", "/w500/")
+            val img = (o["img"] as? String)
             return Title(
                 m = m, id = id,
                 title = o["title"] as? String ?: "?",

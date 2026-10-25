@@ -19,6 +19,7 @@ object Helper {
     class Search(val pkg: String, val query: String, val at: Long = System.currentTimeMillis()) {
         @Volatile var clicks = 0
         @Volatile var last = 0L
+        @Volatile var navPlanned = false
     }
 
     @Volatile var resend: Resend? = null

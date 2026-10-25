@@ -53,10 +53,31 @@ class HelperService : AccessibilityService() {
         }
     }
 
+    /**
+     * TiviMate: Seitenmenü links öffnen, ganz nach oben (Suche), auswählen.
+     * Tastendrücke per Bedienungshilfe gibt es ab Android 13 (Google TV Streamer: Android 14).
+     */
+    private fun navigateTiviMate(s: Helper.Search) {
+        if (s.navPlanned || Build.VERSION.SDK_INT < 33) return
+        s.navPlanned = true
+        val keys = mutableListOf(GLOBAL_ACTION_DPAD_LEFT)
+        repeat(10) { keys += GLOBAL_ACTION_DPAD_UP }
+        keys += GLOBAL_ACTION_DPAD_CENTER
+        keys.forEachIndexed { i, k ->
+            main.postDelayed({ if (Helper.search === s) performGlobalAction(k) }, 2500L + i * 220L)
+        }
+        // danach Suchfeld suchen, auch wenn die App keine Ereignisse schickt
+        listOf(1200L, 2200L, 3500L, 5000L).forEach { d ->
+            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, 2500L + keys.size * 220L + d)
+        }
+    }
+
     private fun search(s: Helper.Search, now: Long) {
         if (now - s.last < 700) return
         s.last = now
+        if (s.pkg == Helper.TIVIMATE) navigateTiviMate(s)
         val root = rootInActiveWindow ?: return
+        if (root.packageName?.toString() != s.pkg) return
         val edit = find(root) { it.isEditable }
         if (edit != null) {
             edit.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
@@ -68,6 +89,8 @@ class HelperService : AccessibilityService() {
             Helper.note = if (ok) "TiviMate: „${s.query}“ eingetragen" else "TiviMate: Suchfeld gefunden, Eintragen fehlgeschlagen"
             return
         }
+        // TiviMate wird über das Seitenmenü angesteuert; bei anderen Apps nach „Suche“ suchen
+        if (s.pkg == Helper.TIVIMATE && Build.VERSION.SDK_INT >= 33) return
         if (s.clicks >= 5) return
         val btn = find(root) { n ->
             val l = (n.text ?: n.contentDescription ?: "").toString().trim()

@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,6 +83,9 @@ fun DetailScreen(app: AppState, start: Title) {
     var err by remember(start.k) { mutableStateOf<String?>(null) }
     val firstBtn = remember(start.k) { FocusRequester() }
     var tint by remember(start.k) { mutableStateOf<Color?>(null) }
+    var full by remember(start.k) { mutableStateOf(false) }
+    val list = androidx.compose.foundation.lazy.rememberLazyListState()
+    val toTop: (androidx.compose.ui.focus.FocusState) -> Unit = { f -> if (f.hasFocus && list.firstVisibleItemIndex + list.firstVisibleItemScrollOffset > 0) scope.launch { list.animateScrollToItem(0) } }
 
     LaunchedEffect(start.k) {
         launch { d = runCatching { Tmdb.details(start) }.onFailure { err = it.message }.getOrNull() }
@@ -119,6 +123,7 @@ fun DetailScreen(app: AppState, start: Title) {
         // Google TV scrollt fokussierte Elemente standardmäßig weit nach oben (Handlung wäre abgeschnitten) – hier nur so weit wie nötig
         androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides MinimalScroll) {
         LazyColumn(
+            state = list,
             contentPadding = PaddingValues(start = 56.dp, top = 48.dp, bottom = 48.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
@@ -149,18 +154,39 @@ fun DetailScreen(app: AppState, start: Title) {
                         Spacer(Modifier.height(12.dp))
                         Text(d!!.tagline, fontSize = 17.sp, color = C.ink, fontWeight = FontWeight.SemiBold)
                     }
+                    // Infozeile: FSK, Status, Staffeln/Folgen, Regie bzw. Idee, Sender, nächste Folge
+                    val dd = d
+                    if (dd != null) {
+                        val info = listOfNotNull(
+                            dd.cert.ifEmpty { null }?.let { "FSK $it" },
+                            dd.status.ifEmpty { null },
+                            if (t.m == "serie" && dd.episodes > 0) "${dd.seasons} Staffel${if (dd.seasons == 1) "" else "n"}, ${dd.episodes} Folgen" else null,
+                            dd.makers.takeIf { it.isNotEmpty() }?.let { dd.makersLabel + ": " + it.joinToString(", ") },
+                            dd.networks.takeIf { it.isNotEmpty() }?.joinToString(", "),
+                        ).joinToString("  ·  ")
+                        if (info.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(info, fontSize = 14.sp, color = C.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                        if (dd.nextEpisode.isNotEmpty()) { Spacer(Modifier.height(4.dp)); Text("Nächste Folge: " + dd.nextEpisode, fontSize = 14.sp, color = C.accent, fontWeight = FontWeight.SemiBold) }
+                    }
                     Spacer(Modifier.height(10.dp))
-                    Text(d?.overview?.ifEmpty { "Keine Beschreibung." } ?: err ?: "", fontSize = 16.sp, color = C.ink, maxLines = 6, overflow = TextOverflow.Ellipsis, lineHeight = 23.sp)
-                    if (!d?.cast.isNullOrEmpty()) {
-                        Spacer(Modifier.height(8.dp))
-                        Text("Mit " + d!!.cast.joinToString(", "), fontSize = 14.sp, color = C.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Handlung: fokussierbar (damit man zurück nach oben kommt), OK zeigt den ganzen Text
+                    androidx.tv.material3.Surface(
+                        onClick = { full = !full },
+                        modifier = Modifier.fillMaxWidth().onFocusChanged(toTop),
+                        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+                        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = C.surface2.copy(alpha = 0.85f), contentColor = C.ink, focusedContentColor = C.ink),
+                        scale = androidx.tv.material3.ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                    ) {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                            Text(d?.overview?.ifEmpty { "Keine Beschreibung." } ?: err ?: "", fontSize = 16.sp, color = C.ink, maxLines = if (full) 40 else 5, overflow = TextOverflow.Ellipsis, lineHeight = 23.sp)
+                            if ((d?.overview?.length ?: 0) > 320) Text(if (full) "Weniger" else "Ganzen Text lesen (OK)", fontSize = 13.sp, color = C.ink2, modifier = Modifier.padding(top = 4.dp))
+                        }
                     }
                 }
             }
 
             // Ansehen-Knöpfe
             item {
-                Column {
+                Column(Modifier.onFocusChanged(toTop)) {
                     Text(
                         when {
                             av == null -> "Verfügbarkeit …"
@@ -224,6 +250,35 @@ fun DetailScreen(app: AppState, start: Title) {
                 }
             }
 
+            // Trailer
+            val trailers = d?.trailers.orEmpty()
+            if (trailers.isNotEmpty()) {
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        trailers.forEach { (name, key) ->
+                            OutlinedButton(onClick = { openTrailer(ctx, key)?.let { app.say(it) } }) {
+                                Icon(Icons.Filled.PlayCircle, null, Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(if (trailers.size == 1) "Trailer" else name.take(28), fontSize = 15.sp, maxLines = 1)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Besetzung
+            val people = d?.people.orEmpty()
+            if (people.isNotEmpty()) {
+                item {
+                    Column {
+                        Text("Besetzung", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.padding(top = 8.dp, bottom = 6.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(end = 56.dp, top = 8.dp, bottom = 8.dp)) {
+                            items(people, key = { it.name + it.role }) { p -> PersonCard(p) }
+                        }
+                    }
+                }
+            }
+
             if (similar.isNotEmpty()) {
                 item {
                     Column {
@@ -251,6 +306,37 @@ private val MinimalScroll = object : androidx.compose.foundation.gestures.BringI
             offset < 0 && end > containerSize -> 0f
             offset < 0 -> offset
             else -> minOf(end - containerSize, offset)
+        }
+    }
+}
+
+/** Trailer in der YouTube-App des Fernsehers öffnen. */
+private fun openTrailer(ctx: android.content.Context, key: String): String? {
+    val u = android.net.Uri.parse("https://www.youtube.com/watch?v=$key")
+    for (pkg in listOf("com.google.android.youtube.tv", "com.google.android.youtube", null)) {
+        val i = android.content.Intent(android.content.Intent.ACTION_VIEW, u).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (pkg != null) i.setPackage(pkg)
+        if (runCatching { ctx.startActivity(i) }.isSuccess) return null
+    }
+    return "YouTube ist nicht installiert"
+}
+
+@Composable
+private fun PersonCard(p: de.lychtlos.fundustv.data.Person) {
+    androidx.tv.material3.Surface(
+        onClick = {},
+        modifier = Modifier.width(120.dp),
+        shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+        colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = C.surface2, contentColor = C.ink, focusedContentColor = C.ink),
+    ) {
+        Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(88.dp).clip(androidx.compose.foundation.shape.CircleShape).background(C.surface2), contentAlignment = Alignment.Center) {
+                if (p.photo != null) AsyncImage(p.photo, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Text(p.name.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString(""), fontSize = 22.sp, color = C.ink2, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(p.name, fontSize = 13.sp, color = C.ink, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            if (p.role.isNotEmpty()) Text(p.role, fontSize = 12.sp, color = C.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }

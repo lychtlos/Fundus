@@ -97,6 +97,7 @@ class AppState(ctx: Context) {
                 } else fundus = FundusData()
                 if (allProviders.isEmpty()) allProviders = runCatching { Tmdb.providerList() }.getOrDefault(emptyList())
                 shelves = buildShelves()
+                saveShelves()
                 releasesAt = 0L
                 if (tab == Tab.News || tab == Tab.Follow) loadReleases()
             } catch (e: Exception) {
@@ -137,6 +138,7 @@ class AppState(ctx: Context) {
                     fundus = Fundus.load()
                     Tmdb.userKey = fundus.tmdbKey
                     shelves = buildShelves()
+                    saveShelves()
                     releasesAt = 0L
                 }
             } catch (_: Exception) {
@@ -161,9 +163,9 @@ class AppState(ctx: Context) {
         val names = allProviders.associateBy({ it.id }, { it.name })
         val known = knownKeys()
         val yearAgo = java.time.LocalDate.now().minusMonths(10).toString()
-        val out = mutableListOf<Shelf>()
+        // Serien und Filme gleichzeitig laden
 
-        for (m in listOf("serie", "film")) {
+        return kotlinx.coroutines.coroutineScope { listOf("serie", "film").map { m -> async { val out = mutableListOf<Shelf>()
             val type = if (m == "film") "movie" else "tv"
             val ok = { t: Title -> t.k !in known && fundus.passes(t) }
 
@@ -220,8 +222,8 @@ class AppState(ctx: Context) {
                 val l = res[i].filter(ok).distinctBy { it.k }.map { it.copy(why = hint.replaceFirstChar { c -> c.uppercase() }) }
                 if (l.isNotEmpty()) out += Shelf("cat-$m-$i", label, l, m, hint)
             }
-        }
-        return out
+        out } }.awaitAll().flatten() }
+
     }
 
     private suspend fun scopeAsync(fns: List<suspend () -> List<Title>>): List<List<Title>> =
@@ -287,6 +289,59 @@ class AppState(ctx: Context) {
             refresh()
         }
     }
+
+    /* ---------- letzte Startseite auf dem Gerät: beim nächsten Start sofort sichtbar, dann im Hintergrund aktualisiert ---------- */
+    private val shelfFile = java.io.File(ctx.filesDir, "shelves.json")
+
+    private fun saveShelves() {
+        val uid = user?.uid ?: ""
+        val snap = shelves
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                val a = org.json.JSONArray()
+                snap.forEach { s ->
+                    val items = org.json.JSONArray()
+                    s.items.take(30).forEach { t ->
+                        items.put(org.json.JSONObject().put("m", t.m).put("id", t.id).put("title", t.title).put("year", t.year)
+                            .put("poster", t.poster ?: "").put("backdrop", t.backdrop ?: "").put("rating", t.rating ?: 0.0)
+                            .put("why", t.why ?: "").put("votes", t.votes).put("ai", t.ai)
+                            .put("gids", org.json.JSONArray(t.gids)))
+                    }
+                    a.put(org.json.JSONObject().put("id", s.id).put("label", s.label).put("m", s.m ?: "").put("hint", s.hint ?: "").put("items", items))
+                }
+                shelfFile.writeText(org.json.JSONObject().put("uid", uid).put("shelves", a).toString())
+            }
+        }
+    }
+
+    private fun loadShelves() {
+        runCatching {
+            if (!shelfFile.exists()) return
+            val o = org.json.JSONObject(shelfFile.readText())
+            if (o.optString("uid") != (user?.uid ?: "")) return
+            val a = o.getJSONArray("shelves")
+            shelves = (0 until a.length()).map { i ->
+                val s = a.getJSONObject(i); val it = s.getJSONArray("items")
+                Shelf(
+                    s.getString("id"), s.getString("label"),
+                    (0 until it.length()).map { j ->
+                        val t = it.getJSONObject(j)
+                        Title(
+                            m = t.getString("m"), id = t.getInt("id"), title = t.getString("title"), year = t.optString("year"),
+                            poster = t.optString("poster").ifEmpty { null }, backdrop = t.optString("backdrop").ifEmpty { null },
+                            rating = t.optDouble("rating").takeIf { r -> r > 0 }, why = t.optString("why").ifEmpty { null },
+                            votes = t.optInt("votes"), ai = t.optBoolean("ai"),
+                            gids = t.optJSONArray("gids")?.let { g -> (0 until g.length()).map { x -> g.optInt(x) } } ?: emptyList(),
+                        )
+                    },
+                    s.optString("m").ifEmpty { null }, s.optString("hint").ifEmpty { null },
+                )
+            }
+            if (shelves.isNotEmpty()) ready = true
+        }
+    }
+
+    init { loadShelves() }
 
     fun logout() {
         Auth.logout(); user = null; fundus = FundusData(); releases = null; refresh()
