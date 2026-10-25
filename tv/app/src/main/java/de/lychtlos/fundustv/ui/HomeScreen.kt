@@ -104,9 +104,9 @@ fun HomeScreen(app: AppState, mem: HomeMemory) {
             TopBar(app)
             Hero(hero, heroDetails)
             when {
-                app.shelves.isEmpty() && app.loading -> Message("Lade Vorschläge …")
+                app.shelves.isEmpty() && app.loading -> Message("Lädt …")
                 app.shelves.isEmpty() && app.error != null -> Message(app.error!!)
-                app.shelves.isEmpty() -> Message("Keine Titel gefunden. Unter Einstellungen Streamingdienste wählen.")
+                app.shelves.isEmpty() -> Message("Nichts gefunden. Dienste in den Einstellungen wählen.")
                 else -> LazyColumn(
                     state = mem.column,
                     contentPadding = PaddingValues(bottom = 60.dp),
@@ -138,8 +138,7 @@ private fun TopBar(app: AppState) {
         Modifier.fillMaxWidth().padding(start = 48.dp, end = 40.dp, top = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Fundus", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = C.ink)
-        Text(" TV", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = C.accent)
+        Brand(26)
         Spacer(Modifier.weight(1f))
         app.user?.let { Text(it.name.ifEmpty { it.email }, fontSize = 13.sp, color = C.ink2, modifier = Modifier.padding(end = 12.dp)) }
         NavIcon(Icons.Filled.Search, "Suchen") { app.go(Screen.Search) }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Systemstart ohne schwarzen Blitz: gleiche Farbe wie der Fundus-Splash -->
+    <style name="Theme.FundusTV" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorBackground">#0E1412</item>
+        <item name="android:windowSplashScreenBackground">@color/bg</item>
+    </style>
+</resources>

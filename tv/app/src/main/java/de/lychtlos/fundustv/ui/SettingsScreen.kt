@@ -66,26 +66,26 @@ fun SettingsScreen(app: AppState) {
     ) {
         item { Text("Einstellungen", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = C.ink) }
 
-        item { Section("Fundus-Konto") }
+        item { Section("Konto") }
         item {
             val u = app.user
             Column {
                 if (u != null) {
-                    Text("Verbunden als ${u.name.ifEmpty { u.email }}" + (if (u.name.isNotEmpty() && u.email.isNotEmpty()) " (${u.email})" else ""), color = C.ink, fontSize = 16.sp)
-                    Text("Merkliste, Bewertungen, Tipps und Dienste kommen aus Fundus. Änderungen hier landen auch in der Web-App.", color = C.ink2, fontSize = 14.sp)
+                    Text(u.name.ifEmpty { u.email }, color = C.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    if (u.name.isNotEmpty() && u.email.isNotEmpty()) Text(u.email, color = C.ink2, fontSize = 14.sp)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = { app.refresh(); app.say("Wird neu geladen") }, modifier = Modifier.focusRequester(first)) { Text("Jetzt synchronisieren") }
+                        Button(onClick = { app.refresh(); app.say("Lädt neu") }, modifier = Modifier.focusRequester(first)) { Text("Synchronisieren") }
                         OutlinedButton(onClick = { app.logout() }) { Text("Abmelden") }
                     }
                 } else {
-                    Text("Nicht verbunden. Mit Google anmelden, um Merkliste, Tipps und Dienste aus Fundus zu nutzen.", color = C.ink2, fontSize = 15.sp)
+                    Text("Nicht verbunden", color = C.ink2, fontSize = 15.sp)
                     Spacer(Modifier.height(10.dp))
                     if (Auth.configured) {
                         Button(onClick = { app.go(Screen.Login) }, modifier = Modifier.focusRequester(first)) { Text("Mit Google anmelden") }
                     } else {
                         Text(
-                            "Anmeldung noch nicht eingerichtet: In GitHub die Secrets FUNDUS_TV_CLIENT_ID und FUNDUS_TV_CLIENT_SECRET anlegen und neu bauen (siehe tv/README.md).",
+                            "Anmeldung nicht eingerichtet (tv/README.md)",
                             color = C.mark, fontSize = 14.sp,
                         )
                     }
@@ -93,12 +93,9 @@ fun SettingsScreen(app: AppState) {
             }
         }
 
-        item { Section("Streamingdienste" + if (app.user != null) " (aus Fundus)" else " (auf diesem Gerät)") }
+        item { Section("Streamingdienste") }
         item {
-            Text("Ausgewählte Dienste bestimmen die Reihen auf der Startseite. Haken = gewählt, „installiert“ = App auf diesem Gerät vorhanden.", color = C.ink2, fontSize = 14.sp)
-        }
-        item {
-            if (list.isEmpty()) Text("Dienste werden geladen …", color = C.ink2)
+            if (list.isEmpty()) Text("Lädt …", color = C.ink2)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 list.forEachIndexed { i, p ->
                     val sel = p.id in mine
@@ -126,8 +123,7 @@ fun SettingsScreen(app: AppState) {
         item { Section("Info") }
         item {
             Text(
-                "Fundus TV ${BuildConfig.VERSION_NAME}. Daten: TMDB (This product uses the TMDB API but is not endorsed or certified by TMDB) und JustWatch. " +
-                    "Neue Version: Release „tv-latest“ im Repo lychtlos/Fundus.",
+                "Fundus TV ${BuildConfig.VERSION_NAME} · Daten: TMDB, JustWatch. This product uses the TMDB API but is not endorsed or certified by TMDB.",
                 color = C.ink2, fontSize = 13.sp,
             )
         }

@@ -26,6 +26,14 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,11 +81,14 @@ fun DetailScreen(app: AppState, start: Title) {
     var similar by remember(start.k) { mutableStateOf<List<Title>>(emptyList()) }
     var err by remember(start.k) { mutableStateOf<String?>(null) }
     val firstBtn = remember(start.k) { FocusRequester() }
+    var tint by remember(start.k) { mutableStateOf<Color?>(null) }
 
     LaunchedEffect(start.k) {
         launch { d = runCatching { Tmdb.details(start) }.onFailure { err = it.message }.getOrNull() }
         launch { av = runCatching { Tmdb.availability(start) }.getOrDefault(Availability()) }
         launch { similar = runCatching { Tmdb.recommendations(start) }.getOrDefault(emptyList()) }
+        // Hintergrundfarbe aus dem Cover, wie in der Web-App
+        launch { tint = start.poster?.let { coverColor(ctx, it) } }
     }
 
     val t = d?.title ?: start
@@ -92,14 +103,16 @@ fun DetailScreen(app: AppState, start: Title) {
         if (av != null) runCatching { firstBtn.requestFocus() }
     }
 
-    Box(Modifier.fillMaxSize().background(C.bg)) {
+    val glow by animateColorAsState(tint ?: C.bg, tween(600), label = "tint")
+    Box(Modifier.fillMaxSize().background(C.bg).background(Brush.verticalGradient(listOf(lerp(C.bg, glow, 0.38f), C.bg)))) {
         val backdrop = t.backdrop
         if (backdrop != null) {
             AsyncImage(
                 model = backdrop, contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth(0.75f).fillMaxSize().align(Alignment.TopEnd),
             )
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(C.bg, C.bg.copy(alpha = 0.85f), Color.Transparent), endX = 1300f)))
+            val base = lerp(C.bg, glow, 0.30f)
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(base, base.copy(alpha = 0.85f), Color.Transparent), endX = 1300f)))
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 500f)))
         }
 
@@ -122,7 +135,7 @@ fun DetailScreen(app: AppState, start: Title) {
                     ).joinToString("  ·  ")
                     Text(meta, fontSize = 16.sp, color = C.ink2)
                     val status = app.fundus.status(t.k)
-                    statusLabel(status)?.let {
+                    (listOfNotNull(statusLabel(status), if (app.fundus.followed(t.k)) "Verfolgt" else null).joinToString(" · ").ifEmpty { null })?.let {
                         Spacer(Modifier.height(8.dp))
                         Text(it, fontSize = 14.sp, color = C.mark, fontWeight = FontWeight.SemiBold)
                     }
@@ -135,7 +148,7 @@ fun DetailScreen(app: AppState, start: Title) {
                         Text(d!!.tagline, fontSize = 17.sp, color = C.ink, fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text(d?.overview?.ifEmpty { "Keine Beschreibung vorhanden." } ?: err ?: "", fontSize = 16.sp, color = C.ink, maxLines = 6, overflow = TextOverflow.Ellipsis, lineHeight = 23.sp)
+                    Text(d?.overview?.ifEmpty { "Keine Beschreibung." } ?: err ?: "", fontSize = 16.sp, color = C.ink, maxLines = 6, overflow = TextOverflow.Ellipsis, lineHeight = 23.sp)
                     if (!d?.cast.isNullOrEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Text("Mit " + d!!.cast.joinToString(", "), fontSize = 14.sp, color = C.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -148,8 +161,8 @@ fun DetailScreen(app: AppState, start: Title) {
                 Column {
                     Text(
                         when {
-                            av == null -> "Prüfe Verfügbarkeit …"
-                            watchable.isEmpty() -> "Derzeit in keinem Abo-Dienst in Deutschland."
+                            av == null -> "Verfügbarkeit …"
+                            watchable.isEmpty() -> "In keinem Abo"
                             else -> "Ansehen bei"
                         },
                         fontSize = 15.sp, color = C.ink2, modifier = Modifier.padding(bottom = 10.dp),
@@ -164,7 +177,7 @@ fun DetailScreen(app: AppState, start: Title) {
                                     AsyncImage(p.logo, null, Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)))
                                     Spacer(Modifier.width(10.dp))
                                 }
-                                Text(p.name + if (!installed) " (nicht installiert)" else "", fontSize = 15.sp)
+                                Text(p.name + if (!installed) " · nicht installiert" else "", fontSize = 15.sp)
                             }
                             val onClick: () -> Unit = {
                                 scope.launch { Launcher.open(ctx, p, t)?.let { app.say(it) } }
@@ -176,7 +189,7 @@ fun DetailScreen(app: AppState, start: Title) {
                     val rent = av?.rent.orEmpty().filter { r -> watchable.none { it.id == r.id } }
                     if (rent.isNotEmpty()) {
                         Text(
-                            "Leihen oder kaufen: " + rent.take(5).joinToString(", ") { it.name },
+                            "Leihen/Kaufen: " + rent.take(5).joinToString(", ") { it.name },
                             fontSize = 14.sp, color = C.ink2, modifier = Modifier.padding(top = 10.dp),
                         )
                     }
@@ -187,9 +200,11 @@ fun DetailScreen(app: AppState, start: Title) {
             item {
                 val status = app.fundus.status(t.k)
                 val watch = status == "watch"
+                val fol = app.fundus.followed(t.k)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (t.m == "serie") ActionButton(if (fol) Icons.Filled.PlayCircle else Icons.Outlined.PlayCircle, if (fol) "Verfolgt" else "Verfolgen", fol) { app.toggleFol(t) }
                     ActionButton(
-                        if (watch) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, if (watch) "Auf der Merkliste" else "Merken", watch,
+                        if (watch) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, if (watch) "Gemerkt" else "Merken", watch,
                         if (av != null && watchable.isEmpty()) Modifier.focusRequester(firstBtn) else Modifier,
                     ) {
                         app.setStatus(t, if (watch) null else "watch")
@@ -204,7 +219,7 @@ fun DetailScreen(app: AppState, start: Title) {
             if (similar.isNotEmpty()) {
                 item {
                     Column {
-                        Text("Ähnliche Titel", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.padding(top = 12.dp, bottom = 10.dp))
+                        Text("Ähnlich", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.padding(top = 12.dp, bottom = 10.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(end = 56.dp, top = 10.dp, bottom = 10.dp)) {
                             items(similar, key = { it.k }) { s ->
                                 PosterCard(s, onClick = { app.go(Screen.Detail(s)) }, width = 130.dp)
@@ -218,22 +233,44 @@ fun DetailScreen(app: AppState, start: Title) {
 }
 
 private fun statusLabel(s: String?) = when (s) {
-    "watch" -> "Auf Deiner Merkliste"
+    "watch" -> "Gemerkt"
     "like" -> "Gefällt Dir"
-    "love" -> "Einer Deiner Lieblinge"
-    "dislike" -> "Gefällt Dir nicht"
-    "hide" -> "Kein Interesse"
+    "love" -> "♥ Liebling"
+    "dislike" -> "Gefällt nicht"
+    "hide" -> "Ausgeblendet"
     else -> null
 }
 
+/** Mittlere, kräftige Farbe des Covers (für den Hintergrund der Detailseite). */
+private suspend fun coverColor(ctx: android.content.Context, url: String): Color? = runCatching {
+    val req = coil.request.ImageRequest.Builder(ctx).data(url).size(36, 54).allowHardware(false).build()
+    val bmp = (coil.Coil.imageLoader(ctx).execute(req).drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap ?: return null
+    var r = 0L; var g = 0L; var b = 0L; var n = 0L
+    for (x in 0 until bmp.width) for (y in 0 until bmp.height) {
+        val p = bmp.getPixel(x, y)
+        val pr = (p shr 16) and 255; val pg = (p shr 8) and 255; val pb = p and 255
+        val mx = maxOf(pr, pg, pb); val mn = minOf(pr, pg, pb)
+        val w = 1 + (mx - mn) / 16        // farbige Pixel zählen mehr als graue
+        r += pr * w; g += pg * w; b += pb * w; n += w
+    }
+    if (n == 0L) null else Color((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
+}.getOrNull()
+
 @Composable
 private fun ActionButton(icon: ImageVector, label: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // kurzes „Pop“ beim Aktivieren, wie das Herz in der Web-App
+    val pop = remember { Animatable(1f) }
+    var was by remember { mutableStateOf(active) }
+    LaunchedEffect(active) {
+        if (active && !was) { pop.snapTo(1.4f); pop.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = 500f)) }
+        was = active
+    }
     OutlinedButton(
         onClick = onClick,
         modifier = modifier,
         colors = if (active) ButtonDefaults.colors(containerColor = C.accent.copy(alpha = 0.25f), contentColor = C.accent) else ButtonDefaults.colors(),
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value })
         Spacer(Modifier.width(8.dp))
         Text(label, fontSize = 15.sp)
     }

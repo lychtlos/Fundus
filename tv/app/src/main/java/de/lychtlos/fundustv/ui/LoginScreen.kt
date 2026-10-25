@@ -72,7 +72,7 @@ fun LoginScreen(app: AppState) {
                 Image(qr, contentDescription = "QR-Code", modifier = Modifier.size(260.dp).clip(RoundedCornerShape(12.dp)))
             }
             Column(Modifier.width(560.dp)) {
-                Text("Mit Fundus verbinden", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = C.ink)
+                Brand(30)
                 Spacer(Modifier.height(16.dp))
                 when {
                     err != null -> {
@@ -80,20 +80,18 @@ fun LoginScreen(app: AppState) {
                         Spacer(Modifier.height(16.dp))
                         Button(onClick = { attempt++ }, modifier = Modifier.focusRequester(retry)) { Text("Erneut versuchen") }
                     }
-                    c == null -> Text("Code wird angefordert …", color = C.ink2, fontSize = 17.sp)
+                    c == null -> Text("Lädt …", color = C.ink2, fontSize = 17.sp)
                     else -> {
-                        Text("1. Am Handy den QR-Code scannen oder ${c.url.removePrefix("https://")} öffnen.", color = C.ink, fontSize = 18.sp)
-                        Spacer(Modifier.height(10.dp))
-                        Text("2. Diesen Code eingeben:", color = C.ink, fontSize = 18.sp)
+                        Text("QR-Code scannen oder ${c.url.removePrefix("https://")} öffnen, dann Code eingeben:", color = C.ink, fontSize = 18.sp)
                         Spacer(Modifier.height(10.dp))
                         Text(
                             c.userCode, fontSize = 46.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = C.accent,
                             modifier = Modifier.background(C.surface, RoundedCornerShape(10.dp)).padding(horizontal = 22.dp, vertical = 8.dp),
                         )
                         Spacer(Modifier.height(10.dp))
-                        Text("3. Mit demselben Google-Konto anmelden wie in Fundus.", color = C.ink, fontSize = 18.sp)
+                        Text("Google-Konto wie in Fundus.", color = C.ink2, fontSize = 16.sp)
                         Spacer(Modifier.height(18.dp))
-                        Text("Wartet auf Bestätigung …", color = C.ink2, fontSize = 15.sp)
+                        Text("Wartet …", color = C.ink2, fontSize = 15.sp)
                     }
                 }
             }

@@ -32,6 +32,9 @@ import de.lychtlos.fundustv.ui.LoginScreen
 import de.lychtlos.fundustv.ui.SearchMemory
 import de.lychtlos.fundustv.ui.SearchScreen
 import de.lychtlos.fundustv.ui.SettingsScreen
+import de.lychtlos.fundustv.ui.Splash
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -42,6 +45,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Auth.init(applicationContext)
+        // Bilder weich einblenden
+        coil.Coil.setImageLoader(coil.ImageLoader.Builder(applicationContext).crossfade(260).build())
         app = AppState(applicationContext)
         val homeMem = HomeMemory()
         val searchMem = SearchMemory()
@@ -60,13 +65,18 @@ class MainActivity : ComponentActivity() {
             FundusTheme {
                 BackHandler(enabled = app.stack.size > 1) { app.back() }
                 Box(Modifier.fillMaxSize().background(C.bg)) {
-                    when (val s = app.screen) {
-                        Screen.Home -> HomeScreen(app, homeMem)
-                        Screen.Search -> SearchScreen(app, searchMem)
-                        Screen.Settings -> SettingsScreen(app)
-                        Screen.Login -> LoginScreen(app)
-                        is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
+                    // weicher Übergang zwischen den Seiten
+                    androidx.compose.animation.Crossfade(targetState = app.screen, animationSpec = androidx.compose.animation.core.tween(240), label = "screen") { s ->
+                        when (s) {
+                            Screen.Home -> HomeScreen(app, homeMem)
+                            Screen.Search -> SearchScreen(app, searchMem)
+                            Screen.Settings -> SettingsScreen(app)
+                            Screen.Login -> LoginScreen(app)
+                            is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
+                        }
                     }
+                    var splash by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(true) }
+                    if (splash) Splash(ready = app.ready) { splash = false }
                     val msg = app.toast
                     LaunchedEffect(msg) { if (msg != null) { delay(3500); app.toast = null } }
                     AnimatedVisibility(

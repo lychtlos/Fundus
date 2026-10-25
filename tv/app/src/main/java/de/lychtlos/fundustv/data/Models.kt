@@ -43,6 +43,13 @@ data class FundusData(
     val order: Map<String, Pair<Int, String?>> = emptyMap(),
 ) {
     fun status(k: String): String? = items[k]?.get("status") as? String
+    fun followed(k: String): Boolean = items[k]?.get("fol") == true || items[k]?.get("status") == "follow"
+
+    /** Verfolgte Serien, neueste zuerst. */
+    fun followList(): List<Title> = items.values
+        .filter { it["m"] == "serie" && (it["fol"] == true || it["status"] == "follow") }
+        .sortedByDescending { (it["ts"] as? Number)?.toLong() ?: 0L }
+        .mapNotNull { itemToTitle(it) }
 
     /** Merkliste (nur Filme und Serien), sortiert wie in Fundus: Claude-Reihenfolge, sonst neueste zuerst. */
     fun watchlist(): List<Title> = items.values

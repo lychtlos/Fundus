@@ -42,6 +42,8 @@ class AppState(ctx: Context) {
     var loading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var toast by mutableStateOf<String?>(null)
+    /** erster Ladevorgang fertig (Splash darf verschwinden) */
+    var ready by mutableStateOf(false)
     var allProviders by mutableStateOf<List<Provider>>(emptyList())
     private var provVersion by mutableStateOf(0)
 
@@ -77,9 +79,10 @@ class AppState(ctx: Context) {
                 if (allProviders.isEmpty()) allProviders = runCatching { Tmdb.providerList() }.getOrDefault(emptyList())
                 shelves = buildShelves()
             } catch (e: Exception) {
-                error = e.message ?: "Fehler beim Laden"
+                error = e.message ?: "Laden fehlgeschlagen"
             } finally {
                 loading = false
+                ready = true
             }
         }
     }
@@ -111,7 +114,7 @@ class AppState(ctx: Context) {
             return
         }
         val rated = ratedKeys()
-        val rest = shelves.filter { it.id != "watch" && it.id != "tips" }
+        val rest = shelves.filter { it.id !in FUNDUS_SHELVES }
             .map { s -> s.copy(items = s.items.filter { it.k !in rated }) }
             .filter { it.items.isNotEmpty() }
         shelves = fundusShelves() + rest
@@ -120,9 +123,11 @@ class AppState(ctx: Context) {
     private fun ratedKeys(): Set<String> =
         fundus.items.filterValues { it["status"] in setOf("like", "love", "dislike", "hide") }.keys
 
+    private val FUNDUS_SHELVES = setOf("tips", "watch", "fol")
     private fun fundusShelves(): List<Shelf> = listOfNotNull(
-        fundus.watchlist().takeIf { it.isNotEmpty() }?.let { Shelf("watch", "Deine Merkliste", it) },
-        fundus.tips.takeIf { it.isNotEmpty() }?.let { Shelf("tips", "Tipps von Claude", it) },
+        fundus.tips.takeIf { it.isNotEmpty() }?.let { Shelf("tips", "Für Dich", it) },
+        fundus.watchlist().takeIf { it.isNotEmpty() }?.let { Shelf("watch", "Merkliste", it) },
+        fundus.followList().takeIf { it.isNotEmpty() }?.let { Shelf("fol", "Verfolgt", it) },
     )
 
     private suspend fun buildShelves(): List<Shelf> {
@@ -133,23 +138,24 @@ class AppState(ctx: Context) {
 
         val yearAgo = java.time.LocalDate.now().minusMonths(10).toString()
         val jobs = mutableListOf<Pair<String, suspend () -> List<Title>>>()
-        jobs += "Beliebte Filme in Deinen Diensten" to { Tmdb.discover("movie", prov, free) }
-        jobs += "Beliebte Serien in Deinen Diensten" to { Tmdb.discover("tv", prov, free) }
-        jobs += "Neue Filme in Deinen Diensten" to {
-            Tmdb.discover("movie", prov, free, minVotes = 40, extra = mapOf("primary_release_date.gte" to yearAgo))
-        }
-        jobs += "Neue Serien und Staffeln" to {
+        // Serien vor Filmen, wie in der Web-App
+        jobs += "Beliebte Serien" to { Tmdb.discover("tv", prov, free) }
+        jobs += "Beliebte Filme" to { Tmdb.discover("movie", prov, free) }
+        jobs += "Neue Serien & Staffeln" to {
             Tmdb.discover("tv", prov, free, minVotes = 15, extra = mapOf("air_date.gte" to yearAgo))
+        }
+        jobs += "Neue Filme" to {
+            Tmdb.discover("movie", prov, free, minVotes = 40, extra = mapOf("primary_release_date.gte" to yearAgo))
         }
         prov.take(6).forEach { id ->
             val n = names[id] ?: "Dienst $id"
             jobs += "Top bei $n" to {
-                val a = Tmdb.discover("movie", listOf(id), free)
-                val b = Tmdb.discover("tv", listOf(id), free)
+                val a = Tmdb.discover("tv", listOf(id), free)
+                val b = Tmdb.discover("movie", listOf(id), free)
                 a.zip(b).flatMap { listOf(it.first, it.second) } + (a.drop(b.size) + b.drop(a.size))
             }
         }
-        jobs += "Im Trend diese Woche" to { Tmdb.trending() }
+        jobs += "Im Trend" to { Tmdb.trending() }
 
         val known = ratedKeys()
         val results = scopeAsync(jobs.map { it.second })
@@ -166,32 +172,40 @@ class AppState(ctx: Context) {
         }
 
     fun setStatus(t: Title, status: String?) {
-        if (user == null) { say("Dafür bitte unter Einstellungen mit Fundus verbinden"); return }
+        if (user == null) { say("Erst mit Fundus verbinden"); return }
         scope.launch {
             try {
                 Fundus.setStatus(t, status)
                 fundus = Fundus.data
                 say(
                     when (status) {
-                        "watch" -> "Auf der Merkliste"
-                        "like" -> "Gefällt Dir – fließt in die Vorschläge ein"
-                        "love" -> "Lieblingstitel"
-                        "dislike" -> "Gefällt Dir nicht – ähnliche Titel kommen seltener"
-                        "hide" -> "Wird nicht mehr vorgeschlagen"
+                        "watch" -> "Gemerkt"
+                        "like" -> "Gefällt Dir"
+                        "love" -> "Liebling"
+                        "dislike" -> "Gefällt Dir nicht"
+                        "hide" -> "Ausgeblendet"
                         else -> "Entfernt"
                     }
                 )
-                // Merkliste/Tipps-Reihen sofort aktualisieren
-                shelves = shelves.mapNotNull { s ->
-                    when (s.id) {
-                        "watch" -> null
-                        "tips" -> s.copy(items = fundus.tips)
-                        else -> if (status in setOf("like", "love", "dislike", "hide")) s.copy(items = s.items.filter { it.k != t.k }) else s
-                    }
-                }.let { rest ->
-                    val wl = fundus.watchlist()
-                    if (wl.isNotEmpty()) listOf(Shelf("watch", "Deine Merkliste", wl)) + rest else rest
-                }.filter { it.items.isNotEmpty() }
+                // Fundus-Reihen sofort aktualisieren
+                val rest = shelves.filter { it.id !in FUNDUS_SHELVES }
+                    .map { s -> if (status in setOf("like", "love", "dislike", "hide")) s.copy(items = s.items.filter { it.k != t.k }) else s }
+                shelves = (fundusShelves() + rest).filter { it.items.isNotEmpty() }
+            } catch (e: Exception) {
+                say(e.message ?: "Speichern fehlgeschlagen")
+            }
+        }
+    }
+
+    fun toggleFol(t: Title) {
+        if (user == null) { say("Erst mit Fundus verbinden"); return }
+        val on = !fundus.followed(t.k)
+        scope.launch {
+            try {
+                Fundus.setFol(t, on)
+                fundus = Fundus.data
+                say(if (on) "Wird verfolgt" else "Nicht mehr verfolgt")
+                shelves = (fundusShelves() + shelves.filter { it.id !in FUNDUS_SHELVES }).filter { it.items.isNotEmpty() }
             } catch (e: Exception) {
                 say(e.message ?: "Speichern fehlgeschlagen")
             }

@@ -31,7 +31,13 @@ jobs:
         env:
           FUNDUS_TV_CLIENT_ID: ${{ secrets.FUNDUS_TV_CLIENT_ID }}
           FUNDUS_TV_CLIENT_SECRET: ${{ secrets.FUNDUS_TV_CLIENT_SECRET }}
-        run: gradle --no-daemon assembleRelease
+        run: |
+          set +e
+          gradle --no-daemon assembleRelease 2>&1 | tee build.log
+          st=${PIPESTATUS[0]}
+          # Kompilierfehler als Hinweise im Lauf zeigen
+          grep -E "^e: |error:|FAILURE|What went wrong" build.log | head -30 | sed 's/%/%25/g; s/^/::error title=Build::/'
+          exit $st
       - name: Als Release „tv-latest“ veröffentlichen
         env:
           GH_TOKEN: ${{ github.token }}

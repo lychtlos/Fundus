@@ -109,6 +109,32 @@ object Fundus {
         data = data.copy(items = items, tips = data.tips.filter { it.k != t.k })
     }
 
+    /** Verfolgen (Flag fol) unabhängig vom Status, wie setFol() in Fundus. */
+    suspend fun setFol(t: Title, on: Boolean) {
+        val u = Auth.user ?: throw Exception("Nicht angemeldet")
+        val now = System.currentTimeMillis()
+        val prev = data.items[t.k]
+        val remove = !on && prev?.get("status") == null
+        val item = LinkedHashMap<String, Any?>()
+        if (!remove) {
+            prev?.let { item.putAll(it) }
+            item["k"] = t.k; item["m"] = t.m; item["id"] = t.id; item["title"] = t.title
+            if (t.year.isNotEmpty() && item["year"] == null) { item["year"] = t.year; item["sub"] = t.year }
+            if (item["img"] == null) t.poster?.let { item["img"] = it.replace("/w500/", "/w342/") }
+            if (on) item["fol"] = true else item.remove("fol")
+            item["ts"] = now
+        }
+        val fields = JSONObject().put("writer", encode(WRITER)).put("updatedAt", encode(now))
+        val itemsF = JSONObject(); if (!remove) itemsF.put(t.k, encode(item))
+        fields.put("items", JSONObject().put("mapValue", JSONObject().put("fields", itemsF)))
+        val delF = JSONObject(); if (remove) delF.put(t.k, encode(now))
+        fields.put("del", JSONObject().put("mapValue", JSONObject().put("fields", delF)))
+        patch(u.uid, fields, listOf("writer", "updatedAt", "items.${q(t.k)}", "del.${q(t.k)}"))
+        val items = data.items.toMutableMap()
+        if (remove) items.remove(t.k) else items[t.k] = item
+        data = data.copy(items = items)
+    }
+
     suspend fun setProviders(ids: List<Int>) {
         val u = Auth.user ?: throw Exception("Nicht angemeldet")
         val now = System.currentTimeMillis()
