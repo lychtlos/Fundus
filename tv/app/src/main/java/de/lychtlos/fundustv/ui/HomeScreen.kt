@@ -14,15 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,28 +26,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.Icon
-import androidx.tv.material3.IconButton
+import androidx.tv.material3.FilterChip
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import de.lychtlos.fundustv.AppState
 import de.lychtlos.fundustv.Screen
+import de.lychtlos.fundustv.Shelf
 import de.lychtlos.fundustv.data.Details
 import de.lychtlos.fundustv.data.Title
 import de.lychtlos.fundustv.data.Tmdb
 import kotlinx.coroutines.delay
 
-/** Zustand der Startseite, der beim Wechsel zur Detailseite erhalten bleibt. */
+/** Zustand einer Seite, der beim Wechsel zur Detailseite erhalten bleibt. */
 class HomeMemory {
     val column = LazyListState()
     val rows = HashMap<String, LazyListState>()
@@ -60,11 +55,75 @@ class HomeMemory {
     var hero: Title? = null
 }
 
+fun medColor(m: String) = if (m == "film") C.film else C.serie
+fun medLabel(m: String) = if (m == "film") "Film" else "Serie"
+
+/** Gruppe von Reihen mit großer, farbiger Überschrift (Serien / Filme). */
+data class Group(val m: String?, val title: String?, val shelves: List<Shelf>)
+
+/** Startseite: Bereichswahl wie im Menü der Smartphone-App, Serien und Filme klar getrennt. */
 @Composable
-fun HomeScreen(app: AppState, mem: HomeMemory) {
+fun DiscoverScreen(app: AppState, mem: HomeMemory) {
+    val groups = when (app.med) {
+        "alle" -> listOf("serie", "film").map { m ->
+            // pro Bereich die wichtigsten Reihen
+            val s = app.shelves.filter { it.m == m }
+            Group(m, if (m == "serie") "Serien" else "Filme", (s.filter { !it.id.startsWith("cat-") }.take(3) + s.filter { it.id.startsWith("cat-") }.take(1)))
+        }
+        else -> listOf(Group(app.med, null, app.shelves.filter { it.m == app.med }))
+    }.filter { it.shelves.isNotEmpty() }
+
+    Browse(
+        app = app, mem = mem, groups = groups,
+        header = {
+            Row(Modifier.padding(start = 8.dp, top = 22.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf("alle" to "Alles", "serie" to "Serien", "film" to "Filme").forEach { (id, l) ->
+                    FilterChip(selected = app.med == id, onClick = { app.med = id; mem.focusKey = null }) {
+                        Text(l, fontSize = 15.sp)
+                    }
+                }
+            }
+        },
+        empty = when {
+            app.loading -> "Lädt …"
+            app.error != null -> app.error!!
+            else -> "Nichts gefunden. Dienste in den Einstellungen wählen."
+        },
+    )
+}
+
+/** Merkliste: Serien und Filme getrennt, Reihenfolge von Claude. */
+@Composable
+fun WatchScreen(app: AppState, mem: HomeMemory) {
+    val wl = app.fundus.watchlist()
+    val hasOrder = app.fundus.order.isNotEmpty()
+    val groups = listOf("serie", "film").map { m ->
+        Group(m, if (m == "serie") "Serien" else "Filme", listOfNotNull(
+            wl.filter { it.m == m }.takeIf { it.isNotEmpty() }?.let { Shelf("wl-$m", "Gemerkt", it, m, if (hasOrder) "Reihenfolge von Claude: Bestes zuerst" else null) },
+        ))
+    }.filter { it.shelves.isNotEmpty() }
+    Browse(
+        app = app, mem = mem, groups = groups,
+        header = { PageTitle("Merkliste") },
+        empty = if (app.user == null) "Erst mit Fundus verbinden" else "Die Merkliste ist leer.",
+    )
+}
+
+@Composable
+fun PageTitle(t: String, sub: String? = null) {
+    Column(Modifier.padding(start = 8.dp, top = 26.dp)) {
+        Text(t, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = C.ink)
+        if (sub != null) Text(sub, fontSize = 15.sp, color = C.ink2)
+    }
+}
+
+/** Gemeinsames Gerüst: Kopf, Infobereich des fokussierten Titels, Reihen nach Bereichen. */
+@Composable
+fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composable () -> Unit, empty: String) {
     var hero by remember { mutableStateOf(mem.hero) }
     var heroDetails by remember { mutableStateOf<Details?>(null) }
     val firstFocus = remember { FocusRequester() }
+    val all = groups.flatMap { it.shelves }
 
     LaunchedEffect(hero?.k) {
         val h = hero ?: return@LaunchedEffect
@@ -72,59 +131,44 @@ fun HomeScreen(app: AppState, mem: HomeMemory) {
         delay(300)
         heroDetails = runCatching { Tmdb.details(h) }.getOrNull()
     }
-    // gemerkten Fokus nur nutzen, wenn der Titel noch in der Reihe steht
-    val restore = mem.focusKey?.takeIf { fk -> app.shelves.any { s -> s.items.any { s.id + "|" + it.k == fk } } }
-    LaunchedEffect(app.shelves.isNotEmpty(), restore) {
-        if (app.shelves.isNotEmpty() && restore == null) {
-            delay(100); runCatching { firstFocus.requestFocus() }
-        }
+    val restore = mem.focusKey?.takeIf { fk -> all.any { s -> s.items.any { s.id + "|" + it.k == fk } } }
+    LaunchedEffect(all.isNotEmpty(), restore, groups.firstOrNull()?.shelves?.firstOrNull()?.id) {
+        if (all.isNotEmpty() && restore == null) { delay(120); runCatching { firstFocus.requestFocus() } }
     }
 
-    Box(Modifier.fillMaxSize().background(C.bg)) {
-        // Hintergrundbild des fokussierten Titels
+    Box(Modifier.fillMaxSize()) {
         val backdrop = heroDetails?.title?.backdrop ?: hero?.backdrop
         if (backdrop != null) {
             AsyncImage(
-                model = backdrop,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth(0.72f).height(420.dp).align(Alignment.TopEnd),
+                model = backdrop, contentDescription = null, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd),
             )
-            Box(
-                Modifier.fillMaxWidth(0.72f).height(420.dp).align(Alignment.TopEnd)
-                    .background(Brush.horizontalGradient(listOf(C.bg, Color.Transparent), endX = 500f))
-            )
-            Box(
-                Modifier.fillMaxWidth().height(420.dp)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 150f))
-            )
+            Box(Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd).background(Brush.horizontalGradient(listOf(C.bg, Color.Transparent), endX = 500f)))
+            Box(Modifier.fillMaxWidth().height(400.dp).background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 150f)))
         }
-
-        Column(Modifier.fillMaxSize()) {
-            TopBar(app)
+        Column(Modifier.fillMaxSize().padding(start = 40.dp)) {
+            header()
             Hero(hero, heroDetails)
-            when {
-                app.shelves.isEmpty() && app.loading -> Message("Lädt …")
-                app.shelves.isEmpty() && app.error != null -> Message(app.error!!)
-                app.shelves.isEmpty() -> Message("Nichts gefunden. Dienste in den Einstellungen wählen.")
-                else -> LazyColumn(
-                    state = mem.column,
-                    contentPadding = PaddingValues(bottom = 60.dp),
-                    verticalArrangement = Arrangement.spacedBy(22.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(app.shelves, key = { it.id }) { s ->
-                        ShelfRow(
-                            shelf = s,
-                            state = mem.rows.getOrPut(s.id) { LazyListState() },
-                            onOpen = { t ->
-                                mem.focusKey = s.id + "|" + t.k
-                                app.go(Screen.Detail(t))
-                            },
-                            onFocused = { t -> hero = t; mem.hero = t },
-                            restoreKey = restore,
-                            firstFocus = if (s == app.shelves.first()) firstFocus else null,
-                        )
+            if (all.isEmpty()) Message(empty)
+            else LazyColumn(
+                state = mem.column,
+                contentPadding = PaddingValues(bottom = 60.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                groups.forEach { g ->
+                    if (g.title != null && g.m != null) item(key = "h-" + g.m) { GroupHeader(g.title, medColor(g.m)) }
+                    g.shelves.forEach { s ->
+                        item(key = s.id) {
+                            ShelfRow(
+                                shelf = s,
+                                state = mem.rows.getOrPut(s.id) { LazyListState() },
+                                onOpen = { t -> mem.focusKey = s.id + "|" + t.k; app.go(Screen.Detail(t)) },
+                                onFocused = { t -> hero = t; mem.hero = t },
+                                restoreKey = restore,
+                                firstFocus = if (s == all.first()) firstFocus else null,
+                            )
+                        }
                     }
                 }
             }
@@ -133,49 +177,35 @@ fun HomeScreen(app: AppState, mem: HomeMemory) {
 }
 
 @Composable
-private fun TopBar(app: AppState) {
-    Row(
-        Modifier.fillMaxWidth().padding(start = 48.dp, end = 40.dp, top = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Brand(26)
-        Spacer(Modifier.weight(1f))
-        app.user?.let { Text(it.name.ifEmpty { it.email }, fontSize = 13.sp, color = C.ink2, modifier = Modifier.padding(end = 12.dp)) }
-        NavIcon(Icons.Filled.Search, "Suchen") { app.go(Screen.Search) }
-        NavIcon(Icons.Filled.Refresh, "Neu laden") { app.refresh() }
-        NavIcon(Icons.Filled.Settings, "Einstellungen") { app.go(Screen.Settings) }
+private fun GroupHeader(title: String, color: Color) {
+    Row(Modifier.padding(start = 8.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(6.dp).height(30.dp).clip(RoundedCornerShape(3.dp)).background(color))
+        Spacer(Modifier.width(14.dp))
+        Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = color)
     }
 }
 
-@Composable
-fun NavIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.padding(start = 6.dp)) {
-        Icon(icon, contentDescription = label, modifier = Modifier.size(24.dp))
-    }
-}
-
+/** Infobereich oben: zeigt zum fokussierten Titel, warum er vorgeschlagen wird. */
 @Composable
 private fun Hero(t: Title?, d: Details?) {
-    Column(
-        Modifier.fillMaxWidth().height(230.dp).padding(start = 48.dp, top = 18.dp, end = 48.dp),
-    ) {
+    Column(Modifier.fillMaxWidth().height(210.dp).padding(start = 8.dp, top = 16.dp, end = 48.dp)) {
         if (t == null) return@Column
+        Text(medLabel(t.m).uppercase(), fontSize = 13.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = medColor(t.m))
         Text(
-            t.title, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold, color = C.ink,
+            t.title, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = C.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(720.dp),
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         val meta = listOfNotNull(
-            if (t.m == "film") "Film" else "Serie",
             t.year.ifEmpty { null },
             d?.runtime?.ifEmpty { null },
             d?.genres?.take(3)?.joinToString(", ")?.ifEmpty { null },
             t.rating?.let { "★ " + String.format(java.util.Locale.GERMANY, "%.1f", it) },
         ).joinToString("  ·  ")
         Text(meta, fontSize = 15.sp, color = C.ink2)
-        Spacer(Modifier.height(10.dp))
-        if (t.why != null) {
-            Text("✦ " + t.why, fontSize = 16.sp, color = C.accent, maxLines = 2, modifier = Modifier.width(680.dp))
+        Spacer(Modifier.height(8.dp))
+        if (!t.why.isNullOrEmpty()) {
+            Text((if (t.ai) "✦ " else "↳ ") + t.why, fontSize = 17.sp, color = C.accent, fontWeight = FontWeight.SemiBold, maxLines = 2, modifier = Modifier.width(680.dp))
             Spacer(Modifier.height(6.dp))
         }
         Text(

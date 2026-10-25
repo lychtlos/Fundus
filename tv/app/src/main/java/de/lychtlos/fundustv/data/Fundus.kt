@@ -57,7 +57,7 @@ object Fundus {
             val m = (t as? Map<String, Any?>) ?: return@mapNotNull null
             if (m["m"] != "film" && m["m"] != "serie") return@mapNotNull null
             if (items.containsKey(m["k"] as? String ?: "")) return@mapNotNull null
-            FundusData.itemToTitle(m)
+            FundusData.itemToTitle(m)?.copy(ai = true)
         }
         val order = (ai["order"] as? Map<String, Any?>).orEmpty().mapNotNull { (k, v) ->
             val o = v as? Map<String, Any?> ?: return@mapNotNull null
@@ -70,6 +70,14 @@ object Fundus {
             tmdbKey = settings["tmdbKey"] as? String ?: "",
             tips = tips,
             order = order,
+            rules = ((settings["rules"] as? Map<String, Any?>).orEmpty()).mapNotNull { (m, v) ->
+                val r = v as? Map<String, Any?> ?: return@mapNotNull null
+                m to Rules(
+                    minYear = (r["minYear"] as? Number)?.toInt() ?: 0,
+                    minR = (r["minR"] as? Number)?.toDouble() ?: 0.0,
+                    exGid = (r["exGid"] as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: emptyList(),
+                )
+            }.toMap(),
         )
         return data
     }

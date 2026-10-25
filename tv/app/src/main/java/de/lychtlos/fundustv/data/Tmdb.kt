@@ -40,6 +40,9 @@ object Tmdb {
             poster = img(r.str("poster_path")),
             backdrop = img(r.str("backdrop_path"), "w1280"),
             rating = r.optDouble("vote_average").takeIf { !it.isNaN() && it > 0 },
+            gids = r.optJSONArray("genre_ids")?.let { a -> (0 until a.length()).map { a.optInt(it) } }
+                ?: r.optJSONArray("genres")?.objects()?.map { it.optInt("id") } ?: emptyList(),
+            votes = r.optInt("vote_count"),
         )
     }
 
@@ -123,6 +126,26 @@ object Tmdb {
             free = (list("free") + list("ads")).distinctBy { it.id },
             rent = (list("rent") + list("buy")).distinctBy { it.id },
         )
+    }
+
+    /** Letzte und nächste Folge einer Serie: (Datum, Staffel, Folge, Name) */
+    suspend fun episodes(id: Int): List<Triple<String, Pair<Int, Int>, String>> {
+        val d = call("/tv/$id")
+        return listOf("last_episode_to_air", "next_episode_to_air").mapNotNull { k ->
+            val e = d.optJSONObject(k) ?: return@mapNotNull null
+            val date = e.str("air_date") ?: return@mapNotNull null
+            Triple(date, e.optInt("season_number") to e.optInt("episode_number"), e.str("name") ?: "")
+        }
+    }
+
+    /** Kino- und Digitalstart in Deutschland: (Datum, "Kinostart"/"Digital") */
+    suspend fun movieDates(id: Int): List<Pair<String, String>> {
+        val d = call("/movie/$id/release_dates", mapOf("language" to ""))
+        val de = d.optJSONArray("results")?.objects()?.firstOrNull { it.optString("iso_3166_1") == "DE" } ?: return emptyList()
+        return de.optJSONArray("release_dates")?.objects()?.mapNotNull { r ->
+            val date = r.str("release_date")?.take(10) ?: return@mapNotNull null
+            when (r.optInt("type")) { 3 -> date to "Kinostart"; 4 -> date to "Digital"; else -> null }
+        }?.distinctBy { it.second } ?: emptyList()
     }
 
     /** Streamingdienste in Deutschland (Filme + Serien), nach Bedeutung sortiert. */

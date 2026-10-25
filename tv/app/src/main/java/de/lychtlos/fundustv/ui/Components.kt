@@ -164,16 +164,18 @@ fun ShelfRow(
     firstFocus: FocusRequester?,
 ) {
     Column(Modifier.fillMaxWidth()) {
-        Text(
-            shelf.label,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = C.ink,
-            modifier = Modifier.padding(start = 48.dp, bottom = 10.dp),
-        )
+        androidx.compose.foundation.layout.Row(Modifier.padding(start = 8.dp, bottom = 6.dp), verticalAlignment = Alignment.Bottom) {
+            Text(
+                (if (shelf.id.startsWith("tips")) "✦ " else "") + shelf.label,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (shelf.id.startsWith("tips")) C.accent else C.ink,
+            )
+            if (shelf.hint != null) Text("  ·  " + shelf.hint, fontSize = 14.sp, color = C.ink2, modifier = Modifier.padding(bottom = 2.dp))
+        }
         LazyRow(
             state = state,
-            contentPadding = PaddingValues(horizontal = 48.dp, vertical = 10.dp),
+            contentPadding = PaddingValues(start = 8.dp, end = 48.dp, top = 10.dp, bottom = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             itemsIndexed(shelf.items, key = { _, t -> t.k }) { i, t ->
@@ -192,7 +194,7 @@ fun ShelfRow(
                     onClick = { onOpen(t) },
                     focusRequester = req,
                     onFocused = { onFocused(t) },
-                    badge = if (shelf.id == "tips") "✦" else null,
+                    badge = if (t.ai) "✦" else null,
                 )
             }
         }

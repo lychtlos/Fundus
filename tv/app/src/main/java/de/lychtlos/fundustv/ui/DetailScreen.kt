@@ -141,7 +141,7 @@ fun DetailScreen(app: AppState, start: Title) {
                     }
                     if (start.why != null) {
                         Spacer(Modifier.height(12.dp))
-                        Text("✦ " + start.why, fontSize = 17.sp, color = C.accent)
+                        Text((if (start.ai) "✦ " else "↳ ") + start.why, fontSize = 17.sp, color = C.accent)
                     }
                     if (!d?.tagline.isNullOrEmpty()) {
                         Spacer(Modifier.height(12.dp))

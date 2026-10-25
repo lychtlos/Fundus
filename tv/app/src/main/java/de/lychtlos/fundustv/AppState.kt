@@ -10,6 +10,8 @@ import de.lychtlos.fundustv.data.Auth
 import de.lychtlos.fundustv.data.Fundus
 import de.lychtlos.fundustv.data.FundusData
 import de.lychtlos.fundustv.data.Provider
+import de.lychtlos.fundustv.data.Release
+import de.lychtlos.fundustv.data.Releases
 import de.lychtlos.fundustv.data.Title
 import de.lychtlos.fundustv.data.Tmdb
 import kotlinx.coroutines.CoroutineScope
@@ -19,22 +21,30 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 
+/** Vollbild-Seiten über dem Hauptbildschirm (mit Menü links). */
 sealed interface Screen {
-    data object Home : Screen
-    data object Search : Screen
-    data object Settings : Screen
+    data object Main : Screen
     data object Login : Screen
     data class Detail(val title: Title) : Screen
 }
 
-data class Shelf(val id: String, val label: String, val items: List<Title>)
+/** Menüpunkte wie in der Smartphone-App. */
+enum class Tab(val label: String) {
+    Discover("Entdecken"), Search("Suchen"), Watch("Merkliste"), News("Neuerscheinungen"), Follow("Verfolgt"), Settings("Einstellungen")
+}
+
+/** Eine Reihe auf dem Bildschirm. m = "serie"/"film" (für die Trennung nach Bereich), hint = kurze Erklärung, warum diese Titel. */
+data class Shelf(val id: String, val label: String, val items: List<Title>, val m: String? = null, val hint: String? = null)
 
 class AppState(ctx: Context) {
     private val prefs: SharedPreferences = ctx.getSharedPreferences("app", Context.MODE_PRIVATE)
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    val stack = mutableStateListOf<Screen>(Screen.Home)
+    val stack = mutableStateListOf<Screen>(Screen.Main)
     val screen: Screen get() = stack.last()
+    var tab by mutableStateOf(Tab.Discover)
+    /** Bereich auf „Entdecken“: "alle", "serie" oder "film" */
+    var med by mutableStateOf("alle")
 
     var user by mutableStateOf(Auth.user)
     var fundus by mutableStateOf(FundusData())
@@ -42,10 +52,15 @@ class AppState(ctx: Context) {
     var loading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var toast by mutableStateOf<String?>(null)
-    /** erster Ladevorgang fertig (Splash darf verschwinden) */
-    var ready by mutableStateOf(false)
     var allProviders by mutableStateOf<List<Provider>>(emptyList())
     private var provVersion by mutableStateOf(0)
+
+    var releases by mutableStateOf<List<Release>?>(null)
+    var releasesLoading by mutableStateOf(false)
+    private var releasesAt = 0L
+
+    /** erster Ladevorgang fertig (Splash darf verschwinden) */
+    var ready by mutableStateOf(false)
 
     /** Gewählte Dienste: mit Konto aus Fundus, sonst lokal auf dem Gerät. */
     val providers: List<Int>
@@ -57,7 +72,11 @@ class AppState(ctx: Context) {
         if (stack.size <= 1) return false
         stack.removeAt(stack.lastIndex); return true
     }
-    fun home() { while (stack.size > 1) stack.removeAt(stack.lastIndex) }
+    fun home() { while (stack.size > 1) stack.removeAt(stack.lastIndex); tab = Tab.Discover }
+    fun open(t: Tab) {
+        tab = t
+        if (t == Tab.News || t == Tab.Follow) loadReleases()
+    }
 
     fun say(msg: String) { toast = msg }
 
@@ -78,6 +97,8 @@ class AppState(ctx: Context) {
                 } else fundus = FundusData()
                 if (allProviders.isEmpty()) allProviders = runCatching { Tmdb.providerList() }.getOrDefault(emptyList())
                 shelves = buildShelves()
+                releasesAt = 0L
+                if (tab == Tab.News || tab == Tab.Follow) loadReleases()
             } catch (e: Exception) {
                 error = e.message ?: "Laden fehlgeschlagen"
             } finally {
@@ -87,16 +108,37 @@ class AppState(ctx: Context) {
         }
     }
 
+    fun loadReleases(force: Boolean = false) {
+        if (releasesLoading) return
+        if (!force && releases != null && System.currentTimeMillis() - releasesAt < 3 * 3600_000L) return
+        scope.launch {
+            releasesLoading = true
+            try {
+                releases = Releases.load(fundus)
+                releasesAt = System.currentTimeMillis()
+            } catch (_: Exception) {
+                if (releases == null) releases = emptyList()
+            } finally {
+                releasesLoading = false
+            }
+        }
+    }
+
     /**
      * Prüft leicht, ob sich das Fundus-Konto geändert hat (z. B. in der Web-App),
-     * und übernimmt die Änderung ohne die TMDB-Reihen neu zu laden.
+     * und übernimmt die Änderung.
      */
     fun checkRemote() {
         if (user == null || loading || checking) return
         checking = true
         scope.launch {
             try {
-                if (Fundus.changedRemotely()) applyRemote()
+                if (Fundus.changedRemotely()) {
+                    fundus = Fundus.load()
+                    Tmdb.userKey = fundus.tmdbKey
+                    shelves = buildShelves()
+                    releasesAt = 0L
+                }
             } catch (_: Exception) {
                 // still: nächster Versuch beim nächsten Intervall
             } finally {
@@ -105,63 +147,79 @@ class AppState(ctx: Context) {
         }
     }
 
-    private suspend fun applyRemote() {
-        val before = fundus
-        fundus = Fundus.load()
-        Tmdb.userKey = fundus.tmdbKey
-        if (before.providers != fundus.providers || before.includeFree != fundus.includeFree) {
-            shelves = buildShelves()
-            return
-        }
-        val rated = ratedKeys()
-        val rest = shelves.filter { it.id !in FUNDUS_SHELVES }
-            .map { s -> s.copy(items = s.items.filter { it.k !in rated }) }
-            .filter { it.items.isNotEmpty() }
-        shelves = fundusShelves() + rest
-    }
+    /** alles, was schon in den Listen steht (egal welcher Status) */
+    private fun knownKeys(): Set<String> = fundus.items.keys
 
-    private fun ratedKeys(): Set<String> =
-        fundus.items.filterValues { it["status"] in setOf("like", "love", "dislike", "hide") }.keys
-
-    private val FUNDUS_SHELVES = setOf("tips", "watch", "fol")
-    private fun fundusShelves(): List<Shelf> = listOfNotNull(
-        fundus.tips.takeIf { it.isNotEmpty() }?.let { Shelf("tips", "Für Dich", it) },
-        fundus.watchlist().takeIf { it.isNotEmpty() }?.let { Shelf("watch", "Merkliste", it) },
-        fundus.followList().takeIf { it.isNotEmpty() }?.let { Shelf("fol", "Verfolgt", it) },
-    )
-
+    /**
+     * Reihen für „Entdecken“, getrennt nach Serien und Filmen, jeweils mit Begründung:
+     * 1. Tipps von Claude, 2. aus Deinen Bewertungen (TMDB-Empfehlungen zu Lieblingen und „Gefällt mir“),
+     * 3. „Weil Dir … gefällt“ je Lieblingstitel, 4. neu/beliebt bei Deinen Diensten.
+     */
     private suspend fun buildShelves(): List<Shelf> {
         val prov = providers
         val free = fundus.includeFree
         val names = allProviders.associateBy({ it.id }, { it.name })
-        val out = fundusShelves().toMutableList()
-
+        val known = knownKeys()
         val yearAgo = java.time.LocalDate.now().minusMonths(10).toString()
-        val jobs = mutableListOf<Pair<String, suspend () -> List<Title>>>()
-        // Serien vor Filmen, wie in der Web-App
-        jobs += "Beliebte Serien" to { Tmdb.discover("tv", prov, free) }
-        jobs += "Beliebte Filme" to { Tmdb.discover("movie", prov, free) }
-        jobs += "Neue Serien & Staffeln" to {
-            Tmdb.discover("tv", prov, free, minVotes = 15, extra = mapOf("air_date.gte" to yearAgo))
-        }
-        jobs += "Neue Filme" to {
-            Tmdb.discover("movie", prov, free, minVotes = 40, extra = mapOf("primary_release_date.gte" to yearAgo))
-        }
-        prov.take(6).forEach { id ->
-            val n = names[id] ?: "Dienst $id"
-            jobs += "Top bei $n" to {
-                val a = Tmdb.discover("tv", listOf(id), free)
-                val b = Tmdb.discover("movie", listOf(id), free)
-                a.zip(b).flatMap { listOf(it.first, it.second) } + (a.drop(b.size) + b.drop(a.size))
-            }
-        }
-        jobs += "Im Trend" to { Tmdb.trending() }
+        val out = mutableListOf<Shelf>()
 
-        val known = ratedKeys()
-        val results = scopeAsync(jobs.map { it.second })
-        jobs.forEachIndexed { i, (label, _) ->
-            val list = results[i].filter { it.k !in known }.distinctBy { it.k }
-            if (list.isNotEmpty()) out += Shelf("s$i", label, list)
+        for (m in listOf("serie", "film")) {
+            val type = if (m == "film") "movie" else "tv"
+            val ok = { t: Title -> t.k !in known && fundus.passes(t) }
+
+            // 1. Claude
+            val tips = fundus.tips.filter { it.m == m }
+            if (tips.isNotEmpty()) out += Shelf("tips-$m", "Für Dich", tips, m, "von Claude ausgesucht")
+            val shown = tips.map { it.k }.toMutableSet()
+
+            // 2./3. aus Bewertungen
+            val seeds = fundus.items.values
+                .filter { it["m"] == m && (it["status"] == "love" || it["status"] == "like" || (it["status"] == null && it["fol"] == true)) }
+                .sortedWith(compareByDescending<Map<String, Any?>> { it["status"] == "love" }.thenByDescending { (it["ts"] as? Number)?.toLong() ?: 0L })
+                .mapNotNull { FundusData.itemToTitle(it)?.let { t -> t to (fundus.items[t.k]?.get("status") == "love") } }
+                .take(10)
+            val recs = scopeAsync(seeds.map { (s, _) -> suspend { Tmdb.recommendations(s) } })
+            val score = HashMap<String, Double>(); val why = HashMap<String, MutableList<String>>(); val byK = HashMap<String, Title>()
+            seeds.forEachIndexed { i, (s, love) ->
+                val w = if (love) 2.0 else 1.0 - 0.5 * i / maxOf(1, seeds.size - 1)
+                recs[i].filter(ok).forEachIndexed { pos, r ->
+                    score[r.k] = (score[r.k] ?: 0.0) + w * (1 - pos / 40.0) * ((r.rating ?: 6.0) / 7.5)
+                    why.getOrPut(r.k) { mutableListOf() }.add(s.title)
+                    byK[r.k] = r
+                }
+            }
+            fun reason(k: String): String {
+                val w = why[k].orEmpty().distinct()
+                return when (w.size) {
+                    0 -> ""
+                    1 -> "Weil Dir „${w[0]}“ gefällt"
+                    else -> "Weil Dir „${w[0]}“ und „${w[1]}“ gefallen"
+                }
+            }
+            val mix = score.entries.sortedByDescending { it.value }.map { it.key }.filter { it !in shown }.take(24)
+                .mapNotNull { k -> byK[k]?.copy(why = reason(k)) }
+            if (mix.isNotEmpty()) { out += Shelf("mix-$m", "Aus Deinen Bewertungen", mix, m, "ähnlich zu dem, was Dir gefällt"); shown += mix.take(12).map { it.k } }
+            seeds.take(4).forEachIndexed { i, (s, love) ->
+                val l = recs[i].filter(ok).filter { it.k !in shown }.take(20).map { it.copy(why = "Weil Dir „${s.title}“ gefällt") }
+                if (l.size >= 4) out += Shelf("seed-$m-${s.id}", "Weil Dir „${s.title}“ gefällt", l, m, if (love) "einer Deiner Lieblinge" else null)
+            }
+
+            // 4. Kataloge der eigenen Dienste
+            val catalog = mutableListOf<Triple<String, String, suspend () -> List<Title>>>()
+            catalog += Triple("Neu bei Deinen Diensten", "neu in Deinen Abos", suspend {
+                if (m == "film") Tmdb.discover(type, prov, free, minVotes = 40, extra = mapOf("primary_release_date.gte" to yearAgo))
+                else Tmdb.discover(type, prov, free, minVotes = 15, extra = mapOf("air_date.gte" to yearAgo))
+            })
+            catalog += Triple("Beliebt bei Deinen Diensten", "meistgesehen in Deinen Abos", suspend { Tmdb.discover(type, prov, free) })
+            prov.take(4).forEach { id ->
+                val n = names[id] ?: "Dienst $id"
+                catalog += Triple("Top bei $n", "in Deinem Abo", suspend { Tmdb.discover(type, listOf(id), free) })
+            }
+            val res = scopeAsync(catalog.map { it.third })
+            catalog.forEachIndexed { i, (label, hint, _) ->
+                val l = res[i].filter(ok).distinctBy { it.k }.map { it.copy(why = hint.replaceFirstChar { c -> c.uppercase() }) }
+                if (l.isNotEmpty()) out += Shelf("cat-$m-$i", label, l, m, hint)
+            }
         }
         return out
     }
@@ -170,6 +228,11 @@ class AppState(ctx: Context) {
         kotlinx.coroutines.coroutineScope {
             fns.map { f -> async { runCatching { f() }.getOrDefault(emptyList()) } }.awaitAll()
         }
+
+    /** Titel nach Bewertung aus allen Reihen nehmen (wie in der Web-App). */
+    private fun dropFromShelves(k: String) {
+        shelves = shelves.map { s -> s.copy(items = s.items.filter { it.k != k }) }.filter { it.items.isNotEmpty() }
+    }
 
     fun setStatus(t: Title, status: String?) {
         if (user == null) { say("Erst mit Fundus verbinden"); return }
@@ -187,10 +250,8 @@ class AppState(ctx: Context) {
                         else -> "Entfernt"
                     }
                 )
-                // Fundus-Reihen sofort aktualisieren
-                val rest = shelves.filter { it.id !in FUNDUS_SHELVES }
-                    .map { s -> if (status in setOf("like", "love", "dislike", "hide")) s.copy(items = s.items.filter { it.k != t.k }) else s }
-                shelves = (fundusShelves() + rest).filter { it.items.isNotEmpty() }
+                if (status != null) dropFromShelves(t.k)
+                releasesAt = 0L
             } catch (e: Exception) {
                 say(e.message ?: "Speichern fehlgeschlagen")
             }
@@ -205,7 +266,8 @@ class AppState(ctx: Context) {
                 Fundus.setFol(t, on)
                 fundus = Fundus.data
                 say(if (on) "Wird verfolgt" else "Nicht mehr verfolgt")
-                shelves = (fundusShelves() + shelves.filter { it.id !in FUNDUS_SHELVES }).filter { it.items.isNotEmpty() }
+                if (on) dropFromShelves(t.k)
+                releasesAt = 0L
             } catch (e: Exception) {
                 say(e.message ?: "Speichern fehlgeschlagen")
             }
@@ -227,6 +289,6 @@ class AppState(ctx: Context) {
     }
 
     fun logout() {
-        Auth.logout(); user = null; fundus = FundusData(); refresh()
+        Auth.logout(); user = null; fundus = FundusData(); releases = null; refresh()
     }
 }

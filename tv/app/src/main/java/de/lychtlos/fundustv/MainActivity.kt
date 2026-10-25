@@ -26,13 +26,10 @@ import de.lychtlos.fundustv.data.Auth
 import de.lychtlos.fundustv.ui.C
 import de.lychtlos.fundustv.ui.DetailScreen
 import de.lychtlos.fundustv.ui.FundusTheme
-import de.lychtlos.fundustv.ui.HomeMemory
-import de.lychtlos.fundustv.ui.HomeScreen
 import de.lychtlos.fundustv.ui.LoginScreen
-import de.lychtlos.fundustv.ui.SearchMemory
-import de.lychtlos.fundustv.ui.SearchScreen
-import de.lychtlos.fundustv.ui.SettingsScreen
 import de.lychtlos.fundustv.ui.Splash
+import de.lychtlos.fundustv.ui.MainScreen
+import de.lychtlos.fundustv.ui.Memories
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
@@ -48,8 +45,7 @@ class MainActivity : ComponentActivity() {
         // Bilder weich einblenden
         coil.Coil.setImageLoader(coil.ImageLoader.Builder(applicationContext).crossfade(260).build())
         app = AppState(applicationContext)
-        val homeMem = HomeMemory()
-        val searchMem = SearchMemory()
+        val mems = Memories()
 
         // solange die App sichtbar ist: alle 90 s prüfen, ob sich das Fundus-Konto geändert hat
         lifecycleScope.launch {
@@ -64,13 +60,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             FundusTheme {
                 BackHandler(enabled = app.stack.size > 1) { app.back() }
+                // Zurück auf einer Unterseite des Menüs führt zu „Entdecken“
+                BackHandler(enabled = app.stack.size == 1 && app.tab != de.lychtlos.fundustv.Tab.Discover) { app.open(de.lychtlos.fundustv.Tab.Discover) }
                 Box(Modifier.fillMaxSize().background(C.bg)) {
                     // weicher Übergang zwischen den Seiten
                     androidx.compose.animation.Crossfade(targetState = app.screen, animationSpec = androidx.compose.animation.core.tween(240), label = "screen") { s ->
                         when (s) {
-                            Screen.Home -> HomeScreen(app, homeMem)
-                            Screen.Search -> SearchScreen(app, searchMem)
-                            Screen.Settings -> SettingsScreen(app)
+                            Screen.Main -> MainScreen(app, mems)
                             Screen.Login -> LoginScreen(app)
                             is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
                         }
