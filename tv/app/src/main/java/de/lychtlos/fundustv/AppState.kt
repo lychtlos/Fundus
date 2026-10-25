@@ -343,6 +343,36 @@ class AppState(ctx: Context) {
 
     init { loadShelves() }
 
+    /** Letzte Seite merken (Google TV kann Fundus im Hintergrund beenden). */
+    fun saveLast() {
+        val d = (stack.lastOrNull() as? Screen.Detail)?.title
+        val e = prefs.edit().putLong("lastAt", System.currentTimeMillis()).putString("lastTab", tab.name).putString("lastMed", med)
+        if (d != null) e.putString("lastDetail", org.json.JSONObject().put("m", d.m).put("id", d.id).put("title", d.title).put("year", d.year)
+            .put("poster", d.poster ?: "").put("backdrop", d.backdrop ?: "").put("why", d.why ?: "").put("ai", d.ai).toString())
+        else e.remove("lastDetail")
+        e.apply()
+    }
+
+    /** @return true, wenn eine frische letzte Seite wiederhergestellt wurde (dann ohne Startbildschirm). */
+    fun restoreLast(): Boolean {
+        val at = prefs.getLong("lastAt", 0L)
+        if (System.currentTimeMillis() - at > 2 * 3600_000L) return false
+        runCatching { tab = Tab.valueOf(prefs.getString("lastTab", "Discover")!!) }
+        med = prefs.getString("lastMed", "alle") ?: "alle"
+        prefs.getString("lastDetail", null)?.let { j ->
+            runCatching {
+                val o = org.json.JSONObject(j)
+                stack.add(Screen.Detail(Title(
+                    m = o.getString("m"), id = o.getInt("id"), title = o.getString("title"), year = o.optString("year"),
+                    poster = o.optString("poster").ifEmpty { null }, backdrop = o.optString("backdrop").ifEmpty { null },
+                    why = o.optString("why").ifEmpty { null }, ai = o.optBoolean("ai"),
+                )))
+            }
+        }
+        ready = true
+        return true
+    }
+
     fun logout() {
         Auth.logout(); user = null; fundus = FundusData(); releases = null; refresh()
     }

@@ -29,6 +29,14 @@ object Helper {
 
     const val TIVIMATE = "ar.tvplayer.tv"
 
+    /** kurzes Protokoll der letzten Helfer-Schritte (Einstellungen → Helfer), zur Fehlersuche */
+    val log = java.util.concurrent.ConcurrentLinkedDeque<String>()
+    fun log(msg: String) {
+        val t = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.GERMANY).format(java.util.Date())
+        log.addFirst("$t  $msg")
+        while (log.size > 25) log.pollLast()
+    }
+
     fun enabled(ctx: Context): Boolean {
         val list = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false
         val me = ComponentName(ctx.packageName, "de.lychtlos.fundustv.HelperService")

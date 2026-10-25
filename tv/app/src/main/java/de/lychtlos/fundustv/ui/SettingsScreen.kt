@@ -129,6 +129,12 @@ fun SettingsScreen(app: AppState) {
                 if (!on) Text("Einschalten: Bedienungshilfen → Fundus-Helfer → An", color = C.ink2, fontSize = 14.sp)
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(onClick = { de.lychtlos.fundustv.data.Helper.openSettings(ctx) }) { Text(if (on) "Bedienungshilfen öffnen" else "Helfer einschalten") }
+                val log = remember(app.toast) { de.lychtlos.fundustv.data.Helper.log.toList() }
+                if (log.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Letzte Schritte", color = C.ink2, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    log.take(12).forEach { Text(it, color = C.ink2, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) }
+                }
             }
         }
 

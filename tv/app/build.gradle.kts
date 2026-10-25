@@ -33,7 +33,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: kleinerer, schnellerer Code (Compose profitiert deutlich)
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("fundus")
         }
         debug {
@@ -68,4 +70,6 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("com.google.zxing:core:3.5.3")
+    // vorkompilierte Profile der Compose-Bibliotheken: flüssigeres Scrollen schon ab dem ersten Start
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
 }

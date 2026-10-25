@@ -114,7 +114,9 @@ object Tmdb {
         return d.optJSONArray("results")?.objects()?.mapNotNull { parse(t.m, it) } ?: emptyList()
     }
 
-    suspend fun details(t: Title): Details {
+    suspend fun details(t: Title): Details = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { detailsImpl(t) }
+
+    private suspend fun detailsImpl(t: Title): Details {
         val d = call("/${t.type}/${t.id}", mapOf(
             "append_to_response" to if (t.m == "film") "credits,videos,release_dates" else "aggregate_credits,credits,videos,content_ratings",
             "include_video_language" to "de,en,null",

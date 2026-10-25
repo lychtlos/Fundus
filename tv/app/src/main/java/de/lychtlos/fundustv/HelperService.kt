@@ -32,12 +32,30 @@ class HelperService : AccessibilityService() {
             else if (pkg == r.pkg) resend(r, now)
         }
         Helper.search?.let { s ->
-            if (now - s.at > 40_000) { Helper.search = null; Helper.note = "TiviMate: Suchfeld nicht gefunden" }
+            if (now - s.at > 40_000) { Helper.search = null; Helper.note = "Suchfeld nicht gefunden"; Helper.log("Abbruch: kein Suchfeld nach 40 s") }
             else if (pkg == s.pkg) search(s, now)
         }
     }
 
     override fun onInterrupt() {}
+
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        Helper.log("Helfer verbunden")
+        de.lychtlos.fundustv.data.HelperServiceBridge.starter = { main.post { begin() } }
+    }
+
+    override fun onDestroy() {
+        de.lychtlos.fundustv.data.HelperServiceBridge.starter = null
+        super.onDestroy()
+    }
+
+    /** Auftrag sofort zeitgesteuert abarbeiten (manche Apps senden kaum Ereignisse) */
+    private fun begin() {
+        val s = Helper.search ?: return
+        if (s.pkg == Helper.TIVIMATE) navigateTiviMate(s)
+        else listOf(2500L, 4000L, 5500L, 7500L, 10000L).forEach { d -> main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, d) }
+    }
 
     private fun resend(r: Helper.Resend, now: Long) {
         if (now - lastScan < 350) return
@@ -45,9 +63,10 @@ class HelperService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
         if (root.packageName?.toString() != r.pkg) return
         val text = collect(root)
-        if (PROFILE.containsMatchIn(text)) { r.sawProfile = true; return }
+        if (PROFILE.containsMatchIn(text)) { if (!r.sawProfile) Helper.log("Profilauswahl erkannt"); r.sawProfile = true; return }
         if (r.sawProfile) {
             Helper.resend = null
+            Helper.log("Profil gewählt → Titel nachgereicht")
             // kurz warten, bis die App nach der Auswahl bereit ist
             main.postDelayed({ runCatching { startActivity(Intent(r.intent).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }, 1500)
         }
@@ -58,17 +77,23 @@ class HelperService : AccessibilityService() {
      * Tastendrücke per Bedienungshilfe gibt es ab Android 13 (Google TV Streamer: Android 14).
      */
     private fun navigateTiviMate(s: Helper.Search) {
-        if (s.navPlanned || Build.VERSION.SDK_INT < 33) return
+        if (s.navPlanned) return
+        if (Build.VERSION.SDK_INT < 33) { Helper.log("Android zu alt für Tastendrücke (ab 13)"); return }
         s.navPlanned = true
         val keys = mutableListOf(GLOBAL_ACTION_DPAD_LEFT)
         repeat(10) { keys += GLOBAL_ACTION_DPAD_UP }
         keys += GLOBAL_ACTION_DPAD_CENTER
         keys.forEachIndexed { i, k ->
-            main.postDelayed({ if (Helper.search === s) performGlobalAction(k) }, 2500L + i * 220L)
+            main.postDelayed({
+                if (Helper.search !== s) return@postDelayed
+                val fg = rootInActiveWindow?.packageName?.toString()
+                val ok = performGlobalAction(k)
+                if (i == 0 || i == keys.lastIndex) Helper.log((if (i == 0) "Taste links" else "Taste OK") + (if (ok) "" else " FEHLGESCHLAGEN") + " (vorne: ${fg ?: "?"})")
+            }, 3500L + i * 260L)
         }
         // danach Suchfeld suchen, auch wenn die App keine Ereignisse schickt
         listOf(1200L, 2200L, 3500L, 5000L).forEach { d ->
-            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, 2500L + keys.size * 220L + d)
+            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, 3500L + keys.size * 260L + d)
         }
     }
 
@@ -86,7 +111,8 @@ class HelperService : AccessibilityService() {
             val ok = edit.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b)
             if (ok && Build.VERSION.SDK_INT >= 30) edit.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
             Helper.search = null
-            Helper.note = if (ok) "TiviMate: „${s.query}“ eingetragen" else "TiviMate: Suchfeld gefunden, Eintragen fehlgeschlagen"
+            Helper.log(if (ok) "Suchfeld gefunden, „${s.query}“ eingetragen" else "Suchfeld gefunden, Eintragen fehlgeschlagen")
+            Helper.note = if (ok) "„${s.query}“ eingetragen" else "Suchfeld gefunden, Eintragen fehlgeschlagen"
             return
         }
         // TiviMate wird über das Seitenmenü angesteuert; bei anderen Apps nach „Suche“ suchen
@@ -98,7 +124,8 @@ class HelperService : AccessibilityService() {
         } ?: return
         var c: AccessibilityNodeInfo? = btn
         while (c != null && !c.isClickable) c = c.parent
-        (c ?: btn).performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        val ok = (c ?: btn).performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        Helper.log("„Suche“ angetippt" + if (ok) "" else " (fehlgeschlagen)")
         s.clicks++
     }
 

@@ -120,35 +120,21 @@ fun PageTitle(t: String, sub: String? = null) {
 /** Gemeinsames Gerüst: Kopf, Infobereich des fokussierten Titels, Reihen nach Bereichen. */
 @Composable
 fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composable () -> Unit, empty: String) {
-    var hero by remember { mutableStateOf(mem.hero) }
-    var heroDetails by remember { mutableStateOf<Details?>(null) }
+    // Fokus-Infos in eigenem Zustand: ein Fokuswechsel zeichnet nur Infobereich und Hintergrund neu, nicht die Reihen
+    val hs = remember { HeroState(mem.hero) }
     val firstFocus = remember { FocusRequester() }
     val all = groups.flatMap { it.shelves }
-
-    LaunchedEffect(hero?.k) {
-        val h = hero ?: return@LaunchedEffect
-        heroDetails = null
-        delay(300)
-        heroDetails = runCatching { Tmdb.details(h) }.getOrNull()
-    }
+    HeroLoader(hs)
     val restore = mem.focusKey?.takeIf { fk -> all.any { s -> s.items.any { s.id + "|" + it.k == fk } } }
     LaunchedEffect(all.isNotEmpty(), restore, groups.firstOrNull()?.shelves?.firstOrNull()?.id) {
         if (all.isNotEmpty() && restore == null) { delay(120); runCatching { firstFocus.requestFocus() } }
     }
 
     Box(Modifier.fillMaxSize()) {
-        val backdrop = heroDetails?.title?.backdrop ?: hero?.backdrop
-        if (backdrop != null) {
-            AsyncImage(
-                model = backdrop, contentDescription = null, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd),
-            )
-            Box(Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd).background(Brush.horizontalGradient(listOf(C.bg, Color.Transparent), endX = 500f)))
-            Box(Modifier.fillMaxWidth().height(400.dp).background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 150f)))
-        }
+        HeroBackdrop(hs)
         Column(Modifier.fillMaxSize().padding(start = 40.dp)) {
             header()
-            Hero(hero, heroDetails)
+            HeroInfo(hs)
             if (all.isEmpty()) Message(empty)
             else LazyColumn(
                 state = mem.column,
@@ -164,7 +150,7 @@ fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composa
                                 shelf = s,
                                 state = mem.rows.getOrPut(s.id) { LazyListState() },
                                 onOpen = { t -> mem.focusKey = s.id + "|" + t.k; app.go(Screen.Detail(t)) },
-                                onFocused = { t -> hero = t; mem.hero = t },
+                                onFocused = { t -> hs.pending = t; mem.hero = t },
                                 restoreKey = restore,
                                 firstFocus = if (s == all.first()) firstFocus else null,
                             )
@@ -184,6 +170,52 @@ private fun GroupHeader(title: String, color: Color) {
         Text(title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = color)
     }
 }
+
+/** Zustand des Infobereichs (fokussierter Titel, nachgeladene Details). */
+class HeroState(start: Title?) {
+    var pending by mutableStateOf(start)
+    var title by mutableStateOf(start)
+    var details by mutableStateOf<Details?>(null)
+    var backdrop by mutableStateOf(start?.backdrop)
+}
+
+/** Übernimmt den Fokus erst nach kurzer Ruhe (schnelles Durchscrollen lädt nicht jedes Bild), dann Details. */
+@Composable
+private fun HeroLoader(hs: HeroState) {
+    val p = hs.pending
+    LaunchedEffect(p?.k) {
+        if (p == null) return@LaunchedEffect
+        delay(140)
+        hs.title = p; hs.details = null
+        p.backdrop?.let { hs.backdrop = it }
+        delay(260)
+        val d = runCatching { Tmdb.details(p) }.getOrNull()
+        if (hs.title?.k == p.k) { hs.details = d; d?.title?.backdrop?.let { hs.backdrop = it } }
+    }
+}
+
+@Composable
+private fun HeroBackdrop(hs: HeroState) {
+    val url = hs.backdrop ?: return
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // altes Bild bleibt stehen, bis das neue geladen ist (kein schwarzes Aufblitzen)
+    var prev by remember { mutableStateOf<String?>(null) }
+    val req = remember(url) {
+        coil.request.ImageRequest.Builder(ctx).data(url).crossfade(260).placeholderMemoryCacheKey(prev).build()
+    }
+    LaunchedEffect(url) { prev = url }
+    Box(Modifier.fillMaxWidth().height(400.dp)) {
+        AsyncImage(
+            model = req, contentDescription = null, contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd),
+        )
+        Box(Modifier.fillMaxWidth(0.66f).height(400.dp).align(Alignment.TopEnd).background(Brush.horizontalGradient(listOf(C.bg, Color.Transparent), endX = 500f)))
+        Box(Modifier.fillMaxWidth().height(400.dp).background(Brush.verticalGradient(listOf(Color.Transparent, C.bg), startY = 150f)))
+    }
+}
+
+@Composable
+private fun HeroInfo(hs: HeroState) = Hero(hs.title, hs.details)
 
 /** Infobereich oben: zeigt zum fokussierten Titel, warum er vorgeschlagen wird. */
 @Composable

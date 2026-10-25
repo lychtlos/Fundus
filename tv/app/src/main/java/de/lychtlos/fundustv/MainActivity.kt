@@ -48,13 +48,15 @@ class MainActivity : ComponentActivity() {
         coil.Coil.setImageLoader(
             coil.ImageLoader.Builder(applicationContext)
                 .crossfade(220)
-                .memoryCache { coil.memory.MemoryCache.Builder(applicationContext).maxSizePercent(0.30).build() }
+                .memoryCache { coil.memory.MemoryCache.Builder(applicationContext).maxSizePercent(0.20).build() }
                 .diskCache { coil.disk.DiskCache.Builder().directory(cacheDir.resolve("img")).maxSizeBytes(300L * 1024 * 1024).build() }
                 .respectCacheHeaders(false)
                 .build()
         )
         app = AppState(applicationContext)
         val mems = Memories()
+        // nach Neustart durch das System: letzte Seite wiederherstellen, ohne Startbildschirm
+        val restored = app.restoreLast()
 
         // solange die App sichtbar ist: alle 90 s prüfen, ob sich das Fundus-Konto geändert hat
         lifecycleScope.launch {
@@ -72,15 +74,13 @@ class MainActivity : ComponentActivity() {
                 // Zurück auf einer Unterseite des Menüs führt zu „Entdecken“
                 BackHandler(enabled = app.stack.size == 1 && app.tab != de.lychtlos.fundustv.Tab.Discover) { app.open(de.lychtlos.fundustv.Tab.Discover) }
                 Box(Modifier.fillMaxSize().background(C.bg)) {
-                    // weicher Übergang zwischen den Seiten
-                    androidx.compose.animation.Crossfade(targetState = app.screen, animationSpec = androidx.compose.animation.core.tween(240), label = "screen") { s ->
-                        when (s) {
-                            Screen.Main -> MainScreen(app, mems)
-                            Screen.Login -> LoginScreen(app)
-                            is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
-                        }
+                    // direkter Wechsel ohne Überblendung (die Überblendung zeigte kurz Schwarz)
+                    when (val s = app.screen) {
+                        Screen.Main -> MainScreen(app, mems)
+                        Screen.Login -> LoginScreen(app)
+                        is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
                     }
-                    var splash by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(true) }
+                    var splash by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(!restored) }
                     if (splash) Splash(ready = app.ready) { splash = false }
                     val msg = app.toast
                     LaunchedEffect(msg) { if (msg != null) { delay(3500); app.toast = null } }
@@ -101,8 +101,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        app.saveLast()
+    }
+
     override fun onResume() {
         super.onResume()
+        KeepAlive.start(this)
         de.lychtlos.fundustv.data.Helper.note?.let { app.say(it); de.lychtlos.fundustv.data.Helper.note = null }
         // erster Start oder lange Pause: alles neu laden; sonst nur prüfen, ob sich das Konto geändert hat
         if (System.currentTimeMillis() - app.lastFull > 30 * 60 * 1000L) app.refresh()

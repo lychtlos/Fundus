@@ -116,6 +116,8 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
      */
     fun titlePage(url: String): String {
         var u = url.replace(Regex("(?i)netflix\\.com/(?:[a-z-]+/)?watch/(\\d+)"), "netflix.com/title/$1")
+        // Paramount+: Folge → Serienseite (/shows/<name>/video/… → /shows/<name>/)
+        u = u.replace(Regex("(?i)(paramountplus\\.com/(?:[a-z]{2}/)?shows/)(?!video/)([^/]+)/video/.*$"), "$1$2/")
         val uri = Uri.parse(u)
         val drop = setOf("autoplay", "autostart", "play", "playback", "t", "trackId", "action")
         if (uri.queryParameterNames.any { it.lowercase() in drop }) {
@@ -126,12 +128,20 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         return u
     }
 
+    /** Link führt direkt zur Wiedergabe (z. B. …/video/…, …/watch/…) und nicht zur Titelseite */
+    fun isPlayback(url: String): Boolean = Regex("(?i)/(video|watch|play|player|episode|playback)s?(/|$)").containsMatchIn(Uri.parse(url).path ?: "")
+
     fun tivimateInstalled(ctx: Context) = installed(ctx, Helper.TIVIMATE)
 
     /** TiviMate starten; mit eingeschaltetem Helfer wird der Titel dort ins Suchfeld eingetragen. */
     fun tivimate(ctx: Context, t: Title): String? {
         if (!launchApp(ctx, Helper.TIVIMATE)) return "TiviMate ist nicht installiert"
-        if (Helper.enabled(ctx)) { Helper.search = Helper.Search(Helper.TIVIMATE, t.title); return null }
+        if (Helper.enabled(ctx)) {
+            Helper.search = Helper.Search(Helper.TIVIMATE, t.title)
+            Helper.log("TiviMate gestartet, Suche „${t.title}“")
+            if (!HelperServiceBridge.start()) Helper.log("Helfer-Dienst läuft nicht (in den Bedienungshilfen aus- und wieder einschalten)")
+            return null
+        }
         return "Helfer aus: in TiviMate selbst nach „${t.title}“ suchen"
     }
 
@@ -142,8 +152,11 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
             jwOffers(t).firstOrNull { (jp, _) -> jp.id == p.id || norm(jp.name) == norm(p.name) }?.second
         } catch (e: Exception) { null }
 
-        if (url != null && pkg != null) {
-            val i = Intent(Intent.ACTION_VIEW, Uri.parse(titlePage(url))).setPackage(pkg)
+        val page = url?.let { titlePage(it) }
+        if (page != null) Helper.log("${p.name}: Link " + page.take(90))
+        if (page != null && isPlayback(page)) Helper.log("${p.name}: Link würde abspielen → stattdessen App + Suche")
+        if (page != null && pkg != null && !isPlayback(page)) {
+            val i = Intent(Intent.ACTION_VIEW, Uri.parse(page)).setPackage(pkg)
             if (pkg == "com.netflix.ninja") i.putExtra("source", "30")
             if (tryStart(ctx, i)) {
                 if (Helper.enabled(ctx)) { Helper.resend = Helper.Resend(pkg, Intent(i)); return null }
@@ -152,9 +165,16 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         }
         if (pkg != null && launchApp(ctx, pkg)) {
             // kein direkter Link: der Helfer trägt den Titel in die Suche der App ein
-            if (Helper.enabled(ctx)) { Helper.search = Helper.Search(pkg, t.title); return null }
-            return "${t.title}: In ${p.name} selbst suchen (kein direkter Link)"
+            if (Helper.enabled(ctx)) { Helper.search = Helper.Search(pkg, t.title); HelperServiceBridge.start(); return null }
+            return "${t.title}: In ${p.name} selbst suchen"
         }
         return "${p.name} ist auf diesem Gerät nicht installiert."
     }
+}
+
+/** Verbindung zum laufenden Helfer-Dienst (gleicher Prozess). */
+object HelperServiceBridge {
+    @Volatile var starter: (() -> Unit)? = null
+    /** startet den Ablauf für Helper.search sofort (ohne auf Ereignisse der App zu warten) */
+    fun start(): Boolean = starter?.let { it(); true } ?: false
 }

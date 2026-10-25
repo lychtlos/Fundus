@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,20 +59,19 @@ class Memories {
 /** Hauptbildschirm: Menü links (wie die Leiste der Smartphone-App), Inhalt rechts. */
 @Composable
 fun MainScreen(app: AppState, mem: Memories) {
-    Row(Modifier.fillMaxSize().background(C.bg)) {
-        Rail(app)
-        Box(Modifier.weight(1f).fillMaxHeight()) {
-            androidx.compose.animation.Crossfade(targetState = app.tab, animationSpec = androidx.compose.animation.core.tween(200), label = "tab") { t ->
-                when (t) {
-                    Tab.Discover -> DiscoverScreen(app, mem.discover)
-                    Tab.Search -> SearchScreen(app, mem.search)
-                    Tab.Watch -> WatchScreen(app, mem.watch)
-                    Tab.News -> NewsScreen(app)
-                    Tab.Follow -> FollowScreen(app)
-                    Tab.Settings -> SettingsScreen(app)
-                }
+    // Menü liegt über dem Inhalt: beim Aufklappen wird der Inhalt nicht neu angeordnet (flüssiger)
+    Box(Modifier.fillMaxSize().background(C.bg)) {
+        Box(Modifier.fillMaxSize().padding(start = 84.dp)) {
+            when (app.tab) {
+                Tab.Discover -> DiscoverScreen(app, mem.discover)
+                Tab.Search -> SearchScreen(app, mem.search)
+                Tab.Watch -> WatchScreen(app, mem.watch)
+                Tab.News -> NewsScreen(app)
+                Tab.Follow -> FollowScreen(app)
+                Tab.Settings -> SettingsScreen(app)
             }
         }
+        Rail(app)
     }
 }
 
@@ -87,12 +87,12 @@ private fun iconOf(t: Tab): ImageVector = when (t) {
 @Composable
 private fun Rail(app: AppState) {
     var open by remember { mutableStateOf(false) }
-    val w by animateDpAsState(if (open) 250.dp else 84.dp, label = "rail")
+    val w by animateDpAsState(if (open) 250.dp else 84.dp, androidx.compose.animation.core.tween(160), label = "rail")
     Column(
         Modifier
             .width(w)
             .fillMaxHeight()
-            .background(if (open) C.surface else C.bg)
+            .background(if (open) Brush.horizontalGradient(listOf(C.surface, C.surface, C.surface.copy(alpha = 0.92f))) else Brush.horizontalGradient(listOf(C.bg, C.bg)))
             .onFocusChanged { open = it.hasFocus }
             .padding(vertical = 28.dp, horizontal = 14.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),

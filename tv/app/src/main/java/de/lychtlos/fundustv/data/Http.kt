@@ -41,8 +41,11 @@ object Http {
     suspend fun get(url: String, headers: Map<String, String> = emptyMap()): JSONObject {
         val b = Request.Builder().url(url).common(url)
         headers.forEach { (k, v) -> b.header(k, v) }
-        return JSONObject(exec(b.build()))
+        return parse(exec(b.build()))
     }
+
+    /** JSON im Hintergrund zerlegen, nicht auf dem Hauptthread (sonst ruckelt die Oberfläche) */
+    private suspend fun parse(body: String): JSONObject = withContext(Dispatchers.Default) { JSONObject(body) }
 
     suspend fun postForm(url: String, form: Map<String, String>): JSONObject {
         val fb = FormBody.Builder()

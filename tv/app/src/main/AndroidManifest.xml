@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -24,7 +26,6 @@
 
     <application
         android:allowBackup="false"
-        android:largeHeap="true"
         android:banner="@drawable/banner"
         android:icon="@mipmap/ic_launcher"
         android:label="Fundus"
@@ -41,6 +42,14 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- hält Fundus im Speicher, während eine Streaming-App läuft -->
+        <service
+            android:name=".KeepAlive"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Fundus beim Wechsel in Streaming-Apps im Speicher halten, damit die Rückkehr ohne Neustart gelingt" />
+        </service>
 
         <!-- Helfer: Titel nach Profilauswahl nachreichen, Suche in TiviMate eintragen (Bedienungshilfe, vom Nutzer einzuschalten) -->
         <service
