@@ -80,20 +80,33 @@ class HelperService : AccessibilityService() {
         if (s.navPlanned) return
         if (Build.VERSION.SDK_INT < 33) { Helper.log("Android zu alt für Tastendrücke (ab 13)"); return }
         s.navPlanned = true
-        val keys = mutableListOf(GLOBAL_ACTION_DPAD_LEFT)
-        repeat(10) { keys += GLOBAL_ACTION_DPAD_UP }
-        keys += GLOBAL_ACTION_DPAD_CENTER
-        keys.forEachIndexed { i, k ->
-            main.postDelayed({
-                if (Helper.search !== s) return@postDelayed
-                val fg = rootInActiveWindow?.packageName?.toString()
+        fun key(k: Int, at: Long, label: String? = null) = main.postDelayed({
+            if (Helper.search === s) {
                 val ok = performGlobalAction(k)
-                if (i == 0 || i == keys.lastIndex) Helper.log((if (i == 0) "Taste links" else "Taste OK") + (if (ok) "" else " FEHLGESCHLAGEN") + " (vorne: ${fg ?: "?"})")
-            }, 3500L + i * 260L)
-        }
+                if (label != null) Helper.log(label + if (ok) "" else " FEHLGESCHLAGEN")
+            }
+        }, at)
+        // TiviMate startet in der Senderliste: zweimal links bis ins Seitenmenü
+        key(GLOBAL_ACTION_DPAD_LEFT, 3500L, "Taste links")
+        key(GLOBAL_ACTION_DPAD_LEFT, 3900L, "Taste links")
+        main.postDelayed({
+            if (Helper.search !== s) return@postDelayed
+            // „Suchen“ direkt antippen; klappt das nicht: ganz nach oben und OK
+            val root = rootInActiveWindow
+            val item = root?.let { r -> find(r) { n -> SEARCH.matches((n.text ?: n.contentDescription ?: "").toString().trim()) } }
+            var c: AccessibilityNodeInfo? = item
+            while (c != null && !c.isClickable) c = c.parent
+            if (c != null && c.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                Helper.log("„Suchen“ im Menü gewählt")
+            } else {
+                Helper.log("„Suchen“ nicht direkt gefunden → nach oben + OK")
+                repeat(8) { i -> key(GLOBAL_ACTION_DPAD_UP, 200L + i * 180L) }
+                key(GLOBAL_ACTION_DPAD_CENTER, 200L + 8 * 180L + 250L, "Taste OK")
+            }
+        }, 4500L)
         // danach Suchfeld suchen, auch wenn die App keine Ereignisse schickt
-        listOf(1200L, 2200L, 3500L, 5000L).forEach { d ->
-            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, 3500L + keys.size * 260L + d)
+        listOf(6500L, 7500L, 8800L, 10500L, 13000L).forEach { d ->
+            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, d)
         }
     }
 
