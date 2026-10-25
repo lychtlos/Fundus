@@ -76,38 +76,42 @@ class HelperService : AccessibilityService() {
      * TiviMate: Seitenmenü links öffnen, ganz nach oben (Suche), auswählen.
      * Tastendrücke per Bedienungshilfe gibt es ab Android 13 (Google TV Streamer: Android 14).
      */
+    /**
+     * TiviMate: egal, wo die App gerade steht (Startseite, Serie, Film, Suche):
+     * Suchfeld da → Text ersetzen. „Suchen“ im Seitenmenü sichtbar → antippen.
+     * Sonst „Zurück“ (höchstens 4×) und neu prüfen.
+     */
     private fun navigateTiviMate(s: Helper.Search) {
         if (s.navPlanned) return
-        if (Build.VERSION.SDK_INT < 33) { Helper.log("Android zu alt für Tastendrücke (ab 13)"); return }
         s.navPlanned = true
-        fun key(k: Int, at: Long, label: String? = null) = main.postDelayed({
-            if (Helper.search === s) {
-                val ok = performGlobalAction(k)
-                if (label != null) Helper.log(label + if (ok) "" else " FEHLGESCHLAGEN")
-            }
-        }, at)
-        // TiviMate startet in der Senderliste: zweimal links bis ins Seitenmenü
-        key(GLOBAL_ACTION_DPAD_LEFT, 3500L, "Taste links")
-        key(GLOBAL_ACTION_DPAD_LEFT, 3900L, "Taste links")
-        main.postDelayed({
-            if (Helper.search !== s) return@postDelayed
-            // „Suchen“ direkt antippen; klappt das nicht: ganz nach oben und OK
-            val root = rootInActiveWindow
-            val item = root?.let { r -> find(r) { n -> SEARCH.matches((n.text ?: n.contentDescription ?: "").toString().trim()) } }
-            var c: AccessibilityNodeInfo? = item
-            while (c != null && !c.isClickable) c = c.parent
-            if (c != null && c.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                Helper.log("„Suchen“ im Menü gewählt")
-            } else {
-                Helper.log("„Suchen“ nicht direkt gefunden → nach oben + OK")
-                repeat(8) { i -> key(GLOBAL_ACTION_DPAD_UP, 200L + i * 180L) }
-                key(GLOBAL_ACTION_DPAD_CENTER, 200L + 8 * 180L + 250L, "Taste OK")
-            }
-        }, 4500L)
-        // danach Suchfeld suchen, auch wenn die App keine Ereignisse schickt
-        listOf(6500L, 7500L, 8800L, 10500L, 13000L).forEach { d ->
-            main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, d)
+        main.postDelayed({ tiviStep(s, 0) }, 3000L)
+    }
+
+    private fun tiviStep(s: Helper.Search, backs: Int) {
+        if (Helper.search !== s) return
+        val root = rootInActiveWindow
+        val fg = root?.packageName?.toString()
+        if (fg != s.pkg) {
+            if (backs > 0) { Helper.log("TiviMate nicht mehr vorne (${fg ?: "?"}) – Abbruch"); Helper.search = null }
+            else main.postDelayed({ tiviStep(s, 0) }, 700L)   // App startet noch
+            return
         }
+        // 1. Suchfeld sichtbar → eintragen (ersetzt vorherigen Text)
+        if (find(root) { it.isEditable && it.isVisibleToUser } != null) { s.last = 0; search(s, System.currentTimeMillis()); return }
+        // 2. „Suchen“ im Menü sichtbar → antippen
+        val item = find(root) { n -> n.isVisibleToUser && SEARCH.matches((n.text ?: n.contentDescription ?: "").toString().trim()) }
+        var c: AccessibilityNodeInfo? = item
+        while (c != null && !c.isClickable) c = c.parent
+        if (c != null && c.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+            Helper.log("„Suchen“ gewählt")
+            listOf(900L, 1800L, 3000L, 4500L).forEach { d -> main.postDelayed({ if (Helper.search === s) { s.last = 0; search(s, System.currentTimeMillis()) } }, d) }
+            return
+        }
+        // 3. eine Ebene zurück
+        if (backs >= 4) { Helper.log("„Suchen“ nach 4× Zurück nicht gefunden"); Helper.search = null; Helper.note = "TiviMate: Suche nicht gefunden"; return }
+        val ok = performGlobalAction(GLOBAL_ACTION_BACK)
+        Helper.log("Zurück" + if (ok) "" else " FEHLGESCHLAGEN")
+        main.postDelayed({ tiviStep(s, backs + 1) }, 800L)
     }
 
     private fun search(s: Helper.Search, now: Long) {
@@ -129,7 +133,7 @@ class HelperService : AccessibilityService() {
             return
         }
         // TiviMate wird über das Seitenmenü angesteuert; bei anderen Apps nach „Suche“ suchen
-        if (s.pkg == Helper.TIVIMATE && Build.VERSION.SDK_INT >= 33) return
+        if (s.pkg == Helper.TIVIMATE) return
         if (s.clicks >= 5) return
         val btn = find(root) { n ->
             val l = (n.text ?: n.contentDescription ?: "").toString().trim()
