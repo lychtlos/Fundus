@@ -98,8 +98,8 @@ object Tmdb {
         } ?: emptyList()
     }
 
-    suspend fun search(q: String): List<Title> {
-        val d = call("/search/multi", mapOf("query" to q, "include_adult" to "false"))
+    suspend fun search(q: String, page: Int = 1): List<Title> {
+        val d = call("/search/multi", mapOf("query" to q, "include_adult" to "false", "page" to page.toString()))
         return d.optJSONArray("results")?.objects()?.mapNotNull {
             when (it.optString("media_type")) {
                 "movie" -> parse("film", it)
