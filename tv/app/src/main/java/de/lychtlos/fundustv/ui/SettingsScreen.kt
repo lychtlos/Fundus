@@ -120,6 +120,18 @@ fun SettingsScreen(app: AppState) {
             }
         }
 
+        item { Section("Helfer") }
+        item {
+            val on = remember(app.toast) { de.lychtlos.fundustv.data.Helper.enabled(ctx) }
+            Column {
+                Text(if (on) "Eingeschaltet" else "Aus", color = if (on) C.accent else C.ink2, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Reicht den Titel nach der Profilauswahl nach, sucht ohne direkten Link in der App und trägt die Suche in TiviMate ein.", color = C.ink2, fontSize = 14.sp)
+                if (!on) Text("Einschalten: Bedienungshilfen → Fundus-Helfer → An", color = C.ink2, fontSize = 14.sp)
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(onClick = { de.lychtlos.fundustv.data.Helper.openSettings(ctx) }) { Text(if (on) "Bedienungshilfen öffnen" else "Helfer einschalten") }
+            }
+        }
+
         item { Section("Info") }
         item {
             Text(

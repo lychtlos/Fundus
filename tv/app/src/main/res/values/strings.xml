@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="helper_label">Fundus-Helfer</string>
+    <string name="helper_desc">Reicht den gewählten Titel nach der Profilauswahl der Streaming-App noch einmal nach und trägt Suchbegriffe in TiviMate ein. Liest nur Bildschirmtexte der App, die Fundus gerade geöffnet hat, und speichert nichts.</string>
+</resources>

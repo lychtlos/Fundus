@@ -188,6 +188,12 @@ fun DetailScreen(app: AppState, start: Title) {
                             else OutlinedButton(onClick = onClick, modifier = mod) { content() }
                         }
                     }
+                    if (Launcher.tivimateInstalled(ctx)) {
+                        OutlinedButton(
+                            onClick = { Launcher.tivimate(ctx, t)?.let { app.say(it) } },
+                            modifier = Modifier.padding(top = 10.dp).let { if (av != null && watchable.isEmpty()) it.focusRequester(firstBtn) else it },
+                        ) { Text("In TiviMate suchen", fontSize = 15.sp) }
+                    }
                     val rent = av?.rent.orEmpty().filter { r -> watchable.none { it.id == r.id } }
                     if (rent.isNotEmpty()) {
                         Text(
@@ -207,7 +213,7 @@ fun DetailScreen(app: AppState, start: Title) {
                     if (t.m == "serie") ActionButton(if (fol) Icons.Filled.PlayCircle else Icons.Outlined.PlayCircle, if (fol) "Verfolgt" else "Verfolgen", fol) { app.toggleFol(t) }
                     ActionButton(
                         if (watch) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, if (watch) "Gemerkt" else "Merken", watch,
-                        if (av != null && watchable.isEmpty()) Modifier.focusRequester(firstBtn) else Modifier,
+                        if (av != null && watchable.isEmpty() && !Launcher.tivimateInstalled(ctx)) Modifier.focusRequester(firstBtn) else Modifier,
                     ) {
                         app.setStatus(t, if (watch) null else "watch")
                     }

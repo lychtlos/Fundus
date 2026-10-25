@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        de.lychtlos.fundustv.data.Helper.note?.let { app.say(it); de.lychtlos.fundustv.data.Helper.note = null }
         // erster Start oder lange Pause: alles neu laden; sonst nur prüfen, ob sich das Konto geändert hat
         if (System.currentTimeMillis() - app.lastFull > 30 * 60 * 1000L) app.refresh()
         else app.checkRemote()

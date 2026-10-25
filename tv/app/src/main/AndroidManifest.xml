@@ -40,5 +40,17 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Helfer: Titel nach Profilauswahl nachreichen, Suche in TiviMate eintragen (Bedienungshilfe, vom Nutzer einzuschalten) -->
+        <service
+            android:name=".HelperService"
+            android:exported="true"
+            android:label="@string/helper_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/fundus_helper" />
+        </service>
     </application>
 </manifest>

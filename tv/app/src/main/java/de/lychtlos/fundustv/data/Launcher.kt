@@ -110,6 +110,15 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         return tryStart(ctx, i)
     }
 
+    fun tivimateInstalled(ctx: Context) = installed(ctx, Helper.TIVIMATE)
+
+    /** TiviMate starten; mit eingeschaltetem Helfer wird der Titel dort ins Suchfeld eingetragen. */
+    fun tivimate(ctx: Context, t: Title): String? {
+        if (!launchApp(ctx, Helper.TIVIMATE)) return "TiviMate ist nicht installiert"
+        if (Helper.enabled(ctx)) { Helper.search = Helper.Search(Helper.TIVIMATE, t.title); return null }
+        return "Helfer aus: in TiviMate selbst nach „${t.title}“ suchen"
+    }
+
     /** @return Hinweistext für die Oberfläche oder null bei Erfolg ohne Hinweis. */
     suspend fun open(ctx: Context, p: Provider, t: Title): String? {
         val pkg = packageFor(ctx, p)
@@ -120,10 +129,15 @@ query GetSuggestedTitles(${'$'}country: Country!, ${'$'}language: Language!, ${'
         if (url != null && pkg != null) {
             val i = Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(pkg)
             if (pkg == "com.netflix.ninja") i.putExtra("source", "30")
-            if (tryStart(ctx, i)) return "Profilauswahl? Danach zurück und nochmal drücken"
+            if (tryStart(ctx, i)) {
+                if (Helper.enabled(ctx)) { Helper.resend = Helper.Resend(pkg, Intent(i)); return null }
+                return "Profilauswahl? Danach zurück und nochmal drücken"
+            }
         }
         if (pkg != null && launchApp(ctx, pkg)) {
-            return "${t.title}: In ${p.name} bitte selbst suchen (kein direkter Link)."
+            // kein direkter Link: der Helfer trägt den Titel in die Suche der App ein
+            if (Helper.enabled(ctx)) { Helper.search = Helper.Search(pkg, t.title); return null }
+            return "${t.title}: In ${p.name} selbst suchen (kein direkter Link)"
         }
         return "${p.name} ist auf diesem Gerät nicht installiert."
     }
