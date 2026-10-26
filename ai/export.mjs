@@ -81,10 +81,14 @@ for(const [uid,u] of users){
   if(items.some(x=>['musik','buch'].includes(x.m)&&['love','like'].includes(x.status)))tasks.push('radar');
   tasks.push('gametext');
   if(WEEKDAY==='Sun'||process.env.FORCE_DIGEST==='1')tasks.push('digest');
+  /* Bedarf: je Bereich sollen rund 20 offene KI-Tipps bereitstehen; was fehlt, wird heute nachgeliefert (3 bis 10) */
+  const openTips={};((u.ai||{}).tips||[]).forEach(t=>{if(t&&!(u.items||{})[t.k])openTips[t.m]=(openTips[t.m]||0)+1});
+  const need={};MEDIA.forEach(m=>{const has=items.some(x=>x.m===m&&['like','love','watch'].includes(x.status));need[m]=has?Math.max(3,Math.min(10,20-(openTips[m]||0))):0});
+  p+='\n# Bedarf heute (Anzahl neuer Tipps je Bereich)\n'+MEDIA.filter(m=>need[m]).map(m=>LBL[m]+': '+need[m]).join(' · ')+'\n';
   p+='\n# Aufgaben heute\n'+tasks.join(', ')+'\n';
   if(conc&&conc.bands.length)p+='Konzerte: Wohnort '+conc.city+' ('+conc.plz+'), Umkreis '+conc.radius+' km. Bands heute: '+conc.bands.join(' · ')+'\n';
   fs.writeFileSync(dir+'/profile.md',p);
-  writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist,gtx:Object.keys((u.ai||{}).gtx||{})},provNames:pv,tasks,conc,week:WEEK});
+  writeJ(dir+'/user.json',{uid,items:u.items||{},settings:st,ai:{hist,gtx:Object.keys((u.ai||{}).gtx||{})},provNames:pv,tasks,conc,week:WEEK,need});
   index.push({uid,dir,likes:pos.length});
   console.log('::notice title=Profil::'+dir+': '+pos.length+' positive Bewertungen, '+p.length+' Zeichen');
 }

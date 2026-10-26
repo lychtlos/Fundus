@@ -4,7 +4,7 @@
    Fehlen Tipps, bleiben die alten stehen und es wird ein Fehlerhinweis gesetzt (Exit-Code 1). */
 import fs from 'node:fs';
 import {readJ,passRules,knownSets,norm,isPopular,dd,km,geocode,WEEK} from './lib.mjs';
-const MAX=30,PER_M=5,HIST=300,KEEP_M=20;
+const MAX=60,HIST=400,KEEP_M=25;
 const index=readJ('work/index.json',[]);
 const err=process.env.AI_ERROR||'';
 const model=process.env.AI_MODEL||'';
@@ -25,7 +25,7 @@ for(const {uid,dir} of index){
     const c=checked[t&&t.k];if(!c||c.st!=='ok'||seen.has(t.k))continue;
     const it=c.item;if(keys.has(it.k)||names.has(it.m+'|'+norm(it.title))||!passRules(user,it))continue;
     const why=String(t.why||'').replace(/\s+/g,' ').trim().slice(0,180);if(!why)continue;
-    if((per[it.m]||0)>=PER_M)continue;
+    const lim=Math.min(10,(user.need&&user.need[it.m])||5);if((per[it.m]||0)>=lim)continue;
     const isPop=isPopular(it,c.extra||{});if(isPop&&pop+1>Math.ceil(MAX/3))continue;
     if(isPop)pop++;per[it.m]=(per[it.m]||0)+1;
     seen.add(it.k);tips.push({...it,why,...(c.extra&&c.extra.mine&&c.extra.mine.length?{prov:c.extra.mine[0]}:{})});
