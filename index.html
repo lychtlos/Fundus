@@ -1093,7 +1093,20 @@ const adapter=m=>MODE==='demo'?DEMO[m]:(needsKey(m)?null:LIVE[m]);
 
 /* ---------- Verfügbarkeit ---------- */
 const baseName=n=>String(n).replace(/\s+(Amazon|Apple TV|Apple TV Plus|Prime Video|Roku Premium)?\s*Channels?$/i,'').replace(/\s+(Standard|Basic)?\s*with Ads$/i,'').replace(/\s+mit Werbung$/i,'').replace(/\s+Free$/i,'').replace(/\+$/,' Plus').trim();
-async function availFetch(it){if(AV.has(it.k))return AV.get(it.k);const A=adapter(it.m);if(!A||!A.avail)return null;let av=null;try{av=await A.avail(it)}catch(e){av=null}AV.set(it.k,av);return av}
+/* Serien: Anzahl Staffeln und Status (läuft/abgeschlossen), 3 Tage zwischengespeichert */
+const TVI=new Map();
+async function tvInfo(it){
+  if(it.m!=='serie'||TVI.has(it.k))return;const id=String(it.id);
+  try{
+    const d=id.startsWith('tvm')
+      ?await cached('tvi:'+id,async()=>{await GATE.tvm();const r=await fetchT('https://api.tvmaze.com/shows/'+id.slice(3)+'?embed=seasons');const j=await r.json();return {n:((j._embedded||{}).seasons||[]).filter(x=>x.premiereDate).length,st:j.status==='Ended'?'end':j.status==='Running'?'run':''}},3*24*H)
+      :await cached('tvi:'+id,async()=>{const j=await tmdb('/tv/'+id);return {n:j.number_of_seasons||0,st:/Ended|Canceled/.test(j.status||'')?(j.status==='Canceled'?'cancel':'end'):/Returning|In Production|Planned/.test(j.status||'')?'run':''}},3*24*H);
+    TVI.set(it.k,d);
+  }catch(e){TVI.set(it.k,null)}
+}
+function tviText(it){const d=TVI.get(it.k);if(!d)return '';
+  return [d.n?d.n+(d.n===1?' Staffel':' Staffeln'):'',d.st==='end'?'abgeschlossen':d.st==='cancel'?'abgesetzt':d.st==='run'?'läuft weiter':''].filter(Boolean).join(', ')}
+async function availFetch(it){if(it.m==='serie'&&!TVI.has(it.k))await tvInfo(it);if(AV.has(it.k))return AV.get(it.k);const A=adapter(it.m);if(!A||!A.avail)return null;let av=null;try{av=await A.avail(it)}catch(e){av=null}AV.set(it.k,av);return av}
 function avSum(it){
   const av=AV.get(it.k);if(!av)return null;const mine=new Set(S.settings.providers);
   const seen=new Set();const hits=[];
@@ -1378,7 +1391,7 @@ function card(it,mode,reasons,isAi){
   }else if(mode==='watch'){
     acts=(it.m==='serie'?(()=>{const fo=isFolK(it.k);return '<button class="btn'+(fo?' pri':'')+'" data-act="folTog" data-k="'+k+'" aria-pressed="'+fo+'" title="Neue Folgen per Push">'+IC.play+(fo?'Verfolgt':'Verfolgen')+'</button>'})():'')+'<button class="btn lovebtn" data-act="love" data-k="'+k+'" title="Lieblingstitel, zählt doppelt">'+IC.heart+'</button><button class="btn" data-act="like" data-k="'+k+'">'+IC.up+'Gefällt mir</button><button class="btn" data-act="dislike" data-k="'+k+'">'+IC.down+'Nicht gut</button><button class="btn ghost" data-act="unset" data-k="'+k+'">Entfernen</button>'+lnk;
   }
-  return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+(it.sub||hasRating(it)?'<p class="sub">'+esc(it.sub||'')+(it.sub&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':'')+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
+  return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+((()=>{const sb=[it.sub,it.m==='serie'?tviText(it):''].filter(Boolean).join(' · ');return sb||hasRating(it)?'<p class="sub">'+esc(sb)+(sb&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':''})())+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
 const secT=m=>'<span class="h-ic">'+IC['m_'+m]+'</span>'+MEDIA[m].label;
 const emptyIc=ic=>'<span class="empty-ic">'+IC[ic]+'</span>';
