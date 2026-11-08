@@ -217,7 +217,8 @@ details.rated .base{margin-top:8px}
 
 .rel{display:flex;flex-direction:column;gap:6px}
 .ev .ev-art{align-self:center}.ev .t .tbtn{font:inherit;color:inherit;text-align:left;padding:0;border:0;background:none;cursor:pointer;overflow-wrap:anywhere}
-.ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.fol-key{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--accent);vertical-align:-1px}
+.ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.medf{display:flex;align-items:center;gap:8px;margin:-4px 0 12px;padding:6px 6px 6px 12px;border-radius:999px;background:var(--surface);width:max-content;max-width:100%;font-weight:600}.medf .h-ic svg{width:18px;height:18px}.medf .btn{padding:4px;min-height:0}
+.fol-key{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--accent);vertical-align:-1px}
 .follow-box{border:2px solid var(--accent);border-radius:calc(var(--r) + 6px);padding:12px;margin:6px 0 18px;background:color-mix(in srgb,var(--accent) 6%,transparent)}.follow-box .subh{margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px}.follow-box .subh svg{width:18px;height:18px}.follow-box .rel{gap:8px}.fol-none{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ev{display:grid;grid-template-columns:48px 70px 1fr auto;gap:14px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px}
 .ev .art{width:48px}
@@ -1393,6 +1394,11 @@ function card(it,mode,reasons,isAi){
   }
   return '<article class="card f-'+it.m+'" data-card="'+k+'"><button class="art-btn" data-act="detail" data-k="'+k+'" aria-label="Details zu '+esc(it.title)+'">'+art(it)+'</button><div class="body">'+meta+'<h3 class="t"><button class="tbtn" data-act="detail" data-k="'+k+'">'+esc(it.title)+'</button></h3>'+((()=>{const sb=[it.sub,it.m==='serie'?tviText(it):''].filter(Boolean).join(' · ');return sb||hasRating(it)?'<p class="sub">'+esc(sb)+(sb&&hasRating(it)?' · ':'')+ratingHtml(it)+'</p>':''})())+why+avHtml(it)+'<div class="acts">'+acts+'</div></div></article>';
 }
+const FILTER_TABS=['entdecken','merkliste','neu','suchen'];
+/* Hinweis oben, wenn ein Bereich gefiltert ist (nicht auf Entdecken, dort ist es die Überschrift) */
+function medFilterBar(){if(ui.med==='alle'||!MEDIA[ui.med])return '';
+  return '<div class="medf"><span class="h-ic">'+IC['m_'+ui.med]+'</span><span>'+MEDIA[ui.med].label+'</span><button class="btn ghost" data-act="medAll" aria-label="Filter aufheben">'+IC.x+'</button></div>'}
+const medOk=m=>ui.med==='alle'||m===ui.med;
 const secT=m=>'<span class="h-ic">'+IC['m_'+m]+'</span>'+MEDIA[m].label;
 const emptyIc=ic=>'<span class="empty-ic">'+IC[ic]+'</span>';
 const skel=n=>'<div class="grid">'+Array.from({length:n},()=>'<div class="skel"></div>').join('')+'</div>';
@@ -1504,7 +1510,7 @@ function discoverBlock(m,n){
 }
 const VIEWS={
   suchen(){
-    const G=ui.gs||(ui.gs={q:'',m:'alle',res:{},busy:{},err:{}});
+    const G=ui.gs||(ui.gs={q:'',m:ui.med||'alle',res:{},busy:{},err:{}});
     let h='<div class="head"><h2>Suchen</h2></div>'+wishBox()+
       '<div class="gs-bar"><span class="gs-ic">'+IC.search+'</span><input class="inp" id="gsQ" type="search" placeholder="Suchen" value="'+esc(G.q)+'" autocomplete="off" enterkeyhint="search"></div>'+
       '<div class="chips" style="margin-top:12px">'+[['alle','Alle']].concat(gsMedia().map(m=>[m,MEDIA[m].label])).map(([id,l])=>'<button class="chip" data-act="gsMed" data-m="'+id+'" aria-pressed="'+(G.m===id)+'">'+(id==='alle'?'':'<span class="chip-ic">'+IC['m_'+id]+'</span>')+l+'</button>').join('')+'</div>';
@@ -1525,13 +1531,14 @@ const VIEWS={
   },
   merkliste(){
     let h='<div class="head"><h2>Merkliste</h2><button class="btn pri" data-act="addOpen">'+IC.plus+'Hinzufügen</button></div>';
-    const all=Object.values(S.items).filter(x=>x.status==='watch');
-    if(!all.length)return h+'<div class="empty">'+emptyIc('mark')+'<p>Merkliste leer.</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
+    h+=medFilterBar();
+    const all=Object.values(S.items).filter(x=>x.status==='watch'&&medOk(x.m));
+    if(!all.length)return h+'<div class="empty">'+emptyIc('mark')+'<p>'+(ui.med==='alle'?'Merkliste leer.':'Keine '+MEDIA[ui.med].label+' auf der Merkliste.')+'</p><button class="btn pri" data-act="addOpen">'+IC.plus+'Titel hinzufügen</button><button class="btn" data-act="tab" data-tab="entdecken">Zu den Vorschlägen</button></div>';
     const W=MODE==='live'&&S.settings.ai!==false&&S.ai&&S.ai.order||{};
     const nf=folList().length;
     if(nf)h+='<p class="note" style="margin-top:-6px">'+IC.play.replace('<svg','<svg style="width:14px;height:14px;vertical-align:-2px"')+' <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">'+nf+' verfolgt</button></p>';
     if(Object.keys(W).length)h+='<p class="note">✦ Nach Passung sortiert</p>';
-    ORDER.forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
+    ORDER.filter(medOk).forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
       if(isFS(m)&&!needsKey(m))ensureAv(m,its.filter(i=>!AV.has(i.k)));
       h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3></div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
     return h;
@@ -1542,13 +1549,14 @@ const VIEWS={
       if(!c||Date.now()-c.at>6*H)queueMicrotask(checkReleases)}
     const R0=ui.rel;
     if(R0.busy)h+='<div class="relprog"><div class="bar"><i style="width:'+(R0.total?Math.round(100*R0.done/R0.total):0)+'%"></i></div><span class="note">'+R0.done+' / '+R0.total+(R0.fresh&&R0.fresh.length?' · '+R0.fresh.length+' Treffer':'')+'</span></div>';
-    const L0=R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list;
+    h+=medFilterBar();
+    const L0=(R0.busy&&R0.fresh&&R0.fresh.length?R0.fresh:R0.list).filter(e=>medOk(e.m||(e.src&&e.src.m)));
     const isFol=e=>isFolK(e.src.k);
     const nf=folList().length;
-    if(nf)h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Verfolgt ('+nf+')</button></p>';
+    if(nf&&medOk('serie'))h+='<p class="note" style="margin:0 0 8px"><span class="fol-key"></span> <button class="tbtn" data-act="drTab" data-tab="verfolgt" style="text-decoration:underline">Verfolgt ('+nf+')</button></p>';
     const recent=e=>{const d=String(e.date);return d.length===4?+d>=new Date().getFullYear():dayDiff(d)>=-84};
     const L=dedupeEv(L0.filter(recent)).concat(aiConcertEv(L0));
-    const RD=aiRadar();
+    const RD=aiRadar().filter(e=>medOk(e.m));
     if(!L.length&&!RD.length)return h+(R0.busy?skel(3):'<div class="empty">'+emptyIc('bell')+'<p>Nichts Neues.</p></div>')+relNote();
     if(R0.busy&&!(R0.fresh&&R0.fresh.length))h+='<p class="note" style="margin:0 0 8px">Letzter Stand</p>';
     const conc=L.filter(e=>e.kind==='konzert').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -1557,7 +1565,7 @@ const VIEWS={
     if(past.length)h+='<div class="subh">Erschienen</div><div class="rel">'+past.map(evRow).join('')+'</div>';
     if(RD.length)h+='<div class="subh">✦ Release-Radar</div><div class="rel">'+RD.map(evRow).join('')+'</div>';
     if(conc.length)h+='<div class="subh">Konzerte</div><div class="rel">'+conc.map(evRow).join('')+'</div>';
-    else if(MODE==='live'&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte: PLZ in den Einstellungen.</p>';
+    else if(MODE==='live'&&medOk('musik')&&!concertsOn()&&byStatus('musik','like').length)h+='<p class="note" style="margin-top:14px">Konzerte: PLZ in den Einstellungen.</p>';
     if(!R0.busy&&(R0.errors||R0.skipped))h+='<p class="note" style="margin-top:10px">'+[R0.errors?R0.errors+' nicht geprüft':'',R0.skipped?R0.skipped+' übersprungen':''].filter(Boolean).join(' · ')+'</p>';
     return h+relNote();
   },
@@ -2113,8 +2121,12 @@ const ACT={
   addToggle(b){const k=b.dataset.k;const it=REG.get(k);if(!it)return;const on=S.items[k]&&S.items[k].status==='watch';if(!on)flyToWatch(b.querySelector('.art'));else buzz(8);setStatus(it,on?null:'watch');addUpdate()},
   drawer(){openDrawer()},
   drawerClose(){closeDrawer()},
-  drMed(b){const m=b.dataset.m;ui.drawer=false;doCloseDrawer();ui.knownOpen=null;ui.tab='entdecken';ui.med=m;
+  drMed(b){const m=b.dataset.m;ui.drawer=false;doCloseDrawer();ui.knownOpen=null;
+    /* Seitenleiste = Filter: auf Merkliste, Neu und Suchen bleibt die Seite, sonst Entdecken */
+    if(!FILTER_TABS.includes(ui.tab))ui.tab='entdecken';ui.med=m;
+    if(ui.tab==='suchen'&&ui.gs){ui.gs.m=m}
     try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
+  medAll(){ui.med='alle';if(ui.tab==='suchen'&&ui.gs)ui.gs.m='alle';render()},
   drTab(b){const t=b.dataset.tab;ui.drawer=false;doCloseDrawer();ui.tab=t;try{history.replaceState({tab:ui.tab,med:ui.med},'')}catch(e){}render();window.scrollTo({top:0})},
   gsMed(b){const G=ui.gs;if(!G)return;G.m=b.dataset.m;render();gsSearch();window.scrollTo({top:0})},
   gsSet(b){const k=b.dataset.k,st=b.dataset.st;const it=REG.get(k)||S.items[k];if(!it)return;const cur=S.items[k]&&S.items[k].status;if(cur!==st){if(st==='love')heartPop(b);else if(st==='watch')flyToWatch(srcArt(b));else buzz(8)}else buzz(8);
@@ -2196,7 +2208,7 @@ function renderDrawer(){
   const el=$('#drawer');if(!ui.drawer)return;
   const cnt=m=>byStatus(m,'like').length;
   const item=(act,attrs,ic,label,on,extra)=>'<button class="dr-i'+(on?' on':'')+'" data-act="'+act+'" '+attrs+'><span class="dr-ic">'+ic+'</span><span class="dr-l">'+label+'</span>'+(extra||'')+'</button>';
-  const isE=ui.tab==='entdecken';
+  const isE=FILTER_TABS.includes(ui.tab);
   const av=SYNC.user&&SYNC.user.photo?'<img class="tab-av" src="'+esc(SYNC.user.photo)+'" alt="" referrerpolicy="no-referrer">':IC.user;
   el.innerHTML='<div class="dr-panel" role="dialog" aria-modal="true" aria-label="Menü"><div class="dr-h"><span class="dr-brand">Fundus<i>.</i></span><button class="btn ghost" data-act="drawerClose" aria-label="Menü schließen">'+IC.x+'</button></div>'+
     '<nav class="dr-sec" aria-label="Bereiche"><span class="st dr-cap">Bereiche</span>'+
