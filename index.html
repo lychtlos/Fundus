@@ -1540,7 +1540,7 @@ const VIEWS={
     if(Object.keys(W).length)h+='<p class="note">✦ Nach Passung sortiert</p>';
     ORDER.filter(medOk).forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
       if(isFS(m)&&!needsKey(m))ensureAv(m,its.filter(i=>!AV.has(i.k)));
-      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3></div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3>'+(m==='musik'&&MODE==='live'?'<button class="btn" data-act="ytOpen">'+IC.play+'Playlist</button>':'')+'</div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
     return h;
   },
   neu(){
@@ -1819,6 +1819,88 @@ function openSheet(m){
   el.hidden=false;document.body.style.overflow='hidden';navPush({ov:'sheet'});
 }
 function closeSheet(){if(history.state&&history.state.ov==='sheet'){history.back();return}doCloseSheet()}
+/* ---------- YouTube-Music-Playlist aus Bands der Merkliste ----------
+   Anmeldung mit Google (Zusatzrecht „YouTube verwalten“), dann über die YouTube-Schnittstelle (Tageskontingent 10.000 Einheiten:
+   Suche 100, Song einfügen 50 → etwa 600 je Band mit 10 Songs, also rund 15 Bands pro Tag). */
+let YT_TOKEN=null,YT_EXP=0;
+async function ytToken(){
+  if(YT_TOKEN&&Date.now()<YT_EXP)return YT_TOKEN;
+  const fb=await fbInit();const pr=new fb.A.GoogleAuthProvider();pr.addScope('https://www.googleapis.com/auth/youtube');
+  if(SYNC.user&&SYNC.user.email)pr.setCustomParameters({login_hint:SYNC.user.email});
+  const r=await fb.A.signInWithPopup(fb.auth,pr);const c=fb.A.GoogleAuthProvider.credentialFromResult(r);
+  if(!c||!c.accessToken)throw new Error('Kein YouTube-Zugriff erhalten');
+  YT_TOKEN=c.accessToken;YT_EXP=Date.now()+50*60e3;return YT_TOKEN;
+}
+async function yt(path,params={},body){
+  const u=new URL('https://www.googleapis.com/youtube/v3/'+path);Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetchT(u,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+await ytToken(),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined},20000);
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const re=((j.error||{}).errors||[])[0]||{};const why=re.reason||'';
+    if(r.status===401){YT_TOKEN=null}
+    throw new Error(why==='quotaExceeded'?'Tageskontingent von YouTube erreicht – Rest morgen':why==='accessNotConfigured'||/not been used|disabled/.test((j.error||{}).message||'')?'YouTube-Schnittstelle im Google-Projekt nicht aktiviert':why==='youtubeSignupRequired'?'Für dieses Google-Konto gibt es noch keinen YouTube-Kanal':((j.error||{}).message||('Fehler '+r.status)))}
+  return j;
+}
+const ytNorm=s=>String(s||'').toLowerCase().replace(/\(.*?\)|\[.*?\]/g,'').replace(/official|video|audio|lyrics?|remaster(ed)?|hd|4k/g,'').replace(/[^a-z0-9äöüß]/g,'');
+/* Video-IDs je Band: Top-Songs (Deezer-Liste, eine YouTube-Suche) oder neuestes Album (Album-Playlist von YouTube Music) */
+async function ytBandIds(b,mode,n){
+  if(mode==='album'){
+    const al=await deezer('/artist/'+b.id+'/albums?limit=50',6*H).catch(()=>null);
+    const albums=((al&&al.data)||[]).filter(a=>a.record_type==='album'||a.record_type==='ep').sort((x,y)=>String(y.release_date).localeCompare(String(x.release_date)));
+    const a=albums[0];if(!a)return {ids:[],what:'kein Album gefunden'};
+    const sr=await yt('search',{part:'snippet',type:'playlist',q:b.title+' '+a.title,maxResults:'5'});
+    const pl=(sr.items||[]).find(x=>ytNorm(x.snippet.title).includes(ytNorm(a.title)))||null;
+    if(pl){const li=await yt('playlistItems',{part:'contentDetails',playlistId:pl.id.playlistId,maxResults:'50'});
+      const ids=(li.items||[]).map(x=>x.contentDetails.videoId).filter(Boolean);if(ids.length)return {ids,what:'„'+a.title+'“ ('+String(a.release_date).slice(0,4)+')'}}
+    const vr=await yt('search',{part:'snippet',type:'video',videoCategoryId:'10',q:b.title+' '+a.title,maxResults:'15'});
+    return {ids:(vr.items||[]).map(x=>x.id.videoId).slice(0,n),what:'„'+a.title+'“ (einzelne Songs)'};
+  }
+  const top=await deezer('/artist/'+b.id+'/top?limit='+n,6*H).catch(()=>null);const titles=((top&&top.data)||[]).map(t=>t.title);
+  const vr=await yt('search',{part:'snippet',type:'video',videoCategoryId:'10',q:b.title,maxResults:'50'});
+  const vids=(vr.items||[]).filter(x=>ytNorm(x.snippet.title+x.snippet.channelTitle).includes(ytNorm(b.title))||ytNorm(x.snippet.channelTitle).includes(ytNorm(b.title)));
+  const ids=[];const used=new Set();
+  titles.forEach(t=>{const v=vids.find(x=>!used.has(x.id.videoId)&&ytNorm(x.snippet.title).includes(ytNorm(t)));if(v){used.add(v.id.videoId);ids.push(v.id.videoId)}});
+  vids.forEach(v=>{if(ids.length<n&&!used.has(v.id.videoId)){used.add(v.id.videoId);ids.push(v.id.videoId)}});
+  return {ids:ids.slice(0,n),what:ids.length+' Top-Songs'};
+}
+function ytOpen(){
+  const bands=byStatus('musik','watch').filter(b=>/^\d+$/.test(String(b.id)));
+  const d=new Date();ui.yt={bands,sel:new Set(bands.map(b=>b.k)),mode:'top',busy:false,log:[],url:null,
+    name:'Fundus – Merkliste '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})};
+  ytRender();navPush({ov:'sheet'});
+}
+function ytRender(){
+  const Y=ui.yt,el=$('#sheet');const nm=($('#ytName')||{}).value;if(nm!=null)Y.name=nm;
+  const est=Y.sel.size*(Y.mode==='album'?101+12*50:100+10*50);
+  el.innerHTML='<div class="sheet-panel f-musik" role="dialog" aria-modal="true" aria-label="YouTube-Music-Playlist"><div class="sheet-h"><div class="row"><h2>Playlist für YouTube Music</h2><button class="btn ghost" data-act="closePick" aria-label="Schließen">'+IC.x+'</button></div>'+
+    '<input class="inp" id="ytName" value="'+esc(Y.name)+'" maxlength="120"'+(Y.busy?' disabled':'')+'>'+
+    '<div class="chips" style="margin-top:10px">'+[['top','Top 10 je Band'],['album','Neuestes Album']].map(([v,l])=>'<button class="chip" data-act="ytMode" data-v="'+v+'" aria-pressed="'+(Y.mode===v)+'"'+(Y.busy?' disabled':'')+'>'+l+'</button>').join('')+'</div></div>'+
+    '<div class="sheet-b">'+(Y.url?'<p><a class="btn pri" href="'+esc(Y.url)+'" target="_blank" rel="noopener">'+IC.play+'In YouTube Music öffnen</a></p>':'')+
+    (Y.log.length?'<div class="note" style="margin-bottom:12px">'+Y.log.map(esc).join('<br>')+'</div>':'')+
+    (Y.bands.length?'<button class="tbtn" data-act="ytAll" style="text-decoration:underline;margin-bottom:8px"'+(Y.busy?' disabled':'')+'>'+(Y.sel.size===Y.bands.length?'Keine':'Alle')+' auswählen</button>'+
+      '<div class="tiles">'+Y.bands.map(b=>'<button class="tile f-musik" data-act="ytTog" data-k="'+esc(b.k)+'" aria-pressed="'+Y.sel.has(b.k)+'"'+(Y.busy?' disabled':'')+'>'+art(b)+'<span class="tick">'+IC.check+'</span><span class="tt">'+esc(b.title)+'</span></button>').join('')+'</div>'
+      :'<p class="pk-hint">Keine Bands auf der Merkliste.</p>')+'</div>'+
+    '<div class="sheet-f"><span class="note">'+Y.sel.size+' Bands'+(Y.sel.size?' · ca. '+Math.round(est/100)+' % des Tageskontingents':'')+'</span><button class="btn pri" data-act="ytGo"'+(Y.busy||!Y.sel.size?' disabled':'')+'>'+(Y.busy?'Erstelle …':'Erstellen')+'</button></div></div>';
+  el.hidden=false;document.body.style.overflow='hidden';
+}
+async function ytGo(){
+  const Y=ui.yt;if(Y.busy)return;Y.name=(($('#ytName')||{}).value||Y.name).trim()||'Fundus';Y.busy=true;Y.log=[];Y.url=null;ytRender();
+  const say=t=>{Y.log.push(t);ytRender()};
+  try{
+    await ytToken();
+    const pl=await yt('playlists',{part:'snippet,status'},{snippet:{title:Y.name,description:'Erstellt mit Fundus aus der Merkliste ('+(Y.mode==='album'?'neuestes Album':'Top-Songs')+' je Band)'},status:{privacyStatus:'private'}});
+    Y.url='https://music.youtube.com/playlist?list='+pl.id;say('Playlist angelegt');
+    let total=0;
+    for(const b of Y.bands.filter(b=>Y.sel.has(b.k))){
+      let r;try{r=await ytBandIds(b,Y.mode,10)}catch(e){say(b.title+': '+e.message);if(/Kontingent/.test(e.message))break;continue}
+      let n=0;
+      for(const id of r.ids){try{await yt('playlistItems',{part:'snippet'},{snippet:{playlistId:pl.id,resourceId:{kind:'youtube#video',videoId:id}}});n++;total++}
+        catch(e){if(/Kontingent/.test(e.message)){say(b.title+': '+e.message);throw e}}}
+      say(b.title+': '+n+' Songs · '+r.what);
+    }
+    say('Fertig: '+total+' Songs');
+  }catch(e){if(!/popup-closed|cancelled-popup/.test(e.code||''))say('Abbruch: '+(e.message||e))}
+  Y.busy=false;ytRender();
+}
 /* ---------- Heute Abend: ein Vorschlag, passend zu Zeit, Lust und Diensten ---------- */
 const TN_DEF={type:'beide',max:0,minR:7,mine:true,genre:''};
 function tnOpts(){return {...TN_DEF,...(S.settings.tonight||{})}}
@@ -2075,6 +2157,11 @@ const ACT={
   reshuffle(b){const m=b.dataset.m;resetPools(m==='alle'?null:[m]);render()},
   pick(b){openSheet(b.dataset.m)},
   closePick(){closeSheet()},
+  ytOpen(){ytOpen()},
+  ytTog(b){const k=b.dataset.k;const Y=ui.yt;if(Y.sel.has(k))Y.sel.delete(k);else Y.sel.add(k);ytRender()},
+  ytAll(){const Y=ui.yt;Y.sel=Y.sel.size===Y.bands.length?new Set():new Set(Y.bands.map(b=>b.k));ytRender()},
+  ytMode(b){ui.yt.mode=b.dataset.v;ytRender()},
+  ytGo(){ytGo()},
   detail(b){const a=srcArt(b);const k=b.dataset.k;
     if(a&&!ui.detail){a.style.viewTransitionName='dtc';const t=vt(()=>{a.style.viewTransitionName='';openDetail(k)});if(t)t.finished.finally(clearVt);else a.style.viewTransitionName=''}else openDetail(k)},
   closeDetail(){closeDetail()},
