@@ -1843,14 +1843,14 @@ async function yt(path,params={},body){
 /* keine Live-Mitschnitte, ganzen Alben/EPs, Cover, Reaktionen o. Ä. */
 const YT_BAD=/\b(live|konzert|concert|full\s*(album|ep|show|set)|komplettes album|whole album|compilation|reaction|react|interview|cover|tutorial|playthrough|drum cam|bass cover|guitar cover|wacken|hellfest|festival|bootleg|rehearsal|probe|documentary|doku|trailer|teaser|making of|unboxing)\b/i;
 const ytDur=d=>{const m=String(d||'').match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);return m?(+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0):0};
-/* Länge und Titel prüfen (1 Einheit je 50 Videos): 1–12 Minuten, kein Live/Album */
+/* Länge und Titel prüfen (1 Einheit je 50 Videos): 1–20 Minuten, kein Live/Album */
 async function ytClean(ids,band){
   const ok=new Set();
   for(let i=0;i<ids.length;i+=50){
     const r=await yt('videos',{part:'contentDetails,snippet',id:ids.slice(i,i+50).join(','),maxResults:'50'});
     (r.items||[]).forEach(v=>{const d=ytDur(v.contentDetails.duration);const t=v.snippet.title||'';
       const tNoBand=t.replace(new RegExp(band.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),'');
-      if(d>=60&&d<=720&&!YT_BAD.test(tNoBand))ok.add(v.id)});
+      if(d>=60&&d<=1200&&!YT_BAD.test(tNoBand))ok.add(v.id)});
   }
   return ids.filter(id=>ok.has(id));
 }
@@ -1893,7 +1893,7 @@ function ytRender(){
     '<input class="inp" id="ytName" value="'+esc(Y.name)+'" maxlength="120"'+(Y.busy?' disabled':'')+'>'+
     '<div class="chips" style="margin-top:10px">'+[['top','Top-Songs'],['album','Neuestes Album']].map(([v,l])=>'<button class="chip" data-act="ytMode" data-v="'+v+'" aria-pressed="'+(Y.mode===v)+'"'+(Y.busy?' disabled':'')+'>'+l+'</button>').join('')+'</div>'+
     (Y.mode==='top'?'<div class="chips" style="margin-top:8px"><span class="note" style="align-self:center">Songs je Band:</span>'+[3,4,5,10].map(v=>'<button class="chip" data-act="ytN" data-v="'+v+'" aria-pressed="'+(Y.n===v)+'"'+(Y.busy?' disabled':'')+'>'+v+'</button>').join('')+'</div>':'')+
-    '<p class="note" style="margin:8px 0 0">Ohne Live-Aufnahmen, ganze Alben (über 12 Min.) und Cover</p></div>'+
+    '<p class="note" style="margin:8px 0 0">Ohne Live-Aufnahmen, ganze Alben (über 20 Min.) und Cover</p></div>'+
     '<div class="sheet-b">'+(Y.url?'<p><a class="btn pri" href="'+esc(Y.url)+'" target="_blank" rel="noopener">'+IC.play+'In YouTube Music öffnen</a></p>':'')+
     (Y.log.length?'<div class="note" style="margin-bottom:12px">'+Y.log.map(esc).join('<br>')+'</div>':'')+
     (Y.bands.length?'<button class="tbtn" data-act="ytAll" style="text-decoration:underline;margin-bottom:8px"'+(Y.busy?' disabled':'')+'>'+(Y.sel.size===Y.bands.length?'Keine':'Alle')+' auswählen</button>'+
