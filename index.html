@@ -1872,27 +1872,36 @@ async function ytBandIds(b,mode,n){
   const titles=((top&&top.data)||[]).map(t=>t.title).filter(t=>!YT_BAD.test(t)).slice(0,n*2);
   const vr=await yt('search',{part:'snippet',type:'video',videoCategoryId:'10',q:b.title,maxResults:'50'});
   let vids=(vr.items||[]).filter(x=>(ytNorm(x.snippet.title+x.snippet.channelTitle).includes(ytNorm(b.title))||ytNorm(x.snippet.channelTitle).includes(ytNorm(b.title)))&&!YT_BAD.test(x.snippet.title.replace(new RegExp(b.title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),'')));
+  /* Topic-Kanal der Band (offizielle Studio-Aufnahmen, wie in YouTube Music): aus den Treffern oder per Kanalsuche */
+  const isTopic=x=>ytNorm(x.snippet.channelTitle)===ytNorm(b.title+' - Topic')||ytNorm(x.snippet.channelTitle)===ytNorm(b.title)+'topic';
+  let topicId=((vr.items||[]).find(isTopic)||{snippet:{}}).snippet.channelId;
+  if(!topicId){const cr=await yt('search',{part:'snippet',type:'channel',q:b.title+' - Topic',maxResults:'5'});
+    const c=(cr.items||[]).find(x=>ytNorm(x.snippet.channelTitle||x.snippet.title)===ytNorm(b.title+' - Topic'));topicId=c&&c.snippet.channelId}
+  let topicVids=[];
+  if(topicId){const tr=await yt('search',{part:'snippet',type:'video',channelId:topicId,order:'viewCount',maxResults:'50'});
+    topicVids=(tr.items||[]).filter(x=>!YT_BAD.test(x.snippet.title))}
+  /* nur Topic-Songs, wenn genug da sind; sonst mit den übrigen Treffern auffüllen */
+  vids=topicVids.length>=n?topicVids:topicVids.concat(vids.filter(x=>!topicVids.some(t=>t.id.videoId===x.id.videoId)).sort((x,y)=>(isTopic(y)?1:0)-(isTopic(x)?1:0)));
   const good=new Set(await ytClean(vids.map(x=>x.id.videoId),b.title));
-  /* offizielle Song-Versionen („- Topic“) zuerst */
-  vids=vids.filter(x=>good.has(x.id.videoId)).sort((x,y)=>(/ - Topic$/.test(y.snippet.channelTitle)?1:0)-(/ - Topic$/.test(x.snippet.channelTitle)?1:0));
+  vids=vids.filter(x=>good.has(x.id.videoId));
   const ids=[];const used=new Set();
   titles.forEach(t=>{const v=vids.find(x=>!used.has(x.id.videoId)&&ytNorm(x.snippet.title).includes(ytNorm(t)));if(v){used.add(v.id.videoId);ids.push(v.id.videoId)}});
   vids.forEach(v=>{if(ids.length<n&&!used.has(v.id.videoId)){used.add(v.id.videoId);ids.push(v.id.videoId)}});
-  return {ids:ids.slice(0,n),what:Math.min(n,ids.length)+' Top-Songs'};
+  return {ids:ids.slice(0,n),what:Math.min(n,ids.length)+' Top-Songs'+(topicId?' (offizielle Versionen)':' (kein offizieller Kanal gefunden)')};
 }
 function ytOpen(){
   const bands=byStatus('musik','watch').filter(b=>/^\d+$/.test(String(b.id)));
-  const d=new Date();ui.yt={bands,sel:new Set(bands.map(b=>b.k)),mode:'top',n:4,busy:false,log:[],url:null,
+  const d=new Date();ui.yt={bands,sel:new Set(bands.map(b=>b.k)),mode:'top',n:6,busy:false,log:[],url:null,
     name:'Fundus – Merkliste '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})};
   ytRender();navPush({ov:'sheet'});
 }
 function ytRender(){
   const Y=ui.yt,el=$('#sheet');const nm=($('#ytName')||{}).value;if(nm!=null)Y.name=nm;
-  const est=Y.sel.size*(Y.mode==='album'?102+10*50:101+Y.n*50);
+  const est=Y.sel.size*(Y.mode==='album'?102+10*50:201+Y.n*50);
   el.innerHTML='<div class="sheet-panel f-musik" role="dialog" aria-modal="true" aria-label="YouTube-Music-Playlist"><div class="sheet-h"><div class="row"><h2>Playlist für YouTube Music</h2><button class="btn ghost" data-act="closePick" aria-label="Schließen">'+IC.x+'</button></div>'+
     '<input class="inp" id="ytName" value="'+esc(Y.name)+'" maxlength="120"'+(Y.busy?' disabled':'')+'>'+
     '<div class="chips" style="margin-top:10px">'+[['top','Top-Songs'],['album','Neuestes Album']].map(([v,l])=>'<button class="chip" data-act="ytMode" data-v="'+v+'" aria-pressed="'+(Y.mode===v)+'"'+(Y.busy?' disabled':'')+'>'+l+'</button>').join('')+'</div>'+
-    (Y.mode==='top'?'<div class="chips" style="margin-top:8px"><span class="note" style="align-self:center">Songs je Band:</span>'+[3,4,5,10].map(v=>'<button class="chip" data-act="ytN" data-v="'+v+'" aria-pressed="'+(Y.n===v)+'"'+(Y.busy?' disabled':'')+'>'+v+'</button>').join('')+'</div>':'')+
+    (Y.mode==='top'?'<div class="chips" style="margin-top:8px"><span class="note" style="align-self:center">Songs je Band:</span>'+[3,4,6,10].map(v=>'<button class="chip" data-act="ytN" data-v="'+v+'" aria-pressed="'+(Y.n===v)+'"'+(Y.busy?' disabled':'')+'>'+v+'</button>').join('')+'</div>':'')+
     '<p class="note" style="margin:8px 0 0">Ohne Live-Aufnahmen, ganze Alben (über 20 Min.) und Cover</p></div>'+
     '<div class="sheet-b">'+(Y.url?'<p><a class="btn pri" href="'+esc(Y.url)+'" target="_blank" rel="noopener">'+IC.play+'In YouTube Music öffnen</a></p>':'')+
     (Y.log.length?'<div class="note" style="margin-bottom:12px">'+Y.log.map(esc).join('<br>')+'</div>':'')+
