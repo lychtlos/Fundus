@@ -1540,7 +1540,7 @@ const VIEWS={
     if(Object.keys(W).length)h+='<p class="note">✦ Nach Passung sortiert</p>';
     ORDER.filter(medOk).forEach(m=>{const its=byStatus(m,'watch').sort((a,b)=>((W[a.k]||{}).r??999)-((W[b.k]||{}).r??999));if(!its.length)return;
       if(isFS(m)&&!needsKey(m))ensureAv(m,its.filter(i=>!AV.has(i.k)));
-      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3>'+(m==='musik'&&MODE==='live'?'<button class="btn" data-act="ytOpen">'+IC.play+'Playlist</button>':'')+'</div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
+      h+='<section class="sec f-'+m+'"><div class="sec-h"><h3>'+secT(m)+' <span class="st">'+its.length+'</span></h3>'+(m==='musik'&&MODE==='live'&&ytAllowed()?'<button class="btn" data-act="ytOpen">'+IC.play+'Playlist</button>':'')+'</div><div class="grid">'+its.map(i=>card(i,'watch',W[i.k]&&W[i.k].why?[W[i.k].why]:null,!!W[i.k])).join('')+'</div></section>'});
     return h;
   },
   neu(){
@@ -1822,6 +1822,9 @@ function closeSheet(){if(history.state&&history.state.ov==='sheet'){history.back
 /* ---------- YouTube-Music-Playlist aus Bands der Merkliste ----------
    Anmeldung mit Google (Zusatzrecht „YouTube verwalten“), dann über die YouTube-Schnittstelle (Tageskontingent 10.000 Einheiten:
    Suche 100, Song einfügen 50 → etwa 600 je Band mit 10 Songs, also rund 15 Bands pro Tag). */
+/* Playlist-Funktion nur für freigeschaltete Konten (Testnutzer im Google-Projekt, gemeinsames Tageskontingent) */
+const YT_UIDS=['GTcgRzkLuRZ7NXkmfO8cCKyP5Zq1'];
+const ytAllowed=()=>!!(SYNC.user&&YT_UIDS.includes(SYNC.user.uid));
 let YT_TOKEN=null,YT_EXP=0;
 async function ytToken(){
   if(YT_TOKEN&&Date.now()<YT_EXP)return YT_TOKEN;
@@ -1890,6 +1893,7 @@ async function ytBandIds(b,mode,n){
   return {ids:ids.slice(0,n),what:Math.min(n,ids.length)+' Top-Songs'+(topicId?' (offizielle Versionen)':' (kein offizieller Kanal gefunden)')};
 }
 function ytOpen(){
+  if(!ytAllowed())return;
   const bands=byStatus('musik','watch').filter(b=>/^\d+$/.test(String(b.id)));
   const d=new Date();ui.yt={bands,sel:new Set(bands.map(b=>b.k)),mode:'top',n:6,busy:false,log:[],url:null,
     name:'Fundus – Merkliste '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})};
