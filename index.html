@@ -730,8 +730,10 @@ const epCode=(s,e)=>'S'+String(s).padStart(2,'0')+'E'+String(e).padStart(2,'0');
 async function tvmazeEvents(it){
   const d=await tvmaze('/singlesearch/shows?q='+encodeURIComponent(it.title)+'&embed[]=nextepisode&embed[]=previousepisode');
   const em=d&&d._embedded||{};const ev=[];const nx=em.nextepisode,pv=em.previousepisode;
-  if(nx&&nx.airdate)ev.push({id:it.k+':'+epCode(nx.season,nx.number),date:nx.airdate,label:nx.number===1?'Neue Staffel startet':'Nächste Folge',text:epCode(nx.season,nx.number)+(nx.name?' · '+nx.name:''),via:'TVmaze'});
-  if(pv&&pv.airdate&&dayDiff(pv.airdate)>=-45)ev.push({id:it.k+':'+epCode(pv.season,pv.number),date:pv.airdate,label:pv.number===1?'Neue Staffel gestartet':'Neue Folge erschienen',text:epCode(pv.season,pv.number)+(pv.name?' · '+pv.name:''),via:'TVmaze'});
+  let ss=[];if(d&&d.id&&(nx||pv))try{ss=await tvmaze('/shows/'+d.id+'/seasons')||[]}catch(e){}
+  const cnt=sn=>{const x=ss.find(q=>q.number===sn);return x&&x.episodeOrder?' · '+x.episodeOrder+' Folgen':''};
+  if(nx&&nx.airdate)ev.push({id:it.k+':'+epCode(nx.season,nx.number),date:nx.airdate,label:nx.number===1?'Neue Staffel startet':'Nächste Folge',text:epCode(nx.season,nx.number)+(nx.name?' · '+nx.name:'')+cnt(nx.season),via:'TVmaze'});
+  if(pv&&pv.airdate&&dayDiff(pv.airdate)>=-45)ev.push({id:it.k+':'+epCode(pv.season,pv.number),date:pv.airdate,label:pv.number===1?'Neue Staffel gestartet':'Neue Folge erschienen',text:epCode(pv.season,pv.number)+(pv.name?' · '+pv.name:'')+cnt(pv.season),via:'TVmaze'});
   return ev;
 }
 /* Genre-Schärfung: TMDB vergibt Genres großzügig (Forrest Gump = Komödie, Drama, Romanze).
@@ -769,8 +771,10 @@ function tmdbAdapter(m){
       if(tvOnly(it))return tvmazeEvents(it);
       let d;try{d=await tmdb('/tv/'+it.id)}catch(e){return tvmazeEvents(it)}
       const ev=[];const nx=d.next_episode_to_air,ls=d.last_episode_to_air;
-      if(nx&&nx.air_date)ev.push({id:it.k+':'+epCode(nx.season_number,nx.episode_number),date:nx.air_date,label:nx.episode_number===1?'Neue Staffel startet':'Nächste Folge',text:epCode(nx.season_number,nx.episode_number)+(nx.name?' · '+nx.name:'')});
-      if(ls&&ls.air_date&&dayDiff(ls.air_date)>=-45)ev.push({id:it.k+':'+epCode(ls.season_number,ls.episode_number),date:ls.air_date,label:ls.episode_number===1?'Neue Staffel gestartet':'Neue Folge erschienen',text:epCode(ls.season_number,ls.episode_number)+(ls.name?' · '+ls.name:'')});
+      /* Folgen der Staffel insgesamt */
+      const cnt=sn=>{const x=(d.seasons||[]).find(q=>q.season_number===sn);return x&&x.episode_count?' · '+x.episode_count+' Folgen':''};
+      if(nx&&nx.air_date)ev.push({id:it.k+':'+epCode(nx.season_number,nx.episode_number),date:nx.air_date,label:nx.episode_number===1?'Neue Staffel startet':'Nächste Folge',text:epCode(nx.season_number,nx.episode_number)+(nx.name?' · '+nx.name:'')+cnt(nx.season_number)});
+      if(ls&&ls.air_date&&dayDiff(ls.air_date)>=-45)ev.push({id:it.k+':'+epCode(ls.season_number,ls.episode_number),date:ls.air_date,label:ls.episode_number===1?'Neue Staffel gestartet':'Neue Folge erschienen',text:epCode(ls.season_number,ls.episode_number)+(ls.name?' · '+ls.name:'')+cnt(ls.season_number)});
       /* TMDB kennt den nächsten Termin oft spät: bei laufenden Serien TVmaze fragen */
       if(!nx&&/Returning|Production|Planned/i.test(d.status||'')){try{(await tvmazeEvents(it)).filter(e=>dayDiff(e.date)>0).forEach(e=>ev.push(e))}catch(e){}}
       if(S.items[it.k]){const old=S.items[it.k].seasons;if(old&&d.number_of_seasons>old)ev.push({id:it.k+':season'+d.number_of_seasons,date:today(),label:'Neue Staffel eingetragen',text:'Staffel '+d.number_of_seasons});S.items[it.k].seasons=d.number_of_seasons}
