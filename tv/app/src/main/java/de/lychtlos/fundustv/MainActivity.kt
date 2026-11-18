@@ -69,6 +69,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val base = androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * app.uiScale, base.fontScale)) {
             FundusTheme {
                 BackHandler(enabled = app.stack.size > 1) { app.back() }
                 // Zurück auf einer Unterseite des Menüs führt zu „Entdecken“
@@ -98,6 +100,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
             }
         }
     }

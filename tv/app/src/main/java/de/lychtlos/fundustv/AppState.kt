@@ -63,6 +63,11 @@ class AppState(ctx: Context) {
     /** erster Ladevorgang fertig (Splash darf verschwinden) */
     var ready by mutableStateOf(false)
 
+    /** Größe der Oberfläche (Einstellungen → Darstellung): 0.8 / 0.9 / 1.0 */
+    var uiScale by mutableStateOf(prefs.getFloat("uiScale", 1f))
+        private set
+    fun setScale(v: Float) { uiScale = v; prefs.edit().putFloat("uiScale", v).apply() }
+
     /** Gewählte Dienste: mit Konto aus Fundus, sonst lokal auf dem Gerät. */
     val providers: List<Int>
         get() = if (provVersion >= 0 && user != null) fundus.providers

@@ -136,7 +136,7 @@ fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composa
             header()
             HeroInfo(hs)
             if (all.isEmpty()) Message(empty)
-            else LazyColumn(
+            else androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides MinimalScroll) { LazyColumn(
                 state = mem.column,
                 contentPadding = PaddingValues(bottom = 60.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -162,7 +162,7 @@ fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composa
                         }
                     }
                 }
-            }
+            } }
         }
     }
 }

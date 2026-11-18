@@ -121,7 +121,7 @@ fun DetailScreen(app: AppState, start: Title) {
         }
 
         // Google TV scrollt fokussierte Elemente standardmäßig weit nach oben (Handlung wäre abgeschnitten) – hier nur so weit wie nötig
-        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides MinimalScroll) {
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides de.lychtlos.fundustv.ui.MinimalScroll) {
         LazyColumn(
             state = list,
             contentPadding = PaddingValues(start = 56.dp, top = 48.dp, bottom = 48.dp),
@@ -283,7 +283,7 @@ fun DetailScreen(app: AppState, start: Title) {
                 item {
                     Column {
                         Text("Ähnlich", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.padding(top = 12.dp, bottom = 10.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(end = 56.dp, top = 10.dp, bottom = 10.dp)) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(start = 6.dp, end = 56.dp, top = 12.dp, bottom = 16.dp)) {
                             items(similar, key = { it.k }) { s ->
                                 PosterCard(s, onClick = { app.go(Screen.Detail(s)) }, width = 130.dp)
                             }
@@ -296,19 +296,6 @@ fun DetailScreen(app: AppState, start: Title) {
     }
 }
 
-/** Scrollt nur so weit, dass das fokussierte Element sichtbar ist. */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-private val MinimalScroll = object : androidx.compose.foundation.gestures.BringIntoViewSpec {
-    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-        val end = offset + size
-        return when {
-            offset >= 0 && end <= containerSize -> 0f
-            offset < 0 && end > containerSize -> 0f
-            offset < 0 -> offset
-            else -> minOf(end - containerSize, offset)
-        }
-    }
-}
 
 /** Trailer in der YouTube-App des Fernsehers öffnen. */
 private fun openTrailer(ctx: android.content.Context, key: String): String? {

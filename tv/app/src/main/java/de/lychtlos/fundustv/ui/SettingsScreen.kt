@@ -120,6 +120,19 @@ fun SettingsScreen(app: AppState) {
             }
         }
 
+        item { Section("Darstellung") }
+        item {
+            Column {
+                Text("Größe der Oberfläche", color = C.ink, fontSize = 16.sp)
+                Spacer(Modifier.height(8.dp))
+                androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                    listOf(0.75f to "Klein", 0.85f to "Mittel", 0.95f to "Groß", 1f to "Sehr groß").forEach { (v, l) ->
+                        androidx.tv.material3.FilterChip(selected = kotlin.math.abs(app.uiScale - v) < 0.01f, onClick = { app.setScale(v) }) { Text(l, fontSize = 15.sp) }
+                    }
+                }
+            }
+        }
+
         item { Section("Helfer") }
         item {
             val on = remember(app.toast) { de.lychtlos.fundustv.data.Helper.enabled(ctx) }

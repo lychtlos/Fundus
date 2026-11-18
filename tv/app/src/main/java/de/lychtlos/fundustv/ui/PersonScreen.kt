@@ -55,14 +55,14 @@ fun PersonScreen(app: AppState, p: Screen.Person) {
         Browse(
             app = app, mem = mem, groups = groups.orEmpty(),
             header = {
-                Row(Modifier.padding(start = 8.dp, top = 22.dp, end = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(64.dp).clip(CircleShape).background(C.surface2)) {
+                Row(Modifier.padding(start = 8.dp, top = 14.dp, end = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(C.surface2)) {
                         if (p.photo != null) AsyncImage(p.photo, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     }
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text(p.name, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = C.ink)
-                        if (info.isNotEmpty()) Text(info.replace("\n", "  ·  "), fontSize = 13.sp, color = C.ink2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(p.name, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = C.ink)
+                        if (info.isNotEmpty()) Text(info.replace("\n", "  ·  "), fontSize = 13.sp, color = C.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             },
