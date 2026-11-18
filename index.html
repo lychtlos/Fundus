@@ -217,7 +217,8 @@ details.rated .base{margin-top:8px}
 
 .rel{display:flex;flex-direction:column;gap:6px}
 .ev .ev-art{align-self:center}.ev .t .tbtn{font:inherit;color:inherit;text-align:left;padding:0;border:0;background:none;cursor:pointer;overflow-wrap:anywhere}
-.ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.medf{display:flex;align-items:center;gap:8px;margin:-4px 0 12px;padding:6px 6px 6px 12px;border-radius:999px;background:var(--surface);width:max-content;max-width:100%;font-weight:600}.medf .h-ic svg{width:18px;height:18px}.medf .btn{padding:4px;min-height:0}
+.ev.is-fol{box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}.fol-tag{display:inline-flex;align-items:center;gap:3px;color:var(--accent);font-weight:700}.fol-tag svg{width:12px;height:12px}.pp-b{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:center}.pp-b:hover img,.pp-b:focus-visible img{outline:2px solid var(--accent);outline-offset:2px}
+.medf{display:flex;align-items:center;gap:8px;margin:-4px 0 12px;padding:6px 6px 6px 12px;border-radius:999px;background:var(--surface);width:max-content;max-width:100%;font-weight:600}.medf .h-ic svg{width:18px;height:18px}.medf .btn{padding:4px;min-height:0}
 .fol-key{display:inline-block;width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 2px var(--accent);vertical-align:-1px}
 .follow-box{border:2px solid var(--accent);border-radius:calc(var(--r) + 6px);padding:12px;margin:6px 0 18px;background:color-mix(in srgb,var(--accent) 6%,transparent)}.follow-box .subh{margin-top:0;color:var(--accent);display:flex;align-items:center;gap:6px}.follow-box .subh svg{width:18px;height:18px}.follow-box .rel{gap:8px}.fol-none{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .ev{display:grid;grid-template-columns:48px 70px 1fr auto;gap:14px;align-items:center;background:var(--surface);border-radius:var(--r);padding:10px 14px}
@@ -1228,10 +1229,10 @@ async function detailFor0(it){
       const dir=(d.credits&&d.credits.crew||[]).filter(c=>c.job==='Director').map(c=>c.name);
       let ds={};try{ds=await movieDatesDE(it.id)}catch(e){}
       facts.push(['Erschienen',fmtDate(d.release_date)],['Kinostart (DE)',fmtDate(ds[3])],['Digital (DE)',fmtDate(ds[4])],['Laufzeit',fmtMin(d.runtime)],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Regie',dir.join(', ')],['Originaltitel',d.original_title!==d.title?d.original_title:'']);
-      people=(d.credits&&d.credits.cast||[]).slice(0,12).map(c=>({name:c.name,role:c.character,img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
+      people=(d.credits&&d.credits.cast||[]).slice(0,12).map(c=>({pid:c.id,name:c.name,role:c.character,img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
     }else{
       facts.push(['Erstausstrahlung',fmtDate(d.first_air_date)],['Status',TV_STATUS[d.status]||d.status],['Umfang',(d.number_of_seasons||0)+' Staffeln · '+(d.number_of_episodes||0)+' Folgen'],['Sender',(d.networks||[]).map(n=>n.name).join(', ')],['Idee',(d.created_by||[]).map(c=>c.name).join(', ')],['Genres',(d.genres||[]).map(g=>g.name).join(', ')],['Originaltitel',d.original_name!==d.name?d.original_name:'']);
-      people=(d.aggregate_credits&&d.aggregate_credits.cast||[]).slice(0,12).map(c=>({name:c.name,role:(c.roles&&c.roles[0]&&c.roles[0].character)||'',img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
+      people=(d.aggregate_credits&&d.aggregate_credits.cast||[]).slice(0,12).map(c=>({pid:c.id,name:c.name,role:(c.roles&&c.roles[0]&&c.roles[0].character)||'',img:c.profile_path?TMDB_IMG+'w185'+c.profile_path:null}));
       const rows=[];const nx=d.next_episode_to_air,ls=d.last_episode_to_air;
       if(nx)rows.push({t:'Nächste: '+epCode(nx.season_number,nx.episode_number)+(nx.name?' · '+nx.name:''),sub:fmtDate(nx.air_date)});
       if(ls)rows.push({t:'Zuletzt: '+epCode(ls.season_number,ls.episode_number)+(ls.name?' · '+ls.name:''),sub:fmtDate(ls.air_date)});
@@ -1274,7 +1275,11 @@ async function detailFor0(it){
     sections:[{title:'Neueste Folgen',rows:eps.map(e=>({t:e.trackName,sub:fmtDate(e.releaseDate)+(e.trackTimeMillis?' · '+Math.round(e.trackTimeMillis/60000)+' Min.':''),desc:stripHtml(e.description||e.shortDescription||'').slice(0,220)}))}]};
 }
 function openDetail(k){
-  const it=REG.get(k)||S.items[k];if(!it)return;ui.detail={k,it,data:null,err:''};
+  const it=REG.get(k)||S.items[k];if(!it)return;
+  /* aus einer Detail- oder Personenseite heraus: vorige Seite merken, Zurück führt dorthin */
+  const nested=ui.detail&&history.state&&history.state.ov==='detail';
+  if(nested){(ui.dstack=ui.dstack||[]).push(ui.detail);navPush({ov:'detail',d:ui.dstack.length})}
+  ui.detail={k,it,data:null,err:''};
   if(isFS(it.m)&&!AV.has(it.k))availFetch(it).then(()=>{if(ui.detail&&ui.detail.k===k)renderDetail()});
   if(!(history.state&&history.state.ov==='detail'))navPush({ov:'detail'});
   renderDetail();
@@ -1284,7 +1289,7 @@ function closeDetail(){if(history.state&&history.state.ov==='detail'){history.ba
 function doCloseDetail(){const k=ui.detail&&ui.detail.k;
   if(k&&!ui.tonight&&document.startViewTransition&&!RM()){const t=vt(()=>{_closeDetail();const g=document.querySelector('#view [data-act="detail"][data-k="'+CSS.escape(k)+'"] .art');if(g)g.style.viewTransitionName='dtc'});if(t)t.finished.finally(clearVt);return}
   _closeDetail()}
-function _closeDetail(){ui.detail=null;if(ui.tonight){renderTonight();render();return}const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
+function _closeDetail(){ui.detail=null;ui.dstack=[];if(ui.tonight){renderTonight();render();return}const el=$('#sheet');el.hidden=true;el.innerHTML='';document.body.style.overflow='';render()}
 function avFull(it){
   if(!AV.has(it.k))return '<div class="subh">Wo verfügbar</div><p class="note">Wird geladen …</p>';
   const av=AV.get(it.k);if(!av)return '';const mine=new Set(S.settings.providers);
@@ -1293,8 +1298,51 @@ function avFull(it){
   const h=grp('Im Abo',av.flat)+grp('Kostenlos',av.free)+grp('Leihen, Kaufen',av.rent);
   return '<div class="subh">Verfügbar</div>'+(h||'<p class="note">Nicht im Streaming</p>');
 }
+/* Personenseite: weitere Serien und Filme einer Person (TMDB) */
+function openPerson(pid,name,img){
+  if(ui.detail){(ui.dstack=ui.dstack||[]).push(ui.detail);navPush({ov:'detail',d:ui.dstack.length})}
+  ui.detail={k:'person:'+pid,person:{pid,name,img},data:null,err:''};renderDetail();
+  const b=$('#sheet .sheet-b');if(b)b.scrollTop=0;
+  personData(pid).then(d=>{if(ui.detail&&ui.detail.k==='person:'+pid){ui.detail.data=d;renderDetail()}}).catch(e=>{if(ui.detail&&ui.detail.k==='person:'+pid){ui.detail.err=e.message||String(e);renderDetail()}});
+}
+async function personData(pid){
+  const d=await tmdb('/person/'+pid,{append_to_response:'combined_credits'});
+  const self=/^(self|himself|herself|sich selbst|narrator|erzähler|host)/i;
+  const seen=new Set();const out={serie:[],film:[]};
+  ((d.combined_credits||{}).cast||[]).forEach(c=>{
+    const m=c.media_type==='tv'?'serie':c.media_type==='movie'?'film':null;if(!m)return;
+    if(self.test(c.character||''))return;
+    if(m==='serie'&&(c.genre_ids||[]).some(g=>g===10767||g===10763))return; /* Talk- und Nachrichtensendungen */
+    const it=tmdbItem(m,c);if(!it||seen.has(it.k))return;seen.add(it.k);
+    out[m].push({it,role:c.character||'',votes:c.vote_count||0});
+  });
+  ['serie','film'].forEach(m=>out[m].sort((a,b)=>b.votes-a.votes));
+  return {bio:d.biography||'',born:d.birthday||'',place:d.place_of_birth||'',img:d.profile_path?TMDB_IMG+'w342'+d.profile_path:null,known:d.known_for_department||'',...out};
+}
+function renderPerson(){
+  const D=ui.detail,P=D.person,d=D.data,el=$('#sheet');
+  let main='';
+  if(D.err)main='<p class="err">'+esc(D.err)+'</p>';
+  else if(!d)main='<p class="note">Wird geladen …</p>';
+  else{
+    const age=d.born?Math.floor((Date.now()-Date.parse(d.born))/31557600000):null;
+    const facts=[d.born?new Date(d.born).toLocaleDateString('de-DE')+(age?' ('+age+')':''):'',d.place].filter(Boolean).join(' · ');
+    if(facts)main+='<p class="note">'+esc(facts)+'</p>';
+    if(d.bio)main+='<p class="dt-ov">'+esc(d.bio.length>600?d.bio.slice(0,600).replace(/\s\S*$/,'')+' …':d.bio)+'</p>';
+    ['serie','film'].forEach(m=>{const L=d[m];if(!L.length)return;
+      main+='<div class="subh">'+(m==='serie'?'Serien':'Filme')+' <span class="note">'+L.length+'</span></div><div class="grid">'+L.slice(0,30).map(x=>card(x.it,'discover',x.role?['als '+x.role]:null)).join('')+'</div>'});
+    if(!d.serie.length&&!d.film.length)main+='<p class="note">Keine weiteren Titel gefunden.</p>';
+  }
+  const img=(d&&d.img)||P.img;
+  el.innerHTML='<div class="sheet-panel dt-panel" role="dialog" aria-modal="true" aria-label="'+esc(P.name)+'">'+
+    '<div class="sheet-h"><div class="row"><div style="margin-right:auto;min-width:0;display:flex;gap:12px;align-items:center">'+(img?'<img src="'+esc(img)+'" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover">':'')+'<div><div class="meta"><span class="mtag">Person</span></div><h2>'+esc(P.name)+'</h2></div></div><button class="btn ghost" data-act="closeDetail" aria-label="Schließen">'+IC.x+'</button></div></div>'+
+    '<div class="sheet-b"><div class="dt-main">'+main+'</div></div></div>';
+  el.hidden=false;document.body.style.overflow='hidden';
+  ['film','serie'].forEach(m=>{const its=d&&d[m]?d[m].slice(0,30).map(x=>x.it).filter(i=>!AV.has(i.k)):[];if(its.length&&!needsKey(m))ensureAv(m,its)});
+}
 function renderDetail(){
   const D=ui.detail;const el=$('#sheet');if(!D)return;
+  if(D.person){renderPerson();return}
   const it=S.items[D.k]?{...D.it,...S.items[D.k]}:D.it;const d=D.data;const M=MEDIA[it.m];const k=esc(it.k);
   const st=S.items[it.k]&&S.items[it.k].status;
   const stLbl={watch:'Auf der Merkliste',love:'♥ Lieblingstitel',like:'Gefällt Dir',dislike:'Gefällt Dir nicht',hide:'Ausgeblendet'};
@@ -1313,7 +1361,7 @@ function renderDetail(){
     const facts=(d.facts||[]).filter(f=>f[1]);
     if(facts.length)main+='<dl class="dt-facts">'+facts.map(f=>'<dt>'+esc(f[0])+'</dt><dd>'+esc(f[1])+'</dd>').join('')+'</dl>';
     if(d.trailer)main+='<div class="subh">Trailer</div>'+(/^https?:/.test(location.protocol)&&MODE==='live'?'<div class="dt-video"><iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(d.trailer.key)+'" title="'+esc(d.trailer.name||'Trailer')+'" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>':'')+'<div><a class="btn" href="https://www.youtube.com/watch?v='+encodeURIComponent(d.trailer.key)+'" target="_blank" rel="noopener">Trailer auf YouTube'+IC.ext+'</a></div>';
-    if(d.people&&d.people.length)main+='<div class="subh">Mitwirkende</div><div class="ppl">'+d.people.map(p=>'<div class="pp">'+(p.img?'<img src="'+esc(p.img)+'" alt="" loading="lazy">':'<span class="pp-ph">'+esc(String(p.name).split(/\s+/).map(w=>w[0]).slice(0,2).join(''))+'</span>')+'<b>'+esc(p.name)+'</b><small>'+esc(p.role||'')+'</small></div>').join('')+'</div>';
+    if(d.people&&d.people.length)main+='<div class="subh">Mitwirkende</div><div class="ppl">'+d.people.map(p=>(p.pid?'<button class="pp pp-b" data-act="person" data-pid="'+p.pid+'" data-name="'+esc(p.name)+'" data-img="'+esc(p.img||'')+'" aria-label="Weitere Titel mit '+esc(p.name)+'">':'<div class="pp">')+(p.img?'<img src="'+esc(p.img)+'" alt="" loading="lazy">':'<span class="pp-ph">'+esc(String(p.name).split(/\s+/).map(w=>w[0]).slice(0,2).join(''))+'</span>')+'<b>'+esc(p.name)+'</b><small>'+esc(p.role||'')+'</small>'+(p.pid?'</button>':'</div>')).join('')+'</div>';
     (d.sections||[]).forEach(sec=>{if(!sec.rows||!sec.rows.length)return;
       main+='<div class="subh">'+esc(sec.title)+'</div><div class="dt-rows">'+sec.rows.map(r=>{const q=r.q?links({...it,title:r.q,link:null})[0]:null;
         const lk=q?q:r.url?['Öffnen',r.url]:null;
@@ -2194,6 +2242,7 @@ const ACT={
   reshuffle(b){const m=b.dataset.m;resetPools(m==='alle'?null:[m]);render()},
   pick(b){openSheet(b.dataset.m)},
   closePick(){closeSheet()},
+  person(b){openPerson(+b.dataset.pid,b.dataset.name,b.dataset.img||null)},
   ytOpen(){ytOpen()},
   ytTog(b){const k=b.dataset.k;const Y=ui.yt;if(Y.sel.has(k))Y.sel.delete(k);else Y.sel.add(k);ytRender()},
   ytAll(){const Y=ui.yt;Y.sel=Y.sel.size===Y.bands.length?new Set():new Set(Y.bands.map(b=>b.k));ytRender()},
@@ -2353,6 +2402,7 @@ window.addEventListener('popstate',e=>{
   try{
     if(ui.drawer&&st.ov!=='drawer'){doCloseDrawer();return}
     if(ui.detail&&st.ov!=='detail'){doCloseDetail();return}
+    if(ui.detail&&st.ov==='detail'&&(ui.dstack||[]).length>(st.d||0)){ui.detail=ui.dstack.pop();renderDetail();const b=$('#sheet .sheet-b');if(b)b.scrollTop=0;return}
     if((ui.add||ui.tonight||ui.pick&&ui.pick.host==='sheet')&&st.ov!=='sheet'){doCloseSheet();return}
     if(ui.intro){const n=typeof st.ii==='number'?st.ii:0;if(n!==ui.intro.i){ui.intro.i=Math.min(n,introSteps().length-1);ui.pick=null;renderIntro();$('#intro').scrollTop=0}return}
     if(st.tab&&(st.tab!==ui.tab||(st.med||'alle')!==ui.med)){ui.tab=st.tab;ui.med=st.med||'alle';ui.knownOpen=null;render();window.scrollTo({top:0})}
