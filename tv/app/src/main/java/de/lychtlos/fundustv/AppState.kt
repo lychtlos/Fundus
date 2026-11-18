@@ -26,6 +26,7 @@ sealed interface Screen {
     data object Main : Screen
     data object Login : Screen
     data class Detail(val title: Title) : Screen
+    data class Person(val id: Int, val name: String, val photo: String?) : Screen
 }
 
 /** Menüpunkte wie in der Smartphone-App. */

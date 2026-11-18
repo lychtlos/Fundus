@@ -46,7 +46,7 @@ data class Details(
     val networks: List<String> = emptyList(),
 )
 
-data class Person(val name: String, val role: String, val photo: String?)
+data class Person(val name: String, val role: String, val photo: String?, val id: Int = 0)
 
 /** Ausschnitt aus dem Fundus-Konto (artifacts/fundus/users/{uid}). */
 data class FundusData(

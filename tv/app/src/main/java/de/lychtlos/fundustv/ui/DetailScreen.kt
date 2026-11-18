@@ -273,7 +273,7 @@ fun DetailScreen(app: AppState, start: Title) {
                     Column {
                         Text("Besetzung", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink, modifier = Modifier.padding(top = 8.dp, bottom = 6.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(end = 56.dp, top = 8.dp, bottom = 8.dp)) {
-                            items(people, key = { it.name + it.role }) { p -> PersonCard(p) }
+                            items(people, key = { it.name + it.role }) { p -> PersonCard(p) { if (p.id > 0) app.go(Screen.Person(p.id, p.name, p.photo)) } }
                         }
                     }
                 }
@@ -322,9 +322,9 @@ private fun openTrailer(ctx: android.content.Context, key: String): String? {
 }
 
 @Composable
-private fun PersonCard(p: de.lychtlos.fundustv.data.Person) {
+private fun PersonCard(p: de.lychtlos.fundustv.data.Person, onClick: () -> Unit) {
     androidx.tv.material3.Surface(
-        onClick = {},
+        onClick = onClick,
         modifier = Modifier.width(120.dp),
         shape = androidx.tv.material3.ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
         colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(containerColor = Color.Transparent, focusedContainerColor = C.surface2, contentColor = C.ink, focusedContentColor = C.ink),

@@ -144,13 +144,18 @@ fun Browse(app: AppState, mem: HomeMemory, groups: List<Group>, header: @Composa
             ) {
                 groups.forEach { g ->
                     if (g.title != null && g.m != null) item(key = "h-" + g.m) { GroupHeader(g.title, medColor(g.m)) }
-                    g.shelves.forEach { s ->
+                    g.shelves.forEachIndexed { si, s ->
                         item(key = s.id) {
                             ShelfRow(
                                 shelf = s,
                                 state = mem.rows.getOrPut(s.id) { LazyListState() },
                                 onOpen = { t -> mem.focusKey = s.id + "|" + t.k; app.go(Screen.Detail(t)) },
-                                onFocused = { t -> hs.pending = t; mem.hero = t },
+                                onFocused = { t ->
+                                    hs.pending = t; mem.hero = t
+                                    // Wo bin ich? Bereich › Reihe x von y › Titel i von n
+                                    val i = s.items.indexOfFirst { it.k == t.k } + 1
+                                    hs.where = listOfNotNull(g.title, if (g.shelves.size > 1) "Reihe ${si + 1} von ${g.shelves.size}" else null, s.label).joinToString("  ›  ") + "   ·   $i / ${s.items.size}"
+                                },
                                 restoreKey = restore,
                                 firstFocus = if (s == all.first()) firstFocus else null,
                             )
@@ -176,6 +181,7 @@ class HeroState(start: Title?) {
     var pending by mutableStateOf(start)
     var title by mutableStateOf(start)
     var details by mutableStateOf<Details?>(null)
+    var where by mutableStateOf("")
     var backdrop by mutableStateOf(start?.backdrop)
 }
 
@@ -215,16 +221,19 @@ private fun HeroBackdrop(hs: HeroState) {
 }
 
 @Composable
-private fun HeroInfo(hs: HeroState) = Hero(hs.title, hs.details)
+private fun HeroInfo(hs: HeroState) = Hero(hs.title, hs.details, hs.where)
 
 /** Infobereich oben: zeigt zum fokussierten Titel, warum er vorgeschlagen wird. */
 @Composable
-private fun Hero(t: Title?, d: Details?) {
-    Column(Modifier.fillMaxWidth().height(210.dp).padding(start = 8.dp, top = 16.dp, end = 48.dp)) {
+private fun Hero(t: Title?, d: Details?, where: String = "") {
+    Column(Modifier.fillMaxWidth().height(178.dp).padding(start = 8.dp, top = 12.dp, end = 48.dp)) {
         if (t == null) return@Column
-        Text(medLabel(t.m).uppercase(), fontSize = 13.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = medColor(t.m))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(medLabel(t.m).uppercase(), fontSize = 13.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, color = medColor(t.m))
+            if (where.isNotEmpty()) Text("     " + where, fontSize = 13.sp, color = C.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         Text(
-            t.title, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = C.ink,
+            t.title, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = C.ink,
             maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(720.dp),
         )
         Spacer(Modifier.height(4.dp))
@@ -241,7 +250,7 @@ private fun Hero(t: Title?, d: Details?) {
             Spacer(Modifier.height(6.dp))
         }
         Text(
-            d?.overview ?: "", fontSize = 15.sp, color = C.ink, maxLines = if (t.why != null) 2 else 4,
+            d?.overview ?: "", fontSize = 15.sp, color = C.ink, maxLines = if (t.why != null) 2 else 3,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.width(680.dp).fillMaxHeight(),
         )
     }

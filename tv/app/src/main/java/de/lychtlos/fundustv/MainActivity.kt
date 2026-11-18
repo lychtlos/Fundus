@@ -79,6 +79,7 @@ class MainActivity : ComponentActivity() {
                         Screen.Main -> MainScreen(app, mems)
                         Screen.Login -> LoginScreen(app)
                         is Screen.Detail -> androidx.compose.runtime.key(s.title.k, app.stack.size) { DetailScreen(app, s.title) }
+                        is Screen.Person -> androidx.compose.runtime.key("p" + s.id, app.stack.size) { de.lychtlos.fundustv.ui.PersonScreen(app, s) }
                     }
                     var splash by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(!restored) }
                     if (splash) Splash(ready = app.ready) { splash = false }

@@ -175,7 +175,7 @@ fun ShelfRow(
         }
         LazyRow(
             state = state,
-            contentPadding = PaddingValues(start = 8.dp, end = 48.dp, top = 10.dp, bottom = 10.dp),
+            contentPadding = PaddingValues(start = 8.dp, end = 48.dp, top = 8.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             itemsIndexed(shelf.items, key = { _, t -> t.k }) { i, t ->
@@ -192,6 +192,7 @@ fun ShelfRow(
                 PosterCard(
                     t = t,
                     onClick = { onOpen(t) },
+                    width = 120.dp,
                     focusRequester = req,
                     onFocused = { onFocused(t) },
                     badge = if (t.ai) "✦" else null,

@@ -109,6 +109,23 @@ object Tmdb {
         } ?: emptyList()
     }
 
+    /** Person: (Kurzinfo, Serien, Filme) – ohne Auftritte als sie selbst, Talk- und Nachrichtensendungen; meistbewertete zuerst */
+    suspend fun person(id: Int): Triple<String, List<Title>, List<Title>> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+        val d = call("/person/$id", mapOf("append_to_response" to "combined_credits"), ttl = 24 * 3600 * 1000L)
+        val self = Regex("(?i)^(self|himself|herself|sich selbst|narrator|erzähler|host)")
+        val cast = d.optJSONObject("combined_credits")?.optJSONArray("cast")?.objects().orEmpty()
+            .filter { !self.containsMatchIn(it.optString("character")) }
+            .sortedByDescending { it.optInt("vote_count") }
+        fun list(type: String, m: String) = cast.filter { it.optString("media_type") == type }
+            .filter { c -> m != "serie" || (0 until (c.optJSONArray("genre_ids")?.length() ?: 0)).none { c.getJSONArray("genre_ids").optInt(it) in setOf(10767, 10763) } }
+            .mapNotNull { c -> parse(m, c)?.let { t -> c.str("character")?.let { r -> t.copy(why = "als $r") } ?: t } }
+            .distinctBy { it.k }
+        val born = d.str("birthday")?.split("-")?.let { if (it.size == 3) it[2] + "." + it[1] + "." + it[0] else null }
+        val info = listOfNotNull(born?.let { "geb. $it" }, d.str("place_of_birth")).joinToString(" · ") +
+            (d.str("biography")?.let { "\n" + it } ?: "")
+        Triple(info, list("tv", "serie"), list("movie", "film"))
+    }
+
     suspend fun recommendations(t: Title): List<Title> {
         val d = call("/${t.type}/${t.id}/recommendations")
         return d.optJSONArray("results")?.objects()?.mapNotNull { parse(t.m, it) } ?: emptyList()
@@ -135,10 +152,10 @@ object Tmdb {
         val people = (agg?.take(20)?.mapNotNull { p ->
             val n = p.str("name") ?: return@mapNotNull null
             val role = p.optJSONArray("roles")?.objects()?.firstOrNull()?.str("character") ?: ""
-            Person(n, role, img(p.str("profile_path"), "w185"))
+            Person(n, role, img(p.str("profile_path"), "w185"), p.optInt("id"))
         } ?: d.optJSONObject("credits")?.optJSONArray("cast")?.objects()?.take(20)?.mapNotNull { p ->
             val n = p.str("name") ?: return@mapNotNull null
-            Person(n, p.str("character") ?: "", img(p.str("profile_path"), "w185"))
+            Person(n, p.str("character") ?: "", img(p.str("profile_path"), "w185"), p.optInt("id"))
         })?.distinctBy { it.name } ?: emptyList()
         val vids = d.optJSONObject("videos")?.optJSONArray("results")?.objects().orEmpty()
             .filter { it.optString("site") == "YouTube" && it.optString("type") in setOf("Trailer", "Teaser") }
