@@ -149,40 +149,42 @@ fun SearchScreen(app: AppState, mem: SearchMemory) {
         if (results.isNotEmpty() && key == mem.lastKey) return@LaunchedEffect
         delay(if (q.isNotEmpty()) 450 else 150)
         busy = true
-        val r = runCatching { load(1) }.getOrDefault(emptyList())
+        val r = try { load(1) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { emptyList() }
         results = r.distinctBy { it.k }; mem.results = results; mem.page = 1; more = r.size >= 10
         mem.lastKey = key
         busy = false
-        runCatching { mem.grid.scrollToItem(0) }
+        try { mem.grid.scrollToItem(0) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (_: Exception) {}
     }
     LaunchedEffect(Unit) { if (mem.results.isEmpty() && q.isEmpty()) runCatching { field.requestFocus() } }
 
+    androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+    // Suchfeld fest oben (nicht in der Liste: dort verlor es auf dem TV Fokus und Tastatur)
+    Box(Modifier.padding(start = 40.dp, end = 48.dp, top = 26.dp, bottom = 6.dp)) {
+            Box(
+            Modifier.fillMaxWidth(0.7f)
+                .border(2.dp, if (focused) C.accent else C.line, RoundedCornerShape(10.dp))
+                .background(C.surface, RoundedCornerShape(10.dp))
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+        ) {
+            if (q.isEmpty()) Text("Titel suchen … oder unten filtern", color = C.ink2, fontSize = 20.sp)
+            BasicTextField(
+                value = q, onValueChange = { q = it }, singleLine = true,
+                textStyle = TextStyle(color = C.ink, fontSize = 20.sp), cursorBrush = SolidColor(C.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { fm.moveFocus(FocusDirection.Down) }),
+                modifier = Modifier.fillMaxWidth().focusRequester(field).onFocusChanged { focused = it.isFocused },
+            )
+        }
+            }
     LazyVerticalGrid(
         state = mem.grid,
         columns = GridCells.Adaptive(130.dp),
-        contentPadding = PaddingValues(start = 40.dp, end = 48.dp, top = 26.dp, bottom = 48.dp),
+        contentPadding = PaddingValues(start = 40.dp, end = 48.dp, top = 6.dp, bottom = 48.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
         val full: (androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope) -> GridItemSpan = { GridItemSpan(it.maxLineSpan) }
-        item(span = full) {
-            Box(
-                Modifier.fillMaxWidth(0.7f)
-                    .border(2.dp, if (focused) C.accent else C.line, RoundedCornerShape(10.dp))
-                    .background(C.surface, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-            ) {
-                if (q.isEmpty()) Text("Titel suchen … oder unten filtern", color = C.ink2, fontSize = 20.sp)
-                BasicTextField(
-                    value = q, onValueChange = { q = it }, singleLine = true,
-                    textStyle = TextStyle(color = C.ink, fontSize = 20.sp), cursorBrush = SolidColor(C.accent),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { fm.moveFocus(FocusDirection.Down) }),
-                    modifier = Modifier.fillMaxWidth().focusRequester(field).onFocusChanged { focused = it.isFocused },
-                )
-            }
-        }
         item(span = full) {
             ChipRow(listOf("alle" to "Filme & Serien", "serie" to "Serien", "film" to "Filme"), mem.kind, { mem.kind = it }) {
                 ChipToggle("Nur meine Dienste", mem.mine) { mem.mine = !mem.mine }
@@ -225,6 +227,7 @@ fun SearchScreen(app: AppState, mem: SearchMemory) {
                 }
             }) { Text(if (loading) "Lädt …" else "Mehr laden", fontSize = 15.sp) }
         }
+    }
     }
 }
 
